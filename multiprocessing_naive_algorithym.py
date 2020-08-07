@@ -34,15 +34,14 @@ print len(b)
 '''
 
 from protein_coverage import read_fasta_into_dict
-from trie_implementation import make_trie, in_trie
-import fasta_protein_coverage
+
 #from test4 import read_peptide
 import numpy as np
 import glob
 import pickle as ppp
 import multiprocessing as mp
 import time
-import constant_parameters
+
 import re
 
 

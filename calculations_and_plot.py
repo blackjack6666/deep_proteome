@@ -32,6 +32,36 @@ def coverage_calculation(zero_line, sep_pos_array, ID_list):
     return overall_percentage, identified_coverage_array, coverage_list_ordered, protein_coverage_dict, average_coverage, identified_average_coverage, len_list
 
 
+def identified_proteome_cov(aho_result, protein_dict):
+    """
+    -----
+    get average coverage of identified proteome, and a dictionary that has coverage of each protein
+    -----
+    :param aho_result:
+    :param protein_dict:
+    :return:
+    """
+    prot_cov_dict = {}
+    ID_list, seq_list = multiprocessing_naive_algorithym.extract_UNID_and_seq(protein_dict)
+
+    seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list)
+    separtor_pos_array = multiprocessing_naive_algorithym.separator_pos(seq_line)
+
+    zero_line = multiprocessing_naive_algorithym.zero_line_for_seq(seq_line)
+    for pos in aho_result:
+        zero_line[pos[0]:pos[1] + 1] += 1
+
+    for i in range(len(separtor_pos_array)-1): # iterate from the left of zeroline all the way to the right
+        non_zero_for_one_protein = np.count_nonzero(zero_line[separtor_pos_array[i]+1:separtor_pos_array[i+1]])
+        total_len_for_one_protein = len(zero_line[separtor_pos_array[i] + 1:separtor_pos_array[i + 1]])
+        coverage_for_one_protein = float(non_zero_for_one_protein) / total_len_for_one_protein * 100
+        prot_cov_dict[ID_list[i]] = coverage_for_one_protein
+
+    # delete unidentified proteins
+    iden_prot_cov_dict = {each:prot_cov_dict[each] for each in prot_cov_dict if prot_cov_dict[each] != 0}
+    return np.mean([v for v in iden_prot_cov_dict.values()]), iden_prot_cov_dict, prot_cov_dict
+
+
 def whole_proteome_cov(aho_result,protein_dict):
     """
     -----
@@ -44,12 +74,17 @@ def whole_proteome_cov(aho_result,protein_dict):
     ID_list, seq_list = multiprocessing_naive_algorithym.extract_UNID_and_seq(protein_dict)
 
     total_seq_len = len(''.join(seq_list))
+    #print ('total seq len:', total_seq_len)
+
     seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list)
+    #print ('seq len with separator: ', len(seq_line))
 
     zero_line = multiprocessing_naive_algorithym.zero_line_for_seq(seq_line)
+
     for pos in aho_result:
         zero_line[pos[0]:pos[1]+1] += 1
     non_zero_len = np.count_nonzero(zero_line)
+
     return float(non_zero_len)/total_seq_len*100
 
 # the following function returns a dictionary with uniprotID as key and aa frequency as value
