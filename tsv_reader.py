@@ -53,3 +53,21 @@ def venn_diagram_gen(dictionary, title=''): # parameter could be a dictionary of
 
     plt.title(title)
     plt.show()
+
+
+def venn_diagram_gen2(dictionary, title=None): # parameter could be a dictionary of proteins or peptides from different samples {'sample1': [], 'sample2': []}
+    import matplotlib.pyplot as plt
+    import matplotlib
+    import venn
+
+    if len(dictionary)>=6:
+        raise ValueError('maximum groups to compare is 5')
+
+    else:
+        matplotlib.rcParams.update({'font.size': 15})
+
+        venn_dict = {each:set(dictionary[each]) for each in dictionary}
+        ax = venn.venn(venn_dict)
+        if title:
+            ax.set_title(title)
+    plt.show()
