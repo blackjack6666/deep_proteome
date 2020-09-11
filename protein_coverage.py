@@ -1,38 +1,30 @@
 from collections import defaultdict
 import glob
 import numpy as np
-def read_fasta_into_dict(filename):
-    dict_human_ref = dict()
-    #key = ""
-    value = ""
-    aa_frequency_all_zero_dict = {}
+
+
+def read_fasta_info_dict2(filename):
+    """
+    -----
+    read fasta file including reverse seq, exclude rev seq in returned dictionary
+    -----
+    :param filename:
+    :return:
+    """
+    protein_seq_dict = {}
     with open(filename, 'r') as file_open:
-        Reverse = 0
-        for line in file_open:
-            if line.startswith('>sp') and value == '':
-                key = line.split('|')[1]
-                Reverse = 0
-                #dict_human_ref[key] = value
-                #value = ""
-                #key = line.split('|')[1]
-            elif line.startswith('>sp') and value != '':
-                dict_human_ref[key] = value
-                key = line.split('|')[1]
-                value = ''
-                Reverse = 0
-            elif line.startswith('>Rev'):
-                Reverse = 1
-            elif Reverse == 0:
-                value += line.rstrip('\n')
+        file_split = file_open.read().split('\n>')
+        # read first entry
+        protein_seq_dict[file_split[0].split('\n')[0].split('|')[1]] = ''.join(file_split[0].split('\n')[1:])
+        # read the rest entry
+        for each in file_split[1:]:
+            if each.startswith('Rev'):
+                continue
+            else:
+                split_line = each.split('\n')
+                protein_seq_dict[split_line[0].split('|')[1]] = ''.join(split_line[1:])
 
-    if key not in dict_human_ref.keys():
-        dict_human_ref[key] = value
-    for ID in [ID for ID in dict_human_ref.keys()][1:]:
-        sequence = dict_human_ref[ID]
-        aa_frequency_all_zero_dict[ID] = [0]*len(sequence)
-
-
-    return dict_human_ref, aa_frequency_all_zero_dict
+    return protein_seq_dict
 
 
 def fasta_reader(fasta_file_path):
@@ -44,6 +36,7 @@ def fasta_reader(fasta_file_path):
             protein_seq_dict[split_line[0].split('|')[1]] = ''.join(split_line[1:])
     return protein_seq_dict
 
+
 def read_description_into_dict(fasta_file):
     ID_description_dict = {}
     with open(fasta_file, 'r') as file_open:
@@ -52,15 +45,56 @@ def read_description_into_dict(fasta_file):
                 ID_description_dict[line.split('|')[1]] = line.split('|')[2].rstrip('\n')
     return ID_description_dict
 
+
 def read_description(fasta_file):
+    """
+       read description and prefix in fasta file
+       :param fasta_file:
+       :return:
+       """
+
     # dictionary format: {'ID': ('sp', 'description')}
-    ID_description_dict ={}
+    ID_description_dict = {}
     with open(fasta_file, 'r') as file_open:
         file_split = file_open.read().split('\n>')
-        for each in file_split:
+        # first entry special case
+        ID_description_dict[file_split[0].split('\n')[0].split('|')[1]] = (
+        file_split[0].split('\n')[0].split('|')[0][1:], file_split[0].split('\n')[0].split('|')[2])
+        for each in file_split[1:]:
             split_line = each.split('\n')
-            ID_description_dict[split_line[0].split('|')[1]] = (split_line[0].split('|')[0],split_line[0].split('|')[2])
+            ID_description_dict[split_line[0].split('|')[1]] = (
+            split_line[0].split('|')[0], split_line[0].split('|')[2])
     return ID_description_dict
+
+
+def fasta_reverse_generator(fasta_file_in, fasta_file_out):
+    print ('reverse_algorithm = null, or other protease')
+    # read protein sequence into dic
+    protein_dict = fasta_reader(fasta_file_in)
+
+    # read description into dic
+    ID_descrip_dict = read_description(fasta_file_in)  # dictionary format: {'ID': ('sp'or'tr', description)}
+
+    # write id and reverse sequence into fasta_file_out
+    with open(fasta_file_out, 'w', newline='\n') as file_open:
+        for id in protein_dict:
+            forward_seq = protein_dict[id]
+
+            rev_seq = protein_dict[id][::-1]
+
+            block = range(0,len(forward_seq)+60,60)
+
+            # write forward
+            file_open.write('>'+ ID_descrip_dict[id][0]+'|'+id+'|'+ID_descrip_dict[id][1]+'\n')
+            for i in range(len(block)-1):
+                file_open.write(forward_seq[block[i]:block[i+1]]+'\n')
+
+            # write reverse
+            file_open.write('>Rev_'+ ID_descrip_dict[id][0]+'|'+id+'|'+ID_descrip_dict[id][1]+'\n')
+            for i in range(len(block)-1):
+                file_open.write(rev_seq[block[i]:block[i+1]]+'\n')
+    return fasta_file_out
+
 
 def contaminant_converter(contaminant_file, normalized_contaminant_file):
     contaminant_description_dict = {}
@@ -149,22 +183,9 @@ def aa_frequency(filename):
     average = float(percentage_sum/len(identified_count_dict.keys()[1:]))
     return average, Total_protein_len, Identified_total_protein_len, Total_identified_zero_count
 
-if __name__ == "__main":
-    Alldta_total_protein_len = 0
-    Alldta_total_identified_protein_len = 0
-    Alldta_total_identified_zero_count = 0
-    Alldta_average_list = []
-    path = 'C:/uic/lab/data/xinhao_data1/'
-    datafiles = glob.glob(path+'*.dta')
-    for datafile in datafiles:
-        Alldta_total_protein_len += aa_frequency(datafile)[1]
-        Alldta_total_identified_protein_len += aa_frequency(datafile)[2]
-        Alldta_total_identified_zero_count += aa_frequency(datafile)[3]
-        Alldta_average_list.append(aa_frequency(datafile)[0])
-    overall_average = np.mean(Alldta_average_list)*100
-    Overall_coverage = float(Alldta_total_identified_protein_len-Alldta_total_identified_zero_count)/Alldta_total_protein_len*100
-    Overall_coverage_for_identified_protein = float(Alldta_total_identified_protein_len-Alldta_total_identified_zero_count)/Alldta_total_identified_protein_len*100
 
-    print ('The average is %.2f%%\nThe overall coverage for all proteins is %.2f%%\nThe overall coverage for identified proteins is %.2f%%')\
-        % (overall_average, Overall_coverage, Overall_coverage_for_identified_protein )
+if __name__ == "__main__":
+    fasta_file_input = 'D:/data/Naba_deep_matrisome/mouse_ecm_costom_proteome_db.fasta'
+    fasta_file_out = 'D:/data/Naba_deep_matrisome/mouse_ecm_costom_proteome_db_rev.fasta'
+    fasta_reverse_generator(fasta_file_input,fasta_file_out)
 
