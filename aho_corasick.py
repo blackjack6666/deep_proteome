@@ -1,6 +1,6 @@
 import ahocorasick
 #from test4 import read_peptide
-from protein_coverage import read_fasta_into_dict
+from protein_coverage import read_fasta_info_dict2
 import glob
 import time
 import multiprocessing_naive_algorithym

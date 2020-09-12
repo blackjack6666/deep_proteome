@@ -33,7 +33,7 @@ b = np.delete(a, index)
 print len(b)
 '''
 
-from protein_coverage import read_fasta_into_dict
+from protein_coverage import read_fasta_info_dict2
 
 #from test4 import read_peptide
 import numpy as np
