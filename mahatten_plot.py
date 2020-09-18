@@ -343,7 +343,7 @@ def create_manhattan_plot(twopoint, multipoint, args):
     ax.set_title(args.graph_title, fontsize=16, weight="bold")
 
     # Now plotting for each of the chromosome
-    starting_pos = 0
+    starting_pos = 0  # decide the X pos for each point
     annots = []
     ticks = []
     for i, chrom in enumerate(available_chrom):
