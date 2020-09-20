@@ -940,4 +940,4 @@ if __name__ == "__main__":
     safe_main()
 
     "command line"
-    "python27 mahatten_plot.py --twopoint C:\uic\lab\Results_Wang_Medips_2019-02-11_fillna.csv --col-chr chromosome --col-name Gene_symbol --col-pos start --col-pvalue edgeR.adj.p.value --bp --use-pvalues --no-annotation --graph-width 20 --graph-height 10 --point-size 3 --significant-point-size 4 --abline 2.3 --significant-threshold 2.3 --max-ylim 40"
+    "python27 mahatten_plot.py --twopoint D:\data\Results_Genes.csv --col-chr chromosome --col-name Gene_symbol --col-pos start --col-pvalue edgeR.adj.p.value --bp --use-pvalues --no-annotation --graph-width 20 --graph-height 10 --point-size 3 --significant-point-size 4 --abline 3 --significant-threshold 3 --max-ylim 40"
