@@ -12,15 +12,14 @@ def protein_tsv_reader(protein_tsv_file):
 
 
 def peptide_counting(peptide_tsv_file):
-    peptide_list = []
+
     with open(peptide_tsv_file, 'r') as file_open:
         next(file_open)
-        for line in file_open:
-            peptide_seq = line.split("\t")[0]
-            peptide_list.append(peptide_seq)
+
+        peptide_list = [line.split("\t")[0] for line in file_open]
     return peptide_list
 
-def psm_reader(psm_path):
+def psm_reader(psm_path,fragpipe_ver=13.0):
     pep_spec_count_dict = defaultdict(int)
     ret_pep_dict = {}
     with open(psm_path, 'r') as f:
@@ -28,8 +27,8 @@ def psm_reader(psm_path):
             next(f)
         for line in f:
             line_split = line.split('\t')
-            pep_seq = line_split[1]
-            retention_time = float(line_split[4])/60  # in minute
+            pep_seq = line_split[2] if fragpipe_ver==13.0 else line_split[1]
+            retention_time = float(line_split[5])/60  if fragpipe_ver==13.0 else float(line_split[4])/60 # in minute
             pep_spec_count_dict[pep_seq]+=1
             ret_pep_dict[retention_time] = pep_seq
     return pep_spec_count_dict, ret_pep_dict
