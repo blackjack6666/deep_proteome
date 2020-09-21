@@ -7,17 +7,17 @@ import multiprocessing_naive_algorithym
 import pandas as pd
 import numpy as np
 
-tryp_path = 'C:/uic/lab/data/Deep_proteome/20200915/20200915_tryp_37C*/peptide.tsv'
-ct_path = 'C:/uic/lab/data/Deep_proteome/20200915/20200915_tryp_50C*/peptide.tsv'
+tryp_path = 'D:/data/deep_proteome/20200915_tryp*/peptide.tsv'
+ct_path = 'D:/data/deep_proteome/20200915_ct*/peptide.tsv'
 tryp_file_list = glob(tryp_path)
 ct_file_list = glob(ct_path)
 
-tryp_psm_path = 'C:/uic/lab/data/Deep_proteome/20200915/20200915_tryp_37C*/psm.tsv'
-ct_psm_path = 'C:/uic/lab/data/Deep_proteome/20200915/20200915_tryp_50C*/psm.tsv'
+tryp_psm_path = 'D:/data/deep_proteome/20200915_tryp*/psm.tsv'
+ct_psm_path = 'D:/data/deep_proteome/20200915_ct*/psm.tsv'
 tryp_psm_file_list = glob(tryp_psm_path)
 ct_psm_file_list = glob(ct_psm_path)
 
-fasta_path = 'C:/uic/lab/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
+fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
 protein_dict = fasta_reader(fasta_path)
 ID_list, seq_list = multiprocessing_naive_algorithym.extract_UNID_and_seq(protein_dict)
 seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list)
@@ -44,22 +44,37 @@ pd.set_option('display.max_rows', None)
 #             df.loc[cond,'cov'] = proteome_coverage
 
 # whole proteome coverage caluculation, single file
+# total_file_list = tryp_file_list+ct_file_list
+# for each_file in total_file_list:
+#     print (each_file)
+#
+#     ez_tm = '_'.join(each_file.split('\\')[-2].split('_')[1:3])
+#     time = each_file.split('\\')[-2].split('_')[-1]
+#     print(ez_tm,time)
+#     pep_list = peptide_counting(each_file)
+#     automaton = aho_corasick.automaton_trie(pep_list)
+#     aho_result = aho_corasick.automaton_matching(automaton,seq_line)
+#     proteome_coverage = whole_proteome_cov(aho_result,protein_dict)
+#     print (ez_tm,time, proteome_coverage)
+#     df.loc[ez_tm,time] = proteome_coverage
+
+# identified protein coverage, single file
 total_file_list = tryp_file_list+ct_file_list
 for each_file in total_file_list:
     print (each_file)
-
-    ez_tm = '_'.join(each_file.split('\\')[-2].split('_')[1:3])
-    time = each_file.split('\\')[-2].split('_')[-1]
-    print(ez_tm,time)
+    cond = '_'.join(each_file.split('\\')[-2].split('_')[1:])
+    # ez_tm = '_'.join(each_file.split('\\')[-2].split('_')[1:3])
+    # time = each_file.split('\\')[-2].split('_')[-1]
+    print(cond)
     pep_list = peptide_counting(each_file)
     automaton = aho_corasick.automaton_trie(pep_list)
     aho_result = aho_corasick.automaton_matching(automaton,seq_line)
-    proteome_coverage = whole_proteome_cov(aho_result,protein_dict)
-    print (ez_tm,time, proteome_coverage)
-    df.loc[ez_tm,time] = proteome_coverage
+    identified_proteome_cov_dict = identified_proteome_cov(aho_result,protein_dict)[1]
+    for each_prot in identified_proteome_cov_dict:
+        df.loc[each_prot,cond] = identified_proteome_cov_dict[each_prot]
+df = df.fillna(0)
 
-
-# psm counting
+#psm counting
 # total_file_list = tryp_psm_file_list+ct_psm_file_list
 # for each_file in total_file_list:
 #     print (each_file)
@@ -97,4 +112,11 @@ for each_file in total_file_list:
 
 
 
-df.to_excel('C:/uic/lab/data/Deep_proteome/20200915/9_20_coverage.xlsx')
+# df.to_excel('D:/data/deep_proteome/9_20_coverage.xlsx')
+# df = pd.read_excel('D:/data/deep_proteome/9_20_coverage.xlsx')
+# print (df)
+# cols = df.columns.tolist()
+# new_cols = ['Unnamed: 0', '0min', '10min','20min','30min','60min', '120min', '240min', '1440min', '3180min', '4320min']
+# df = df.reindex(columns=new_cols)
+# df.to_excel('D:/data/deep_proteome/9_20_identified_cov.xlsx')
+
