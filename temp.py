@@ -118,5 +118,5 @@ df = df.fillna(0)
 # cols = df.columns.tolist()
 # new_cols = ['Unnamed: 0', '0min', '10min','20min','30min','60min', '120min', '240min', '1440min', '3180min', '4320min']
 # df = df.reindex(columns=new_cols)
-# df.to_excel('D:/data/deep_proteome/9_20_identified_cov.xlsx')
+df.to_excel('D:/data/deep_proteome/9_20_identified_cov_total.xlsx')
 
