@@ -28,13 +28,11 @@ def read_fasta_info_dict2(filename):
 
 
 def fasta_reader(fasta_file_path):
-    protein_seq_dict = {}
+
     with open(fasta_file_path, 'r') as file_open:
         file_split = file_open.read().split('\n>')
-        for each in file_split:
-            split_line = each.split('\n')
-            protein_seq_dict[split_line[0].split('|')[1]] = ''.join(split_line[1:])
-    return protein_seq_dict
+
+    return {each.split('\n')[0].split('|')[1]: ''.join(each.split('\n')[1:]) for each in file_split}
 
 
 def read_description_into_dict(fasta_file):
