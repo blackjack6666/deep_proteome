@@ -87,6 +87,18 @@ def whole_proteome_cov(aho_result,protein_dict):
 
     return float(non_zero_len)/total_seq_len*100
 
+
+def length_KR_ratio(protein_dict):
+    """
+    calculate the ratio of protein length and K/R ratio
+    :param protein_dict:
+    :return:
+    """
+
+    return {each:float(protein_dict[each].count('K')+protein_dict[each].count('R'))/len(protein_dict[each])
+            for each in protein_dict}
+
+
 # the following function returns a dictionary with uniprotID as key and aa frequency as value
 def ID_number_line(zero_line, sep_pos_array, ID_list):
     ID_number_line_dict = {}
