@@ -99,6 +99,15 @@ def length_KR_ratio(protein_dict):
             for each in protein_dict}
 
 
+def miss_cleavage_identify(peptide_list,regex_pattern=r'(?:K|R)\w+'):
+    """
+    calculate the ratio of peptides that has least one missed cleavage to all peptides
+    :param peptide_list:
+    :return:
+    """
+    from re import search
+    return {each: bool(search(regex_pattern,each)) for each in peptide_list}
+
 # the following function returns a dictionary with uniprotID as key and aa frequency as value
 def ID_number_line(zero_line, sep_pos_array, ID_list):
     ID_number_line_dict = {}
