@@ -46,7 +46,7 @@ pd.set_option('display.max_rows', None)
 #             print (cond, proteome_coverage)
 #             df.loc[cond,'cov'] = proteome_coverage
 
-# whole proteome coverage caluculation, single file
+# # whole proteome coverage caluculation, single file
 # total_file_list = tryp_file_list+ct_file_list
 # for each_file in total_file_list:
 #     print (each_file)

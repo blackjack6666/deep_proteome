@@ -76,16 +76,16 @@ if __name__=="__main__":
     import numpy as np
     path = 'D:/data/deep_proteome/20200915_ct_50C*/peptide.tsv'
     file_list = glob(path)
-    # print (file_list)
-    #
-    # venn_dict = {'_'.join(each_file.split('\\')[-2].split('_')[1:]):peptide_counting(each_file)
-    #              for each_file in [file_list[1],file_list[2],file_list[3],file_list[4],file_list[-3]]}
-    # venn_diagram_gen2(venn_dict)
+    print (file_list)
 
-    from calculations_and_plot import miss_cleavage_identify
-    for each_file in file_list:
-        print (each_file)
-        pep_list = peptide_counting(each_file)
-        miss_cleav_dict = miss_cleavage_identify(pep_list,regex_pattern=r'(?:F|W|Y)\w+')
-        print (float(np.count_nonzero([each for each in miss_cleav_dict.values()]))/len(pep_list))
+    venn_dict = {'_'.join(each_file.split('\\')[-2].split('_')[1:]):peptide_counting(each_file)
+                 for each_file in file_list[1:6]}
+    venn_diagram_gen2(venn_dict)
+
+    # from calculations_and_plot import miss_cleavage_identify
+    # for each_file in file_list:
+    #     print (each_file)
+    #     pep_list = peptide_counting(each_file)
+    #     miss_cleav_dict = miss_cleavage_identify(pep_list,regex_pattern=r'(?:F|W|Y)\w+')
+    #     print (float(np.count_nonzero([each for each in miss_cleav_dict.values()]))/len(pep_list))
 

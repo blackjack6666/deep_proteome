@@ -103,6 +103,7 @@ def miss_cleavage_identify(peptide_list,regex_pattern=r'(?:K|R)\w+'):
     """
     calculate the ratio of peptides that has least one missed cleavage to all peptides
     :param peptide_list:
+    :param regex_pattern: regex pattern for mapping enzyme specificity. Default is trypsin
     :return:
     """
     from re import search
