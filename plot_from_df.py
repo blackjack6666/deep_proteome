@@ -3,11 +3,11 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from protein_coverage import fasta_reader2
-from calculations_and_plot import length_KR_ratio
+from calculations_and_plot import length_KR_ratio, specific_aa_length_ratio
 
 fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
 protein_dict = fasta_reader2(fasta_path)
-kr_len_ratio = length_KR_ratio(protein_dict)
+kr_len_ratio = specific_aa_length_ratio(protein_dict,spec_aa='FWY')
 
 
 protein_len_dict = {each:len(protein_dict[each]) for each in protein_dict}
@@ -22,23 +22,23 @@ protein_list = df.index.tolist()
 
 kr_len_ratio_list = [kr_len_ratio[each] for each in protein_list]
 df['kr_len_ratio'] = kr_len_ratio_list
-# # kr length ratio plot
+# kr length ratio plot
 
 # plt.hist(kr_len_ratio_list,bins=100,color='black')
-# plt.xlabel('KR freq/protein length')
+# plt.xlabel('FWY freq/protein length')
 # plt.ylabel('frequency')
-# plt.title('The ratio of KR frequency to protein length for all proteins identified')
+# plt.title('The ratio of FWY frequency to protein length for all proteins identified')
 # plt.show()
 
 # protein_len_list = [protein_len_dict[each] for each in protein_list]
 # df['protein_len'] = protein_len_list
 
 df = df.sort_values('kr_len_ratio')
-print (df.head())
-# df_split = np.split(df,[200],axis=0)[0]
-# df_split = df_split[df_split.columns[:-1]]
-# print (df_split.head())
-#
+print (df[-100:])
+# # df_split = np.split(df,[200],axis=0)[0]
+# # df_split = df_split[df_split.columns[:-1]]
+# # print (df_split.head())
+
 fig, ax = plt.subplots(1,1, figsize=(40,20))
 # for each_cond in df_split.columns[1:-1]:
 #     print (each_cond)

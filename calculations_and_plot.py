@@ -99,6 +99,22 @@ def length_KR_ratio(protein_dict):
             for each in protein_dict}
 
 
+def specific_aa_length_ratio(protein_dict,spec_aa='KR'):
+    """
+    calculate the ratio of specific aa numbers to protein length
+    :param protein_dict:
+    :param spec_aa:
+    :return:
+    """
+    product_dict = {}
+    for each in protein_dict:
+        count = 0
+        for aa in spec_aa:
+            count += protein_dict[each].count(aa)
+        product_dict[each] = float(count)/len(protein_dict[each])
+    return product_dict
+
+
 def miss_cleavage_identify(peptide_list,regex_pattern=r'(?:K|R)\w+'):
     """
     calculate the ratio of peptides that has least one missed cleavage to all peptides
