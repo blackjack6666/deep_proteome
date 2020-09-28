@@ -124,41 +124,62 @@ pd.set_option('display.max_rows', None)
 # df.to_excel('D:/data/deep_proteome/9_20_identified_cov_total.xlsx')
 
 # use the protein order from total table and calculate coverage after data combined
-df_total = pd.read_excel("D:/data/deep_proteome/9_20_identified_cov_total.xlsx")
-df_combined = pd.DataFrame()
-protein_list_order = df_total['Unnamed: 0'].tolist()
-print(protein_list_order[:5])
-ct_highest_cov_pep_list = peptide_counting('D:/data/deep_proteome/20200915_ct_37C_240min/peptide.tsv')
-tryp_highest_cov_pep_list = peptide_counting('D:/data/deep_proteome/20200915_tryp_37C_120min/peptide.tsv')
+# df_total = pd.read_excel("D:/data/deep_proteome/9_20_identified_cov_total.xlsx")
+# df_combined = pd.DataFrame()
+# protein_list_order = df_total['Unnamed: 0'].tolist()
+# print(protein_list_order[:5])
+# ct_highest_cov_pep_list = peptide_counting('D:/data/deep_proteome/20200915_ct_37C_240min/peptide.tsv')
+# tryp_highest_cov_pep_list = peptide_counting('D:/data/deep_proteome/20200915_tryp_37C_120min/peptide.tsv')
+#
+# total_dict = {}
+# for each_tryp in tryp_file_list:
+#     print (each_tryp)
+#     tryp_pep_list = peptide_counting(each_tryp)
+#     ez_tm_time_tryp = '_'.join(each_tryp.split('\\')[-2].split('_')[1:])
+#
+#     total_pep_list = tryp_pep_list+ct_highest_cov_pep_list
+#     automaton_tryp = aho_corasick.automaton_trie(total_pep_list)
+#     aho_result_tryp = aho_corasick.automaton_matching(automaton_tryp,seq_line)
+#     identified_cov_dict = identified_proteome_cov(aho_result_tryp,protein_dict)[1]
+#     total_dict[ez_tm_time_tryp+'ct'] = identified_cov_dict
+#
+#
+# for each_ct in ct_file_list:
+#     print(each_ct)
+#     ct_pep_list = peptide_counting(each_ct)
+#     ez_tm_time_ct = '_'.join(each_ct.split('\\')[-2].split('_')[1:])
+#
+#     total_pep_list = ct_pep_list + tryp_highest_cov_pep_list
+#     automaton_ct = aho_corasick.automaton_trie(total_pep_list)
+#     aho_result_ct = aho_corasick.automaton_matching(automaton_ct, seq_line)
+#     identified_cov_dict = identified_proteome_cov(aho_result_ct, protein_dict)[1]
+#     total_dict[ez_tm_time_ct + 'tryp'] = identified_cov_dict
+#
+# for each_cond in total_dict:
+#     for prot in protein_list_order:
+#
+#         df_combined.loc[prot,each_cond] = total_dict[each_cond][prot] if prot in total_dict[each_cond] else 0
+#
+# df_combined.fillna(0)
+# df_combined.to_excel('D:/data/deep_proteome/9_20_cov_tryp_ct_comb.xlsx')
 
-total_dict = {}
-for each_tryp in tryp_file_list:
-    print (each_tryp)
-    tryp_pep_list = peptide_counting(each_tryp)
-    ez_tm_time_tryp = '_'.join(each_tryp.split('\\')[-2].split('_')[1:])
+# peptide charge ratio calculation
+from tsv_reader import peptide_charger_reader
+from collections import Counter
+total_file_list = tryp_file_list+ct_file_list
 
-    total_pep_list = tryp_pep_list+ct_highest_cov_pep_list
-    automaton_tryp = aho_corasick.automaton_trie(total_pep_list)
-    aho_result_tryp = aho_corasick.automaton_matching(automaton_tryp,seq_line)
-    identified_cov_dict = identified_proteome_cov(aho_result_tryp,protein_dict)[1]
-    total_dict[ez_tm_time_tryp+'ct'] = identified_cov_dict
+df = pd.DataFrame()
 
+for each_file in total_file_list:
+    print (each_file)
+    charge_count_dict = Counter([each for each_list in peptide_charger_reader(each_file).values() for each in each_list])
+    print (charge_count_dict)
+    for charge in charge_count_dict:
+        df.loc[int(charge),'_'.join(each_file.split('\\')[-2].split('_')[1:])] = charge_count_dict[charge]
 
-for each_ct in ct_file_list:
-    print(each_ct)
-    ct_pep_list = peptide_counting(each_ct)
-    ez_tm_time_ct = '_'.join(each_ct.split('\\')[-2].split('_')[1:])
-
-    total_pep_list = ct_pep_list + tryp_highest_cov_pep_list
-    automaton_ct = aho_corasick.automaton_trie(total_pep_list)
-    aho_result_ct = aho_corasick.automaton_matching(automaton_ct, seq_line)
-    identified_cov_dict = identified_proteome_cov(aho_result_ct, protein_dict)[1]
-    total_dict[ez_tm_time_ct + 'tryp'] = identified_cov_dict
-
-for each_cond in total_dict:
-    for prot in protein_list_order:
-
-        df_combined.loc[prot,each_cond] = total_dict[each_cond][prot] if prot in total_dict[each_cond] else 0
-
-df_combined.fillna(0)
-df_combined.to_excel('D:/data/deep_proteome/9_20_cov_tryp_ct_comb.xlsx')
+df = df.fillna(0)
+df = df.sort_index()
+df_new = pd.DataFrame(index=[1,2,3,4,5,6])
+for each_column in df.columns:
+    df_new[each_column] = df[each_column]/df[each_column].sum()*100
+df_new.to_excel('D:/data/deep_proteome/9_20_peptide_charge.xlsx')

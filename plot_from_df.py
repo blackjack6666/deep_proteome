@@ -49,3 +49,9 @@ g = sns.heatmap(df[df.columns[:-2]],ax=ax,yticklabels=False)
 plt.xticks(rotation=60)
 plt.show()
 
+# # charge plot
+# df_charge = pd.read_excel('D:/data/deep_proteome/9_20_peptide_charge.xlsx')
+# fig, ax = plt.subplots(1,1, figsize=(40,20))
+# g = sns.heatmap(df_charge,ax=ax,yticklabels=False)
+# plt.xticks(rotation=60)
+# plt.show()

@@ -1,5 +1,45 @@
 from collections import defaultdict
 
+
+def peptide_info_reader(psm_path:str):
+    """
+    read peptide sequence as key, [(filename, spectram number,mass, charge,retention time),()] as key
+    :param psm_path:
+    :return:
+    """
+    info_dict = defaultdict(list)
+    with open(psm_path,'r') as f:
+        for i in range(1):
+            next(f)
+        for line in f:
+            line_split = line.split('\t')
+            pep_seq = line_split[1]
+            file_name = line_split[0].split('.')[0]
+            spec_no = int(line_split[0].split('.')[-2])
+            mass = float(line_split[6])
+            charge = int(line_split[4])
+            ret_time = float(line_split[5])
+            info_dict[pep_seq].append([file_name,spec_no,mass,charge,ret_time])
+    return info_dict
+
+
+def peptide_charger_reader(pep_tsv):
+    """
+    get charge of the peptide
+    :param pep_tsv:
+    :return:
+    """
+    peptide_charge_dict = {}
+    with open(pep_tsv,'r') as file_open:
+        next(file_open)
+        for line in file_open:
+            line_split = line.split('\t')
+            peptide_seq = line_split[0]
+            charge = [line_split[2]] if ', ' not in line_split[2] else line_split[2].split(', ')
+            peptide_charge_dict[peptide_seq] = charge
+        return peptide_charge_dict
+
+
 def protein_tsv_reader(protein_tsv_file):
     protein_list = []
     with open(protein_tsv_file, 'r') as file_open:
