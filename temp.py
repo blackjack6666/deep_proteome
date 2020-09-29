@@ -62,21 +62,21 @@ pd.set_option('display.max_rows', None)
 #     print (ez_tm,time, proteome_coverage)
 #     df.loc[ez_tm,time] = proteome_coverage
 
-#identified protein coverage, single file
-total_file_list = tryp_file_list+ct_file_list
-for each_file in total_file_list:
-    print (each_file)
-    cond = '_'.join(each_file.split('\\')[-2].split('_')[1:])
-    # ez_tm = '_'.join(each_file.split('\\')[-2].split('_')[1:3])
-    # time = each_file.split('\\')[-2].split('_')[-1]
-    print(cond)
-    pep_list = peptide_counting(each_file)
-    automaton = aho_corasick.automaton_trie(pep_list)
-    aho_result = aho_corasick.automaton_matching(automaton,seq_line)
-    identified_proteome_cov_dict = identified_proteome_cov(aho_result,protein_dict)[1]
-    for each_prot in identified_proteome_cov_dict:
-        df.loc[each_prot,cond] = identified_proteome_cov_dict[each_prot]
-df = df.fillna(0)
+# identified protein coverage, single file
+# total_file_list = tryp_file_list+ct_file_list
+# for each_file in total_file_list:
+#     print (each_file)
+#     cond = '_'.join(each_file.split('\\')[-2].split('_')[1:])
+#     # ez_tm = '_'.join(each_file.split('\\')[-2].split('_')[1:3])
+#     # time = each_file.split('\\')[-2].split('_')[-1]
+#     print(cond)
+#     pep_list = peptide_counting(each_file)
+#     automaton = aho_corasick.automaton_trie(pep_list)
+#     aho_result = aho_corasick.automaton_matching(automaton,seq_line)
+#     identified_proteome_cov_dict = identified_proteome_cov(aho_result,protein_dict)[1]
+#     for each_prot in identified_proteome_cov_dict:
+#         df.loc[each_prot,cond] = identified_proteome_cov_dict[each_prot]
+# df = df.fillna(0)
 
 #psm counting
 # total_file_list = tryp_psm_file_list+ct_psm_file_list

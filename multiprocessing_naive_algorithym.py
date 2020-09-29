@@ -1,41 +1,4 @@
-'''
-import numpy as np
-import re
-
-zero_line = np.zeros(100)
-
-sep_pos_list = [5,9,15,23,35,68]
-
-zero_line[10:20] += 1
-zero_line[28:36] += 1
-print zero_line
-for i in range(len(sep_pos_list)-1):
-    print np.count_nonzero(zero_line[sep_pos_list[i]+1:sep_pos_list[i+1]])
-
-seq_line = 'adsfasdgsadfasdf|asdgsadgasd|fasdfasdf|asdfwaef|'
-sep_pos_list = [m.start() for m in re.finditer('\|', seq_line)]
-print sep_pos_list
-'''
-'''
-import numpy as np
-import pickle as p
-A = np.array([1,2,31,2123,12,31,24,12,3,12,31,23,12,3,12,3])
-p.dump(A, open('a.p', 'wb'))
-B = [12,31,2,41,2,31,4,12,3,12,4,1,23,1,24,124,12,3,12,4,1,1,23,13]
-B = np.array(B)
-'''
-'''
-import numpy as np
-a = np.zeros(100)
-a[40:60] += 1
-index = np.argwhere(a > 0)
-b = np.delete(a, index)
-print len(b)
-'''
-
-from protein_coverage import read_fasta_info_dict2
-
-#from test4 import read_peptide
+from collections import defaultdict
 import numpy as np
 import glob
 import pickle as ppp
@@ -65,7 +28,6 @@ def zero_line_for_seq(seq_line):
     return zero_line
 
 # the following function create a dictionary that read each position in long sequence line as key, corresponding UNIPORT ID as value.
-
 def read_position_ID_into_dict(UNID_list, seq_list, zero_line):
     m = 0
     j = 0
@@ -79,6 +41,21 @@ def read_position_ID_into_dict(UNID_list, seq_list, zero_line):
 
             m += 1
     return seq_line_ID_dict
+
+
+def creat_ID_pep_dict(aho_result, pos_ID_dict):
+    ID_pep_dict = defaultdict(set)
+    for i in aho_result:
+        ID_pep_dict[pos_ID_dict[i[0]]].add(i[2])
+    return ID_pep_dict
+
+
+def creat_pep_ID_dict(aho_result, pos_ID_dict):
+    pep_ID_dict = defaultdict(set)
+    for i in aho_result:
+        pep_ID_dict[i[2]].add(pos_ID_dict[i[0]])
+    return pep_ID_dict
+
 
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
