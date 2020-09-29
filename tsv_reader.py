@@ -114,11 +114,11 @@ def venn_diagram_gen2(dictionary, title=None): # parameter could be a dictionary
 if __name__=="__main__":
     from glob import glob
     import numpy as np
-    path = 'D:/data/deep_proteome/20200915_ct_50C*/peptide.tsv'
+    path = 'D:/data/deep_proteome/20200915_ct_50C*/protein.tsv'
     file_list = glob(path)
     print (file_list)
 
-    venn_dict = {'_'.join(each_file.split('\\')[-2].split('_')[1:]):peptide_counting(each_file)
+    venn_dict = {'_'.join(each_file.split('\\')[-2].split('_')[1:]):protein_tsv_reader(each_file)
                  for each_file in file_list[1:6]}
     venn_diagram_gen2(venn_dict)
 

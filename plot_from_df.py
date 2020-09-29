@@ -16,6 +16,7 @@ pd.set_option('display.max_columns', None)
 
 df = pd.read_excel("D:/data/deep_proteome/9_20_identified_cov_total.xlsx")
 
+
 df['protein_num'] = range(len(df))
 df = df.set_index('Unnamed: 0')
 protein_list = df.index.tolist()
