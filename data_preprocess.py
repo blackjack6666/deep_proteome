@@ -128,7 +128,7 @@ def cleavage_site_label(cleavage_site_dict,
                 if pep_ind > each_cleav_ind:
                     SCc += spec_count
                 elif pep_ind <= each_cleav_ind:
-                    if pep_ind+len(pep) <= each_cleav_ind:
+                    if pep_ind+len(pep) <= each_cleav_ind+1:
                         SCn += spec_count
                     else:
                         SCm += spec_count
