@@ -133,6 +133,8 @@ def cleavage_site_label(cleavage_site_dict,
                     else:
                         SCm += spec_count
 
+
+
                 SCn_count_dict[polymer]+=SCn
                 SCc_count_dict[polymer]+=SCc
                 SCm_count_dict[polymer]+=SCm
