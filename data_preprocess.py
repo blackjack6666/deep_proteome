@@ -93,18 +93,19 @@ def protein_id_peplist_dict_getter(proteome_dict,peptide_list):
     return id_pep_dict
 
 
-def cleavage_site_label(cleavage_site_dict,
+def spec_count_polymer(cleavage_site_dict,
                         proteome_seq_dict,
                         id_pep_dict,
                         aa_index_cleav_map_dict,
                         cleavage_polymer_dict,
                         psm_dict):
     """
-    the cleavage site should be labeled as 1 if SCn or SCc was at least 1 and SCm was zero.
-    labeled as 0 if both SCn and SCc were zero and SCm was at least 1.
+    -----
+    stats on missed cleavage polymers with SCn, SCc, SCm, outputs a dictionary {protein_id:(SCn_dict,SCc_dict,SCm_dict)}
     SCn: Spectral count of peps in missed cleavage n terminal
     SCc: spectral counts of peps in missed cleavage c terminal
     SCm: spectral counts of peps that contains missed cleavage site.
+    -----
     :param proteome_seq_dict:
     :param id_pep_dict:
     :param aa_index_cleav_map_dict:
@@ -133,15 +134,42 @@ def cleavage_site_label(cleavage_site_dict,
                     else:
                         SCm += spec_count
 
-
-
-                SCn_count_dict[polymer]+=SCn
-                SCc_count_dict[polymer]+=SCc
-                SCm_count_dict[polymer]+=SCm
+                # add spec count to polymer
+                SCn_count_dict[polymer] += SCn
+                SCc_count_dict[polymer] += SCc
+                SCm_count_dict[polymer] += SCm
         protein_polymer_sc_dict[prot_id]=(SCn_count_dict,SCc_count_dict,SCm_count_dict)
     return protein_polymer_sc_dict
 
-fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
+
+def cleavage_site_label(protein_polymer_sc_dict):
+    """
+    -----
+    the cleavage site should be labeled as 1 if SCn or SCc was at least 1 and SCm was zero.
+    labeled as 0 if both SCn and SCc were zero and SCm was at least 1.
+    -----
+    :param protein_polymer_sc_dict: returned by last function spec_count_polymer,
+    {protein_id:(SCn_dict,SCc_dict,SCm_dict)}
+    :return:
+    """
+    polymer_label_dict = {}  # {polymer:1 or 0}
+
+    for prot in protein_polymer_sc_dict:
+        dict_tuple = protein_polymer_sc_dict[prot]
+
+        for each_polymer in dict_tuple[0]:
+            SCn,SCc,SCm = dict_tuple[0][each_polymer],dict_tuple[1][each_polymer],dict_tuple[2][each_polymer]
+            if SCm == 0 and SCn >= 1 and SCc >= 1:
+                polymer_label_dict[each_polymer] = 1
+            elif SCn == 0 and SCc == 0 and SCm >= 1:
+                polymer_label_dict[each_polymer] = 0
+            else:
+                print(each_polymer)
+                continue
+    return polymer_label_dict
+
+
+fasta_path = 'C:/uic/lab/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
 proteome_dict = fasta_reader2(fasta_path)
 protein_list = ['Q6QHF9-11']
 print (proteome_dict['Q6QHF9-11'])
@@ -154,4 +182,6 @@ print (polymers_dict)
 
 id_pep_dict = {'Q6QHF9-11':{'MESTGSVGEAPGGGHGPR', 'RGPHPLGALLR','GGGGRALDPWALPG'}}
 psm_dict = {'MESTGSVGEAPGGGHGPR':3,'RGPHPLGALLR':5,'GGGGRALDPWALPG':2}
-print (cleavage_site_label(protein_miss_clea_loc_dict,proteome_dict,id_pep_dict,aa_miss_cleavage_dict,polymers_dict,psm_dict))
+protein_polymer_sc_dict = spec_count_polymer(protein_miss_clea_loc_dict,proteome_dict,id_pep_dict,aa_miss_cleavage_dict,polymers_dict,psm_dict)
+cleavage_site_label_dict = cleavage_site_label(protein_polymer_sc_dict)
+print (cleavage_site_label_dict)
