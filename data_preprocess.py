@@ -90,7 +90,7 @@ def protein_id_peplist_dict_getter(proteome_dict,peptide_list):
     pos_id_dict = multiprocessing_naive_algorithym.read_position_ID_into_dict(ID_list,seq_list,seq_line)
     id_pep_dict = multiprocessing_naive_algorithym.creat_ID_pep_dict(aho_result,pos_id_dict)
 
-    return id_pep_dict
+    return id_pep_dict, [prot for prot in id_pep_dict]
 
 
 def spec_count_polymer(cleavage_site_dict,
@@ -114,7 +114,7 @@ def spec_count_polymer(cleavage_site_dict,
     protein_polymer_sc_dict = {}
     for prot_id in id_pep_dict:
         seq = proteome_seq_dict[prot_id]
-        cleavage_site_list = cleavage_site_dict[prot_id]  # the cleavage index list for current protein
+        #cleavage_site_list = cleavage_site_dict[prot_id]  # the cleavage index list for current protein
 
         SCn_count_dict, SCc_count_dict, SCm_count_dict = defaultdict(int),defaultdict(int),defaultdict(int)
 
@@ -164,24 +164,38 @@ def cleavage_site_label(protein_polymer_sc_dict):
             elif SCn == 0 and SCc == 0 and SCm >= 1:
                 polymer_label_dict[each_polymer] = 0
             else:
-                print(each_polymer)
+                # print(each_polymer)
                 continue
     return polymer_label_dict
 
 
-fasta_path = 'C:/uic/lab/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
-proteome_dict = fasta_reader2(fasta_path)
-protein_list = ['Q6QHF9-11']
-print (proteome_dict['Q6QHF9-11'])
-protein_miss_clea_loc_dict = cleavage_site_identify(protein_list,proteome_dict,'trypsin')
-print (protein_miss_clea_loc_dict['Q6QHF9-11'])
-aa_miss_cleavage_dict = miss_clea_adjacent_loc(protein_miss_clea_loc_dict)
-print (miss_clea_adjacent_loc(protein_miss_clea_loc_dict)['Q6QHF9-11'])
-polymers_dict = ploymer_miss_cleav_charc(protein_miss_clea_loc_dict,proteome_dict)
-print (polymers_dict)
+if __name__ == '__main__':
+    from tsv_reader import peptide_counting,psm_reader,protein_tsv_reader_no_contam
+    protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_240min/protein.tsv"
+    peptide_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_240min/peptide.tsv"
+    psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_240min/psm.tsv"
 
-id_pep_dict = {'Q6QHF9-11':{'MESTGSVGEAPGGGHGPR', 'RGPHPLGALLR','GGGGRALDPWALPG'}}
-psm_dict = {'MESTGSVGEAPGGGHGPR':3,'RGPHPLGALLR':5,'GGGGRALDPWALPG':2}
-protein_polymer_sc_dict = spec_count_polymer(protein_miss_clea_loc_dict,proteome_dict,id_pep_dict,aa_miss_cleavage_dict,polymers_dict,psm_dict)
-cleavage_site_label_dict = cleavage_site_label(protein_polymer_sc_dict)
-print (cleavage_site_label_dict)
+    fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
+    proteome_dict = fasta_reader2(fasta_path)
+    pep_list = peptide_counting(peptide_tsv_path)
+    id_pep_dict,protein_list = protein_id_peplist_dict_getter(proteome_dict, pep_list)
+    # protein_list = ['Q6QHF9-11']
+    # protein_list = protein_tsv_reader_no_contam(protein_tsv_path)
+
+    # print (proteome_dict['Q6QHF9-11'])
+    protein_miss_clea_loc_dict = cleavage_site_identify(protein_list,proteome_dict,'trypsin')
+
+    # print (protein_miss_clea_loc_dict['Q6QHF9-11'])
+
+    aa_miss_cleavage_dict = miss_clea_adjacent_loc(protein_miss_clea_loc_dict)
+    # print (miss_clea_adjacent_loc(protein_miss_clea_loc_dict)['Q6QHF9-11'])
+    polymers_dict = ploymer_miss_cleav_charc(protein_miss_clea_loc_dict,proteome_dict)
+    print (polymers_dict)
+
+    # id_pep_dict = {'Q6QHF9-11':{'MESTGSVGEAPGGGHGPR', 'RGPHPLGALLR','GGGGRALDPWALPG'}}
+
+    # psm_dict = {'MESTGSVGEAPGGGHGPR':3,'RGPHPLGALLR':5,'GGGGRALDPWALPG':2}
+    psm_dict = psm_reader(psm_tsv_path)[0]
+    protein_polymer_sc_dict = spec_count_polymer(protein_miss_clea_loc_dict,proteome_dict,id_pep_dict,aa_miss_cleavage_dict,polymers_dict,psm_dict)
+    cleavage_site_label_dict = cleavage_site_label(protein_polymer_sc_dict)
+    print (len(cleavage_site_label_dict))

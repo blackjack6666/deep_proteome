@@ -41,15 +41,16 @@ def peptide_charger_reader(pep_tsv):
 
 
 def protein_tsv_reader(protein_tsv_file):
-    protein_list = []
+
     with open(protein_tsv_file, 'r') as file_open:
         next(file_open)
-        for line in file_open:
-            line_split = line.split("\t")
-            protein_ID = line_split[3]
-            protein_list.append(protein_ID)
-    return protein_list
+        return [line.split("\t")[3] for line in file_open]
 
+
+def protein_tsv_reader_no_contam(protein_tsv_file):
+    with open(protein_tsv_file, 'r') as file_open:
+        next(file_open)
+        return [line.split("\t")[3] for line in file_open if 'contaminant' not in line.split("\t")[3]]
 
 def peptide_counting(peptide_tsv_file):
 
