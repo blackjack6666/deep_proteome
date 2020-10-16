@@ -79,8 +79,8 @@ if __name__=='__main__':
     df_dummy = df_dummy_getter(t_37C_240min_dict)
     matrix, target = matrix_target_getter(df_dummy)
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
-    svm_clf = svm_classifer(X_train,target_train)
-    score = cross_validate(svm_clf,matrix,target)
+    tree_clf = decision_tree_classifer(X_train,target_train)
+    score = cross_validate(tree_clf,matrix,target)
     print (score)
 
 # two_d_list = []
