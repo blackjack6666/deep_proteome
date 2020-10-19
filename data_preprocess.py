@@ -1,3 +1,8 @@
+"""
+label in-silico cleavage site as 0 or 1 based on spectral counts of cleavage site N, C terminal and spectral counts of
+peptide that covers cleavage site, data preparation for downstream statistical training.
+"""
+
 from MS_tools_parameters import expasy_rules
 import re
 from protein_coverage import fasta_reader2
@@ -174,9 +179,9 @@ def cleavage_site_label(protein_polymer_sc_dict):
 if __name__ == '__main__':
     from tsv_reader import peptide_counting,psm_reader,protein_tsv_reader_no_contam
     import pickle as ppp
-    protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_240min/protein.tsv"
-    peptide_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_240min/peptide.tsv"
-    psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_240min/psm.tsv"
+    protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/protein.tsv"
+    peptide_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/peptide.tsv"
+    psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/psm.tsv"
 
     fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
     proteome_dict = fasta_reader2(fasta_path)
@@ -202,5 +207,5 @@ if __name__ == '__main__':
     psm_dict = psm_reader(psm_tsv_path)[0]
     protein_polymer_sc_dict = spec_count_polymer(protein_miss_clea_loc_dict,proteome_dict,id_pep_dict,aa_miss_cleavage_dict,polymers_dict,psm_dict)
     cleavage_site_label_dict,protein_poly_dict = cleavage_site_label(protein_polymer_sc_dict)
-    ppp.dump(cleavage_site_label_dict,open('tryps_37C_240min_cleavage_label.p','wb'))
+    ppp.dump(cleavage_site_label_dict,open('tryp_37C_1440min_cleavage_label.p','wb'))
     print (len(cleavage_site_label_dict), len(protein_poly_dict))
