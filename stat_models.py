@@ -129,11 +129,11 @@ if __name__=='__main__':
     df_dummy = df_dummy_getter(t_37C_240min_dict)
     matrix, target = matrix_target_getter(df_dummy)
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
-    random_clf = random_forest_classifer(X_train,target_train)
+    svm_clf = svm_classifer(X_train,target_train)
     # score = cross_validate(svm_clf,matrix,target)
-    print (plot_confusion_mtx(random_clf,X_test,target_test))
-    print(classifi_report(random_clf,X_test, target_test))
-    precision_recall_curv(random_clf,X_test,target_test)
+    print (plot_confusion_mtx(svm_clf,X_test,target_test))
+    print(classifi_report(svm_clf,X_test, target_test))
+    precision_recall_curv(svm_clf,X_test,target_test)
 # two_d_list = []
 # for polymer in t_37C_240min:
 #     one_d_list = []
