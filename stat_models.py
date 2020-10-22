@@ -110,6 +110,7 @@ def precision_recall_curv(trained_clf,X_test,y_test):
     import matplotlib.pyplot as plt
 
     yhat = trained_clf.predict_proba(X_test)
+    # print (yhat)
     # retrieve just the probabilities for the positive class
     pos_probs = yhat[:, 1]
     # calculate model precision-recall curve
