@@ -104,15 +104,17 @@ plt.subplot(211)
 plt.title('Loss')
 plt.plot(history.history['loss'], label='train')
 plt.plot(history.history['val_loss'], label='validation')
-plt.legend()
+plt.legend(loc='upper right')
 plt.xlim(0,20)
+plt.ylim(0,4)
 # plot accuracy during training
 plt.subplot(212)
 plt.title('Accuracy')
 plt.plot(history.history['sparse_categorical_accuracy'], label='train')
 plt.plot(history.history['val_sparse_categorical_accuracy'], label='validation')
-plt.legend()
+plt.legend(loc='lower right')
 plt.xlim(0,20)
+plt.ylim(0,1)
 plt.xlabel('Epoch')
 plt.show()
 
@@ -122,7 +124,7 @@ plt.show()
 # print (yhat_probs)
 # predict crisp classes for test set
 yhat_classes = np.argmax(model.predict(X_test), axis=-1)
-print (yhat_classes)
+# print (yhat_classes)
 # reduce to 1d array
 # yhat_probs = yhat_probs[:, 0]
 

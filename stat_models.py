@@ -43,7 +43,7 @@ def train_test_data_split(matrix,target):
     :return:
     """
 
-    X_train, X_test, target_train, target_test = train_test_split(matrix, target)
+    X_train, X_test, target_train, target_test = train_test_split(matrix, target,random_state=0)
     print ("X_train: %s, X_test: %s" % (X_train.shape,X_test.shape))
     return X_train, X_test, target_train, target_test
 
@@ -126,17 +126,19 @@ def precision_recall_curv(trained_clf,X_test,y_test):
 if __name__=='__main__':
     from collections import Counter
 
-    t_37C_240min_dict = ppp.load(open('tryp_37C_1440min_cleavage_label.p','rb'))
+    t_37C_240min_dict = ppp.load(open('ct_37C_240min_cleavage_label.p','rb'))
     # print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
     df_dummy = df_dummy_getter(t_37C_240min_dict)
     matrix, target = matrix_target_getter(df_dummy)
 
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
-    svm_clf = svm_classifer(X_train,target_train)
-    # score = cross_validate(svm_clf,matrix,target)
+    svm_clf = random_forest_classifer(X_train,target_train)
+    score = cross_validate(svm_clf,matrix,target)
+    print (score)
     print (plot_confusion_mtx(svm_clf,X_test,target_test))
     print(classifi_report(svm_clf,X_test, target_test))
     precision_recall_curv(svm_clf,X_test,target_test)
+
 # two_d_list = []
 # for polymer in t_37C_240min:
 #     one_d_list = []

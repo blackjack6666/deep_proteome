@@ -29,19 +29,22 @@ def miss_clea_adjacent_loc(protein_miss_clea_loc_dict):
     """
     loc_dict = {}
     for each_prot in protein_miss_clea_loc_dict:
+        # print (each_prot)
         miss_cleav_list = protein_miss_clea_loc_dict[each_prot]
-        aa_miss_map_dict = defaultdict(set)
+        if len(miss_cleav_list)>=1:
+            # print (miss_cleav_list)
+            aa_miss_map_dict = defaultdict(set)
 
-        first_iter_range = range(0,miss_cleav_list[0]+15) # first missed cleavage
-        for each_loc in first_iter_range:
-            aa_miss_map_dict[each_loc].add(miss_cleav_list[0])
+            first_iter_range = range(0,miss_cleav_list[0]+15) # first missed cleavage
+            for each_loc in first_iter_range:
+                aa_miss_map_dict[each_loc].add(miss_cleav_list[0])
 
-        for each_miss_cleav_loc in miss_cleav_list[1:]:
-            iter_range = range(each_miss_cleav_loc-15,each_miss_cleav_loc+15) if each_miss_cleav_loc-15>0 else \
-                range(0,each_miss_cleav_loc+15)
-            for each_loc in iter_range:
-                aa_miss_map_dict[each_loc].add(each_miss_cleav_loc)
-        loc_dict[each_prot]=aa_miss_map_dict
+            for each_miss_cleav_loc in miss_cleav_list[1:]:
+                iter_range = range(each_miss_cleav_loc-15,each_miss_cleav_loc+15) if each_miss_cleav_loc-15>0 else \
+                    range(0,each_miss_cleav_loc+15)
+                for each_loc in iter_range:
+                    aa_miss_map_dict[each_loc].add(each_miss_cleav_loc)
+            loc_dict[each_prot]=aa_miss_map_dict
 
     return loc_dict
 
@@ -118,32 +121,33 @@ def spec_count_polymer(cleavage_site_dict,
     """
     protein_polymer_sc_dict = {}
     for prot_id in id_pep_dict:
-        seq = proteome_seq_dict[prot_id]
-        #cleavage_site_list = cleavage_site_dict[prot_id]  # the cleavage index list for current protein
+        if prot_id in aa_index_cleav_map_dict:
+            seq = proteome_seq_dict[prot_id]
+            #cleavage_site_list = cleavage_site_dict[prot_id]  # the cleavage index list for current protein
 
-        SCn_count_dict, SCc_count_dict, SCm_count_dict = defaultdict(int),defaultdict(int),defaultdict(int)
+            SCn_count_dict, SCc_count_dict, SCm_count_dict = defaultdict(int),defaultdict(int),defaultdict(int)
 
-        for pep in id_pep_dict[prot_id]:
-            spec_count = psm_dict[pep]
-            pep_ind = seq.find(pep)
-            cleav_ind_set = aa_index_cleav_map_dict[prot_id][pep_ind]
+            for pep in id_pep_dict[prot_id]:
+                spec_count = psm_dict[pep]
+                pep_ind = seq.find(pep)
+                cleav_ind_set = aa_index_cleav_map_dict[prot_id][pep_ind]
 
-            for each_cleav_ind in cleav_ind_set:
-                polymer = cleavage_polymer_dict[prot_id][each_cleav_ind]
-                SCn, SCc, SCm = 0,0,0
-                if pep_ind > each_cleav_ind:
-                    SCc += spec_count
-                elif pep_ind <= each_cleav_ind:
-                    if pep_ind+len(pep) <= each_cleav_ind+1:
-                        SCn += spec_count
-                    else:
-                        SCm += spec_count
+                for each_cleav_ind in cleav_ind_set:
+                    polymer = cleavage_polymer_dict[prot_id][each_cleav_ind]
+                    SCn, SCc, SCm = 0,0,0
+                    if pep_ind > each_cleav_ind:
+                        SCc += spec_count
+                    elif pep_ind <= each_cleav_ind:
+                        if pep_ind+len(pep) <= each_cleav_ind+1:
+                            SCn += spec_count
+                        else:
+                            SCm += spec_count
 
-                # add spec count to polymer
-                SCn_count_dict[polymer] += SCn
-                SCc_count_dict[polymer] += SCc
-                SCm_count_dict[polymer] += SCm
-        protein_polymer_sc_dict[prot_id]=(SCn_count_dict,SCc_count_dict,SCm_count_dict)
+                    # add spec count to polymer
+                    SCn_count_dict[polymer] += SCn
+                    SCc_count_dict[polymer] += SCc
+                    SCm_count_dict[polymer] += SCm
+            protein_polymer_sc_dict[prot_id]=(SCn_count_dict,SCc_count_dict,SCm_count_dict)
     return protein_polymer_sc_dict
 
 
@@ -179,9 +183,9 @@ def cleavage_site_label(protein_polymer_sc_dict):
 if __name__ == '__main__':
     from tsv_reader import peptide_counting,psm_reader,protein_tsv_reader_no_contam
     import pickle as ppp
-    protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/protein.tsv"
-    peptide_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/peptide.tsv"
-    psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/psm.tsv"
+    protein_tsv_path = "D:/data/deep_proteome/20200915_ct_37C_240min/protein.tsv"
+    peptide_tsv_path = "D:/data/deep_proteome/20200915_ct_37C_240min/peptide.tsv"
+    psm_tsv_path = "D:/data/deep_proteome/20200915_ct_37C_240min/psm.tsv"
 
     fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
     proteome_dict = fasta_reader2(fasta_path)
@@ -192,7 +196,7 @@ if __name__ == '__main__':
     # protein_list = protein_tsv_reader_no_contam(protein_tsv_path)
 
     # print (proteome_dict['Q6QHF9-11'])
-    protein_miss_clea_loc_dict = cleavage_site_identify(protein_list,proteome_dict,'trypsin')
+    protein_miss_clea_loc_dict = cleavage_site_identify(protein_list,proteome_dict,'chymotrypsin high specificity')
 
     # print (protein_miss_clea_loc_dict['Q6QHF9-11'])
 
@@ -207,5 +211,6 @@ if __name__ == '__main__':
     psm_dict = psm_reader(psm_tsv_path)[0]
     protein_polymer_sc_dict = spec_count_polymer(protein_miss_clea_loc_dict,proteome_dict,id_pep_dict,aa_miss_cleavage_dict,polymers_dict,psm_dict)
     cleavage_site_label_dict,protein_poly_dict = cleavage_site_label(protein_polymer_sc_dict)
-    ppp.dump(cleavage_site_label_dict,open('tryp_37C_1440min_cleavage_label.p','wb'))
+    print (cleavage_site_label_dict)
+    ppp.dump(cleavage_site_label_dict,open('ct_37C_240min_cleavage_label.p','wb'))
     print (len(cleavage_site_label_dict), len(protein_poly_dict))
