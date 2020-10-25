@@ -126,7 +126,7 @@ def precision_recall_curv(trained_clf,X_test,y_test):
 if __name__=='__main__':
     from collections import Counter
 
-    t_37C_240min_dict = ppp.load(open('ct_37C_240min_cleavage_label.p','rb'))
+    t_37C_240min_dict = ppp.load(open('tryps_37C_240min_cleavage_label.p','rb'))
     # print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
     df_dummy = df_dummy_getter(t_37C_240min_dict)
     matrix, target = matrix_target_getter(df_dummy)
