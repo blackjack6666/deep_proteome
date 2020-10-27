@@ -122,22 +122,22 @@ def spec_count_polymer(cleavage_site_dict,
     protein_polymer_sc_dict = {}
     for prot_id in id_pep_dict:
         if prot_id in aa_index_cleav_map_dict:
-            seq = proteome_seq_dict[prot_id]
+            seq = proteome_seq_dict[prot_id]  # protein sequence
             #cleavage_site_list = cleavage_site_dict[prot_id]  # the cleavage index list for current protein
 
             SCn_count_dict, SCc_count_dict, SCm_count_dict = defaultdict(int),defaultdict(int),defaultdict(int)
 
-            for pep in id_pep_dict[prot_id]:
+            for pep in id_pep_dict[prot_id]:  # for each matched peptide in one protein
                 spec_count = psm_dict[pep]
-                pep_ind = seq.find(pep)
-                cleav_ind_set = aa_index_cleav_map_dict[prot_id][pep_ind]
+                pep_ind = seq.find(pep)  # find location of the peptide
+                cleav_ind_set = aa_index_cleav_map_dict[prot_id][pep_ind]  # get cleavage sites that are near the peptide
 
                 for each_cleav_ind in cleav_ind_set:
                     polymer = cleavage_polymer_dict[prot_id][each_cleav_ind]
                     SCn, SCc, SCm = 0,0,0
-                    if pep_ind > each_cleav_ind:
+                    if pep_ind > each_cleav_ind:  # peptide is identified at C terminal of cleavage site
                         SCc += spec_count
-                    elif pep_ind <= each_cleav_ind:
+                    elif pep_ind <= each_cleav_ind:  # peptide is identified at N terminal of cleavage site
                         if pep_ind+len(pep) <= each_cleav_ind+1:
                             SCn += spec_count
                         else:
