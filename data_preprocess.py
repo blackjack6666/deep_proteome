@@ -134,7 +134,7 @@ def spec_count_polymer(cleavage_site_dict,
 
                 for each_cleav_ind in cleav_ind_set:
                     polymer = cleavage_polymer_dict[prot_id][each_cleav_ind]
-                    SCn, SCc, SCm = 0,0,0
+                    SCn, SCc, SCm = 0,0,0  # or array = np.zeros(3)
                     if pep_ind > each_cleav_ind:  # peptide is identified at C terminal of cleavage site
                         SCc += spec_count
                     elif pep_ind <= each_cleav_ind:  # peptide is identified at N terminal of cleavage site
