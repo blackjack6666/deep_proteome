@@ -69,6 +69,14 @@ y_val = target_train[-300:]
 X_train = X_train[:-300]
 y_train = target_train[:-300]
 
+# class weights consideration
+# from sklearn.utils import class_weight
+# class_weights = class_weight.compute_class_weight('balanced',
+#                                                  np.unique(y_train),
+#                                                  y_train)
+# class_weight_dict = dict(enumerate(class_weight))
+
+
 model = compile_model(lstm())
 
 print("Fit model on training data")
