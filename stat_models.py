@@ -9,6 +9,25 @@ from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn import tree
 
 
+def dump_data(polymer_label_dict):
+    """
+    dump 31mer and value into matrix before training, each
+    :param polymer_label_dict:
+    :return:
+    """
+    two_d_list = []
+    for polymer in polymer_label_dict:
+        one_d_list = []
+        for aa in polymer:
+            one_d_list.append(aa)
+        one_d_list.append(polymer_label_dict[polymer])
+        two_d_list.append(one_d_list)
+    matrix = np.array(two_d_list)
+    matrix, target = [' '.join(each) for each in matrix[:,:-1]], matrix[:,-1].astype(np.int)
+
+    return matrix,target
+
+
 def df_dummy_getter(polymer_label_dict):
     """
     get a pandas dataframe based on polymer label dict from different experiment results, values in df are binary
