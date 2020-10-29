@@ -30,6 +30,29 @@ def df_dummy_getter(polymer_label_dict):
     return df_dummy
 
 
+def ohe(polymer_label_dict):
+    """
+    one hot encoder for 31-mers
+    :param polymer_label_dict:
+    :return:
+    """
+    from sklearn.preprocessing import OneHotEncoder
+    # Create the encoder.
+    encoder = OneHotEncoder(handle_unknown="ignore")
+    matrix = []
+    for each in polymer_label_dict:
+        one_d = []
+        for each_aa in each:
+            one_d.append(each_aa)
+        one_d.append(polymer_label_dict[each])
+        matrix.append(one_d)
+
+    matrix = np.array(matrix)
+    matrix,target = matrix[:,:-1], matrix[:,-1].astype(np.int)
+    encoder.fit(matrix)
+    matrix = encoder.transform(matrix)
+    return matrix, target
+
 def matrix_target_getter(df_dummy):
     target = df_dummy['label']
     matrix = df_dummy.drop('label', axis=1)
@@ -125,12 +148,15 @@ def precision_recall_curv(trained_clf,X_test,y_test):
 
 if __name__=='__main__':
     from collections import Counter
-
+    import time
+    time_start = time.time()
     t_37C_240min_dict = ppp.load(open('tryps_37C_240min_cleavage_label.p','rb'))
-    # print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
-    df_dummy = df_dummy_getter(t_37C_240min_dict)
-    matrix, target = matrix_target_getter(df_dummy)
+    print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
 
+    # df_dummy = df_dummy_getter(t_37C_240min_dict)
+
+    matrix, target = ohe(t_37C_240min_dict)
+    print (time.time()-time_start)
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
     svm_clf = random_forest_classifer(X_train,target_train)
     score = cross_validate(svm_clf,matrix,target)
