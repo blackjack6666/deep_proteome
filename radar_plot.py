@@ -57,12 +57,12 @@ from math import pi
 
 # Set data
 df = pd.DataFrame({
-    'group': ['SVM', 'Random forest', 'Dummy classifier', 'CNN', 'LSTM'],
-    'Precision': [0.85, 0.87, 0.53, 0.87, 0.83],
-    'Recall': [0.85, 0.88, 0.55, 0.83, 0.87],
-    'F1-score': [0.85, 0.87, 0.54, 0.85, 0.85],
-    'Accuracy': [0.84, 0.86, 0.51, 0.84, 0.83],
-    'AUC': [0.92, 0.94, 0.66, 0.91, 0.90]
+    'group': ['SVM', 'Random forest', 'Dummy classifier', 'CNN', 'LSTM', 'Sequential'],
+    'Precision': [0.80, 0.9, 0.58, 0.80, 0.73, 0.67],
+    'Recall': [0.81, 0.82, 0.53, 0.78, 0.65, 0.72],
+    'F1-score': [0.80, 0.86, 0.55, 0.79, 0.69, 0.70],
+    'Accuracy': [0.79, 0.85, 0.50, 0.78, 0.69, 0.67],
+    'AUC': [0.88, 0.93, 0.66, 0.84, 0.78, 0.72]
 })
 
 # ------- PART 1: Create background
@@ -87,7 +87,7 @@ plt.xticks(angles[:-1], categories)
 
 # Draw ylabels
 ax.set_rlabel_position(0)
-plt.yticks([0.2, 0.4, 0.6,0.8], ["0.2", "0.4", "0.6", "0.8"], color="grey", size=7)
+plt.yticks([0.4,0.6,0.8,1.0], ["0.4", "0.6", "0.8", "1.0"], color="grey", size=7)
 plt.ylim(0, 1)
 
 # ------- PART 2: Add plots
@@ -95,9 +95,9 @@ plt.ylim(0, 1)
 # Plot each individual = each line of the data
 # I don't do a loop, because plotting more than 3 groups makes the chart unreadable
 
-color = ['r','b','y','p','g']
-label_list = ['SVM', 'Random forest', 'Dummy classifier', 'CNN', 'LSTM']
-for i,c,label in zip(range(5),color,label_list):
+color = ['r','b','y','p','g','a']
+label_list = ['SVM', 'Random forest', 'Dummy classifier', 'CNN', 'LSTM', 'Sequential']
+for i,c,label in zip(range(6),color,label_list):
     values = df.loc[i].drop('group').values.flatten().tolist()
     print (values)
     values += values[:1]
