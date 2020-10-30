@@ -163,6 +163,7 @@ def cleavage_site_label(protein_polymer_sc_dict):
     """
     polymer_label_dict = {}  # {polymer:1 or 0}
     protein_poly_dict = defaultdict(set)
+    uncertain_polymer_no = 0
     for prot in protein_polymer_sc_dict:
         dict_tuple = protein_polymer_sc_dict[prot]
 
@@ -175,28 +176,31 @@ def cleavage_site_label(protein_polymer_sc_dict):
                 polymer_label_dict[each_polymer] = 0
                 protein_poly_dict[prot].add(each_polymer)
             else:
+                uncertain_polymer_no+=1
+                protein_poly_dict[prot].add(each_polymer)
                 # print(each_polymer)
-                continue
-    return polymer_label_dict, protein_poly_dict
+                # continue
+    return polymer_label_dict, protein_poly_dict,uncertain_polymer_no
 
 
 if __name__ == '__main__':
     from tsv_reader import peptide_counting,psm_reader,protein_tsv_reader_no_contam
     import pickle as ppp
-    protein_tsv_path = "D:/data/deep_proteome/20200915_ct_37C_240min/protein.tsv"
-    peptide_tsv_path = "D:/data/deep_proteome/20200915_ct_37C_240min/peptide.tsv"
-    psm_tsv_path = "D:/data/deep_proteome/20200915_ct_37C_240min/psm.tsv"
+    from collections import Counter
+    protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_50C_4320min/protein.tsv"
+    peptide_tsv_path = "D:/data/deep_proteome/20200915_tryp_50C_4320min/peptide.tsv"
+    psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_50C_4320min/psm.tsv"
 
     fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
     proteome_dict = fasta_reader2(fasta_path)
     pep_list = peptide_counting(peptide_tsv_path)
     id_pep_dict,protein_list = protein_id_peplist_dict_getter(proteome_dict, pep_list)
-    print (len(id_pep_dict))
+    print ('total number of proteins mapped by peptides: %i' % len(id_pep_dict))
     # protein_list = ['Q6QHF9-11']
     # protein_list = protein_tsv_reader_no_contam(protein_tsv_path)
 
     # print (proteome_dict['Q6QHF9-11'])
-    protein_miss_clea_loc_dict = cleavage_site_identify(protein_list,proteome_dict,'chymotrypsin high specificity')
+    protein_miss_clea_loc_dict = cleavage_site_identify(protein_list,proteome_dict,'trypsin')
 
     # print (protein_miss_clea_loc_dict['Q6QHF9-11'])
 
@@ -210,7 +214,10 @@ if __name__ == '__main__':
     # psm_dict = {'MESTGSVGEAPGGGHGPR':3,'RGPHPLGALLR':5,'GGGGRALDPWALPG':2}
     psm_dict = psm_reader(psm_tsv_path)[0]
     protein_polymer_sc_dict = spec_count_polymer(protein_miss_clea_loc_dict,proteome_dict,id_pep_dict,aa_miss_cleavage_dict,polymers_dict,psm_dict)
-    cleavage_site_label_dict,protein_poly_dict = cleavage_site_label(protein_polymer_sc_dict)
-    print (cleavage_site_label_dict)
-    ppp.dump(cleavage_site_label_dict,open('ct_37C_240min_cleavage_label.p','wb'))
-    print (len(cleavage_site_label_dict), len(protein_poly_dict))
+    cleavage_site_label_dict,protein_poly_dict,uncertain_polymer_no = cleavage_site_label(protein_polymer_sc_dict)
+    print ('number of proteins with polymers reported: %i' % len(protein_poly_dict))
+    print (Counter([v for v in cleavage_site_label_dict.values()]), len(cleavage_site_label_dict))
+    print ('uncertain ploymer number: %i' % uncertain_polymer_no)
+    # print (cleavage_site_label_dict)
+    # ppp.dump(cleavage_site_label_dict,open('ct_37C_240min_cleavage_label.p','wb'))
+    # print (len(cleavage_site_label_dict), len(protein_poly_dict))
