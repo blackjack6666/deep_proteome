@@ -169,21 +169,22 @@ if __name__=='__main__':
     from collections import Counter
     import time
     time_start = time.time()
-    t_37C_240min_dict = ppp.load(open('ct_37C_240min_cleavage_label.p','rb'))
+    t_37C_240min_dict = ppp.load(open('tryp_37C_4h_cleavage_label_new.p','rb'))
     print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
 
     df_dummy = df_dummy_getter(t_37C_240min_dict)
     print (df_dummy.shape)
 
-    # matrix, target = ohe(t_37C_240min_dict)
-    # print (time.time()-time_start)
-    # X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
-    # svm_clf = random_forest_classifer(X_train,target_train)
-    # score = cross_validate(svm_clf,matrix,target)
-    # print (score)
-    # print (plot_confusion_mtx(svm_clf,X_test,target_test))
-    # print(classifi_report(svm_clf,X_test, target_test))
-    # precision_recall_curv(svm_clf,X_test,target_test)
+    matrix, target = ohe(t_37C_240min_dict)
+    # matrix, target = matrix_target_getter(df_dummy)
+    print (time.time()-time_start)
+    X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
+    svm_clf = svm_classifer(X_train,target_train)
+    score = cross_validate(svm_clf,matrix,target)
+    print (score)
+    print (plot_confusion_mtx(svm_clf,X_test,target_test))
+    print(classifi_report(svm_clf,X_test, target_test))
+    precision_recall_curv(svm_clf,X_test,target_test)
 
 # two_d_list = []
 # for polymer in t_37C_240min:
