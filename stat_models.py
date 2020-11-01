@@ -161,6 +161,7 @@ def precision_recall_curv(trained_clf,X_test,y_test):
     # plot the model precision-recall curve
     plt.plot(recall, precision, marker='.')
     # axis labels
+    # plt.ylim(0,1)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.show()
@@ -168,7 +169,7 @@ def precision_recall_curv(trained_clf,X_test,y_test):
 if __name__=='__main__':
     from collections import Counter
     import time
-    time_start = time.time()
+
     t_37C_240min_dict = ppp.load(open('tryp_37C_4h_cleavage_label_new.p','rb'))
     print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
 
@@ -177,9 +178,11 @@ if __name__=='__main__':
 
     matrix, target = ohe(t_37C_240min_dict)
     # matrix, target = matrix_target_getter(df_dummy)
-    print (time.time()-time_start)
+
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
+    time_start = time.time()
     svm_clf = svm_classifer(X_train,target_train)
+    print('model trained time:',time.time() - time_start)
     score = cross_validate(svm_clf,matrix,target)
     print (score)
     print (plot_confusion_mtx(svm_clf,X_test,target_test))

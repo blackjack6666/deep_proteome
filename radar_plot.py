@@ -58,11 +58,11 @@ from math import pi
 # Set data
 df = pd.DataFrame({
     'group': ['SVM', 'Random forest', 'Dummy classifier', 'CNN', 'LSTM', 'Sequential'],
-    'Precision': [0.80, 0.9, 0.58, 0.80, 0.73, 0.67],
-    'Recall': [0.81, 0.82, 0.53, 0.78, 0.65, 0.72],
-    'F1-score': [0.80, 0.86, 0.55, 0.79, 0.69, 0.70],
-    'Accuracy': [0.79, 0.85, 0.50, 0.78, 0.69, 0.67],
-    'AUC': [0.88, 0.93, 0.66, 0.84, 0.78, 0.72]
+    'Precision': [0.90, 0.91, 0.68, 0.88, 0.9, 0.87],
+    'Recall': [0.9, 0.9, 0.68, 0.88, 0.91, 0.87],
+    'F1-score': [0.9, 0.9, 0.68, 0.88, 0.9, 0.87],
+    'Accuracy': [0.9, 0.9, 0.68, 0.88, 0.91, 0.87],
+    'AUC': [0.98, 0.99, 0.87, 0.92, 0.94, 0.9]
 })
 
 # ------- PART 1: Create background
@@ -117,7 +117,7 @@ for i,c,label in zip(range(6),color,label_list):
 # ax.plot(angles, values, linewidth=1, linestyle='solid', label="group B")
 # ax.fill(angles, values, 'r', alpha=0.1)
 
-
+# plt.gcf().set_size_inches(10, 10)
 
 # Add legend
 plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))

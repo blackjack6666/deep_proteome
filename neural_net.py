@@ -7,13 +7,13 @@ import pickle as ppp
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, cohen_kappa_score, roc_curve,auc, confusion_matrix
-
+from sklearn.metrics import classification_report, precision_score, recall_score, f1_score, cohen_kappa_score, roc_curve,auc, confusion_matrix
+import time
 
 def sequential_nn():
     model = keras.Sequential()
-    # model.add(layers.Embedding(21, 651, input_length=31))  # 21 integers encode, output 64 dimension, input 31 dimension
-    # model.add(layers.Flatten())
+    model.add(layers.Embedding(21, 651, input_length=31))  # 21 integers encode, output 64 dimension, input 31 dimension
+    model.add(layers.Flatten())
     model.add(layers.Dense(64, activation="relu", input_shape=(645,)))
     model.add(layers.Dense(64, activation="relu"))
     # model.add(layers.Dense(64, activation="relu"))
@@ -23,8 +23,8 @@ def sequential_nn():
 
 def cnn():
     model = models.Sequential()
-    # model.add(layers.Embedding(30, 636, input_length=31))  # 21 integers encode, output 64 dimension, input 31 dimension
-    # model.add(layers.Reshape((-1,31,636)))
+    model.add(layers.Embedding(30, 636, input_length=31))  # 21 integers encode, output 64 dimension, input 31 dimension
+    model.add(layers.Reshape((-1,31,636)))
     model.add(layers.Conv2D(filters=64,kernel_size=1, activation='relu', input_shape=(15,43,1)))
 
     # model.add(layers.MaxPooling2D((2, 2)))
@@ -40,7 +40,7 @@ def cnn():
 def lstm():
     model = models.Sequential()
     # model.add(layers.Embedding(30, 64, input_length=31))  # 21 integers encode, output 64 dimension, input 31 dimension
-    model.add(layers.LSTM(64, input_shape=(1,636)))
+    model.add(layers.LSTM(64, input_shape=(1,645)))
     model.add(layers.Dense(64, activation='relu'))
     model.add(layers.Dense(2, activation='softmax'))
     return model
@@ -65,18 +65,18 @@ def compile_model(un_compiled_model):
 #     return auc
 # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-t_37C_240min_dict = ppp.load(open('tryps_37C_240min_cleavage_label.p','rb'))
+t_37C_240min_dict = ppp.load(open('tryp_37C_4h_cleavage_label_new.p','rb'))
 # print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
 df_dummy = df_dummy_getter(t_37C_240min_dict)
 matrix, target = matrix_target_getter(df_dummy)
 # matrix, target = dump_data(t_37C_240min_dict)
-print (matrix)
+# print (matrix)
 
 # one-hot encode, optional
 vocab_size = 21
 encoded_docs = [one_hot(seq, vocab_size) for seq in matrix]
 encoded_docs = np.array(encoded_docs)
-print (encoded_docs)
+# print (encoded_docs)
 
 X_train, X_test, target_train, target_test = train_test_data_split(matrix,target) # matrix is 2d
 
@@ -84,7 +84,7 @@ X_train, X_test, target_train, target_test = train_test_data_split(matrix,target
 # X_train, X_test = X_train.values.reshape(X_train.shape[0],15,43,1), X_test.values.reshape(X_test.shape[0],15,43,1)
 
 # convert in to 3d array for lstm
-# X_train, X_test = X_train.values.reshape(X_train.shape[0],1,X_train.shape[1]), X_test.values.reshape(X_test.shape[0],1,X_test.shape[1])
+X_train, X_test = X_train.values.reshape(X_train.shape[0],1,X_train.shape[1]), X_test.values.reshape(X_test.shape[0],1,X_test.shape[1])
 
 print (X_train.shape)
 X_val = X_train[-300:]
@@ -101,9 +101,10 @@ y_train = target_train[:-300]
 # class_weight_dict = dict(enumerate(class_weight))
 
 
-model = compile_model(sequential_nn())
+model = compile_model(lstm())
 
 print("Fit model on training data")
+start = time.time()
 history = model.fit(
     X_train,
     y_train,
@@ -117,7 +118,7 @@ history = model.fit(
     validation_split=0.2,
     shuffle=True
 )
-
+print ("model trained time: ", time.time()-start)
 print("Evaluate on test data")
 results = model.evaluate(X_test, target_test, batch_size=64)
 print("test loss, test acc:", results)
@@ -172,3 +173,6 @@ print('Recall: %f' % recall)
 # f1: 2 tp / (2 tp + fp + fn)
 f1 = f1_score(target_test, yhat_classes)
 print('F1 score: %f' % f1)
+
+classify_report = classification_report(target_test,yhat_classes)
+print (classify_report)

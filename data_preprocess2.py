@@ -72,6 +72,20 @@ def polymer_miss_cleav_charc(cleavage_site_dict, proteome_seq_dict):
     return total_dict
 
 
+def protein_polymer_convert(protein_cleav_polymer_dict):
+    """
+    convert {protein:{cleavage site1:polymer1, cleavage site2: polymer2}} into {protein:{polymer1,polymer2}}
+    :param polymer_cleav_polymer_dict: returned by polymer_miss_cleav_charc
+    :return:
+    """
+    protein_polymer_dict = defaultdict(set)
+    for prot in protein_cleav_polymer_dict:
+        for each_cleav in protein_cleav_polymer_dict[prot]:
+            protein_polymer_dict[prot].add(protein_cleav_polymer_dict[prot][each_cleav])
+    #print (protein_polymer_dict)
+    return protein_polymer_dict
+
+
 def map_to_cleavage(id_pep_dict,
                     protein_cleavage_dict,
                     protein_polymer_dict,
@@ -124,11 +138,12 @@ def map_to_cleavage(id_pep_dict,
                         # print (cleav_polymer_dict[each_miss])
                         scm[cleav_polymer_dict[each_miss]]+=psm_dict[pep]
         protein_polymer_sc_dict[prot] = (scn,scc,scm)
-        print("mapping end, %fs" % (time.time() - start))
+    print("mapping end, %fs" % (time.time() - start))
 
     return protein_polymer_sc_dict
 
-def cleavage_site_label(protein_polymer_sc_dict):
+
+def cleavage_site_label(protein_polymer_sc_dict,polymer_dict):
     """
     -----
     the cleavage site should be labeled as 1 if SCn or SCc was at least 1 and SCm was zero.
@@ -136,25 +151,29 @@ def cleavage_site_label(protein_polymer_sc_dict):
     -----
     :param protein_polymer_sc_dict: returned by last function spec_count_polymer,
     {protein_id:(SCn_dict,SCc_dict,SCm_dict)}
+    :param polymer_dict: in-silico generated protein-polymer dict, {protein1:{polymer1, polymer2...}}, returned by
+    protein_polymer_convert
     :return:
     """
     polymer_label_dict = {}  # {polymer:1 or 0}
     protein_poly_dict = defaultdict(set)
     uncertain_polymer_no = 0
-    for prot in protein_polymer_sc_dict:
-        dict_tuple = protein_polymer_sc_dict[prot]
+    for prot in polymer_dict:
+        for polymer in polymer_dict[prot]:
+            scn,scc,scm = protein_polymer_sc_dict[prot][0][polymer],\
+                          protein_polymer_sc_dict[prot][1][polymer],\
+                          protein_polymer_sc_dict[prot][2][polymer]
+            print (scn,scc,scm)
 
-        for each_polymer in dict_tuple[0]:
-            SCn,SCc,SCm = dict_tuple[0][each_polymer],dict_tuple[1][each_polymer],dict_tuple[2][each_polymer]
-            if SCm == 0 and SCn >= 1 and SCc >= 1:
-                polymer_label_dict[each_polymer] = 1
-                protein_poly_dict[prot].add(each_polymer)
-            elif SCn == 0 and SCc == 0 and SCm >= 1:
-                polymer_label_dict[each_polymer] = 0
-                protein_poly_dict[prot].add(each_polymer)
+            if (scm == 0 and scn >= 1) or (scm == 0 and scc >= 1):
+                polymer_label_dict[polymer] = 1
+                protein_poly_dict[prot].add(polymer)
+            elif scn == 0 and scc == 0 and scm >= 1:
+                polymer_label_dict[polymer] = 0
+                protein_poly_dict[prot].add(polymer)
             else:
                 uncertain_polymer_no+=1
-                protein_poly_dict[prot].add(each_polymer)
+                protein_poly_dict[prot].add(polymer)
                 # print(each_polymer)
                 # continue
     return polymer_label_dict, protein_poly_dict,uncertain_polymer_no
@@ -182,7 +201,7 @@ if __name__ == '__main__':
 
 
     protein_polymer_sc_dict = map_to_cleavage(id_pep_dict,protein_miss_clea_loc_dict,polymers_dict,proteome_dict,psm_dict)
-    cleavage_site_label_dict, protein_poly_dict, uncertain_polymer_no = cleavage_site_label(protein_polymer_sc_dict)
+    cleavage_site_label_dict, protein_poly_dict, uncertain_polymer_no = cleavage_site_label(protein_polymer_sc_dict, protein_polymer_convert(polymers_dict))
     print('number of proteins with polymers reported: %i' % len(protein_poly_dict))
     print(Counter([v for v in cleavage_site_label_dict.values()]), len(cleavage_site_label_dict))
     print('uncertain ploymer number: %i' % uncertain_polymer_no)
