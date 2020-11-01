@@ -172,22 +172,22 @@ if __name__=='__main__':
 
     t_37C_240min_dict = ppp.load(open('tryp_37C_4h_cleavage_label_new.p','rb'))
     print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
-
+    pd.set_option('display.max_columns', 1000)
     df_dummy = df_dummy_getter(t_37C_240min_dict)
-    print (df_dummy.shape)
+    print (df_dummy.head())
 
-    matrix, target = ohe(t_37C_240min_dict)
-    # matrix, target = matrix_target_getter(df_dummy)
-
-    X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
-    time_start = time.time()
-    svm_clf = svm_classifer(X_train,target_train)
-    print('model trained time:',time.time() - time_start)
-    score = cross_validate(svm_clf,matrix,target)
-    print (score)
-    print (plot_confusion_mtx(svm_clf,X_test,target_test))
-    print(classifi_report(svm_clf,X_test, target_test))
-    precision_recall_curv(svm_clf,X_test,target_test)
+    # matrix, target = ohe(t_37C_240min_dict)
+    # # matrix, target = matrix_target_getter(df_dummy)
+    #
+    # X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
+    # time_start = time.time()
+    # svm_clf = svm_classifer(X_train,target_train)
+    # print('model trained time:',time.time() - time_start)
+    # score = cross_validate(svm_clf,matrix,target)
+    # print (score)
+    # print (plot_confusion_mtx(svm_clf,X_test,target_test))
+    # print(classifi_report(svm_clf,X_test, target_test))
+    # precision_recall_curv(svm_clf,X_test,target_test)
 
 # two_d_list = []
 # for polymer in t_37C_240min:
