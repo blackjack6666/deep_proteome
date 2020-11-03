@@ -112,16 +112,43 @@ def venn_diagram_gen2(dictionary, title=None): # parameter could be a dictionary
             ax.set_title(title)
     plt.show()
 
+
+def combined_proteintsv_map(combined_protein_tsv):
+    """
+    map spectra count from combined protein tsv file to each file
+    :param combined_protein_tsv:
+    :return:
+    """
+    info_dict = {}
+    import pandas as pd
+    df = pd.read_csv(combined_protein_tsv,sep='\t')
+    protein_list = df['Protein ID']
+
+    for each_column in df.columns:
+        if 'Total Spectral Count' in each_column:
+            file_name = each_column.split(' ')[0]
+            spec_count_list = df[each_column]
+            protein_spec_dict = {i:j for i,j in zip(protein_list,spec_count_list) if j != 0}
+            info_dict[file_name] = protein_spec_dict
+    return info_dict
+
 if __name__=="__main__":
     from glob import glob
     import numpy as np
-    path = 'D:/data/deep_proteome/20200915_ct_50C*/protein.tsv'
+    path = 'C:/uic/lab/data/naba/search_result/*/peptide.tsv'
     file_list = glob(path)
     print (file_list)
+    # for f in file_list:
+    #     print (f.split('\\')[-2], sum([v for v in psm_reader(f)[0].values()]))
+    info_dict = combined_proteintsv_map('C:/uic/lab/data/naba/search_result/combined_protein.tsv')
+    # venn_dict = {'163_3_dec': [k for k in info_dict['163_3_dec']],'163_3_extr': [k for k in info_dict['163_3_extr']]}
+    venn_dict = {each_file.split('\\')[-2]:peptide_counting(each_file)
+                 for each_file in file_list[:2]}
+    venn_diagram_gen(venn_dict,title='peptide compare')
 
-    venn_dict = {'_'.join(each_file.split('\\')[-2].split('_')[1:]):protein_tsv_reader(each_file)
-                 for each_file in file_list[1:6]}
-    venn_diagram_gen2(venn_dict)
+
+    for each_file in info_dict:
+        print (each_file,len(info_dict[each_file]))
 
     # from calculations_and_plot import miss_cleavage_identify
     # for each_file in file_list:
