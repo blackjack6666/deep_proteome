@@ -87,8 +87,8 @@ plt.xticks(angles[:-1], categories)
 
 # Draw ylabels
 ax.set_rlabel_position(0)
-plt.yticks([0.4,0.6,0.8,1.0], ["0.4", "0.6", "0.8", "1.0"], color="grey", size=7)
-plt.ylim(0, 1)
+plt.yticks([0.5,0.6,0.7,0.8,0.9,1.0], ["0.5", "0.6", "0.7","0.8","0.9","1.0"], color="grey", size=7)
+plt.ylim(0.5, 1)
 
 # ------- PART 2: Add plots
 

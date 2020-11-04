@@ -165,6 +165,29 @@ def precision_recall_curv(trained_clf,X_test,y_test):
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.show()
+    
+
+def roc_curve(trained_clf,X_test,y_test):
+    from sklearn.metrics import roc_curve,auc
+    import matplotlib.pyplot as plt
+    yhat = trained_clf.predict_proba(X_test)
+    # print (yhat)
+    # retrieve just the probabilities for the positive class
+    pos_probs = yhat[:, 1]
+    fpr, tpr, _ = roc_curve(y_test,pos_probs)
+    roc_auc = auc(fpr,tpr)
+    lw = 2
+    plt.plot(fpr, tpr, color='darkorange',
+             lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC')
+    plt.legend(loc="lower right")
+    plt.show()
+
 
 if __name__=='__main__':
     from collections import Counter
@@ -176,18 +199,18 @@ if __name__=='__main__':
     df_dummy = df_dummy_getter(t_37C_240min_dict)
     print (df_dummy.head())
 
-    # matrix, target = ohe(t_37C_240min_dict)
-    # # matrix, target = matrix_target_getter(df_dummy)
-    #
-    # X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
-    # time_start = time.time()
-    # svm_clf = svm_classifer(X_train,target_train)
-    # print('model trained time:',time.time() - time_start)
-    # score = cross_validate(svm_clf,matrix,target)
-    # print (score)
-    # print (plot_confusion_mtx(svm_clf,X_test,target_test))
-    # print(classifi_report(svm_clf,X_test, target_test))
-    # precision_recall_curv(svm_clf,X_test,target_test)
+    matrix, target = ohe(t_37C_240min_dict)
+    # matrix, target = matrix_target_getter(df_dummy)
+
+    X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
+    time_start = time.time()
+    svm_clf = svm_classifer(X_train,target_train)
+    print('model trained time:',time.time() - time_start)
+    score = cross_validate(svm_clf,matrix,target)
+    print (score)
+    print (plot_confusion_mtx(svm_clf,X_test,target_test))
+    print(classifi_report(svm_clf,X_test, target_test))
+    precision_recall_curv(svm_clf,X_test,target_test)
 
 # two_d_list = []
 # for polymer in t_37C_240min:
