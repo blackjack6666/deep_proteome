@@ -7,7 +7,7 @@ import numpy as np
 import pickle as ppp
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn import tree
-
+from sklearn.preprocessing import OneHotEncoder
 
 def dump_data(polymer_label_dict):
     """
@@ -49,15 +49,7 @@ def df_dummy_getter(polymer_label_dict):
     return df_dummy
 
 
-def ohe(polymer_label_dict):
-    """
-    one hot encoder for 31-mers
-    :param polymer_label_dict:
-    :return:
-    """
-    from sklearn.preprocessing import OneHotEncoder
-    # Create the encoder.
-    encoder = OneHotEncoder(handle_unknown="ignore")
+def matrix_target(polymer_label_dict):
     matrix = []
     for each in polymer_label_dict:
         one_d = []
@@ -67,12 +59,25 @@ def ohe(polymer_label_dict):
         matrix.append(one_d)
 
     matrix = np.array(matrix)
-    matrix,target = matrix[:,:-1], matrix[:,-1].astype(np.int)
-    encoder.fit(matrix)
-    matrix = encoder.transform(matrix)
+    matrix, target = matrix[:, :-1], matrix[:, -1].astype(np.int)
     return matrix, target
 
+
+def ohe(matrix):
+    """
+    one hot encoder for 31-mers
+    :param polymer_label_dict:
+    :return:
+    """
+
+    # Create the encoder.
+    encoder = OneHotEncoder(handle_unknown="ignore", sparse=False)
+    encoder.fit(matrix)
+    matrix = encoder.transform(matrix)
+    return encoder, matrix
+
 def matrix_target_getter(df_dummy):
+    # from df_dummy
     target = df_dummy['label']
     matrix = df_dummy.drop('label', axis=1)
     return matrix, target
@@ -157,7 +162,7 @@ def precision_recall_curv(trained_clf,X_test,y_test):
     pos_probs = yhat[:, 1]
     # calculate model precision-recall curve
     precision, recall, _ = precision_recall_curve(y_test, pos_probs)
-    print ("AUC: ", auc(recall, precision))
+    print ("AUC precision-recall: ", auc(recall, precision))
     # plot the model precision-recall curve
     plt.plot(recall, precision, marker='.')
     # axis labels
@@ -193,24 +198,33 @@ if __name__=='__main__':
     from collections import Counter
     import time
 
-    t_37C_240min_dict = ppp.load(open('tryp_37C_4h_cleavage_label_new.p','rb'))
+    t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_240min_new.p','rb'))
+    test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
     print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
+    print (Counter([v for v in test_dataset_dict.values()]))
     pd.set_option('display.max_columns', 1000)
     df_dummy = df_dummy_getter(t_37C_240min_dict)
-    print (df_dummy.head())
+    # print (df_dummy.head())
 
-    matrix, target = ohe(t_37C_240min_dict)
+    matrix,target = matrix_target(t_37C_240min_dict)
+    encoder,matrix = ohe(matrix)
+    print (matrix.shape)
+    # test set from different dataset
+    test_maxtrix, test_target = matrix_target(test_dataset_dict)
+    test_maxtrix = encoder.transform(test_maxtrix)
+    print(test_maxtrix.shape)
     # matrix, target = matrix_target_getter(df_dummy)
 
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
     time_start = time.time()
-    svm_clf = svm_classifer(X_train,target_train)
+    svm_clf = random_forest_classifer(X_train,target_train)
     print('model trained time:',time.time() - time_start)
-    score = cross_validate(svm_clf,matrix,target)
-    print (score)
-    print (plot_confusion_mtx(svm_clf,X_test,target_test))
-    print(classifi_report(svm_clf,X_test, target_test))
-    precision_recall_curv(svm_clf,X_test,target_test)
+    # score = cross_validate(svm_clf,matrix,target)
+    # print (score)
+    print (plot_confusion_mtx(svm_clf,test_maxtrix,test_target))
+    print(classifi_report(svm_clf,test_maxtrix, test_target))
+    precision_recall_curv(svm_clf,test_maxtrix,test_target)
+    roc_curve(svm_clf,test_maxtrix,test_target)
 
 # two_d_list = []
 # for polymer in t_37C_240min:
