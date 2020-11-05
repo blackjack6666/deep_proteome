@@ -56,14 +56,15 @@ def polymer_miss_cleav_charc(cleavage_site_dict, proteome_seq_dict):
             if cleav_index-15 >=0 and cleav_index +15 < len(seq):  # 31mer is within the protein sequence
                 polymer = seq[cleav_index-15:cleav_index+16]
 
-            elif cleav_index-15 < 0 and cleav_index + 15 <= len(seq): # adding Zs to make up the N-terminal
+            elif cleav_index-15 < 0 and cleav_index + 15 < len(seq): # adding Zs to make up the N-terminal
                 polymer = 'Z'*(15-cleav_index)+seq[:cleav_index+16]
 
-            elif cleav_index-15 < 0 and cleav_index + 15 > len(seq): # adding Zs to both N and C terminal
+            elif cleav_index-15 < 0 and cleav_index + 15 >= len(seq): # adding Zs to both N and C terminal
                 polymer = 'Z'*(15-cleav_index)+seq+'Z'*(16-(len(seq)-cleav_index))
 
             elif cleav_index-15 >=0 and cleav_index+15 > len(seq): # adding Zs to make up C-terminal
                 polymer = seq[cleav_index-15:]+'Z'*(16-(len(seq)-cleav_index))
+
 
             cleav_index_polymer_dict[cleav_index] = polymer
 
@@ -182,9 +183,9 @@ if __name__ == '__main__':
     from tsv_reader import peptide_counting,psm_reader,protein_tsv_reader_no_contam
     import pickle as ppp
     from collections import Counter
-    protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_240min/protein.tsv"
-    peptide_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_240min/peptide.tsv"
-    psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_240min/psm.tsv"
+    protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/protein.tsv"
+    peptide_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/peptide.tsv"
+    psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/psm.tsv"
 
     fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
     proteome_dict = fasta_reader2(fasta_path)
@@ -206,5 +207,8 @@ if __name__ == '__main__':
     print(Counter([v for v in cleavage_site_label_dict.values()]), len(cleavage_site_label_dict))
     print('uncertain ploymer number: %i' % uncertain_polymer_no)
     # print (cleavage_site_label_dict)
-    ppp.dump(cleavage_site_label_dict, open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_240min_new.p', 'wb'))
+    ppp.dump(cleavage_site_label_dict, open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_1440min_new.p', 'wb'))
     print(len(cleavage_site_label_dict), len(protein_poly_dict))
+    for each in cleavage_site_label_dict:
+        if (len(each)) !=31:
+            print (each)

@@ -66,8 +66,10 @@ def compile_model(un_compiled_model):
 #     return auc
 # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_240min_new.p','rb'))
+t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_1440min_new.p','rb'))
 test_dataset_dict = ppp.load(open('P62908_polymer_dict.p','rb'))
+predict_matrix_array = ppp.load(open('P62908_matrix_2d_array.p', 'rb'))
+
 # print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
 # df_dummy = df_dummy_getter(t_37C_240min_dict)
 # matrix, target = matrix_target_getter(df_dummy)
@@ -81,6 +83,7 @@ print (matrix.shape)
 # test set from different dataset
 test_maxtrix, test_target = matrix_target(test_dataset_dict)
 test_maxtrix = encoder.transform(test_maxtrix)
+predict_matrix = encoder.transform(predict_matrix_array)
 # test_maxtrix = csr_matrix.toarray(test_maxtrix)
 
 # one-hot encode, optional
@@ -96,9 +99,10 @@ X_train, X_test, target_train, target_test = train_test_data_split(matrix,target
 # X_train, X_test = X_train.values.reshape(X_train.shape[0],15,43,1), X_test.values.reshape(X_test.shape[0],15,43,1)
 
 # convert in to 3d array for lstm
-X_train, X_test, test_maxtrix = X_train.reshape(X_train.shape[0],1,X_train.shape[1]), \
+X_train, X_test, test_maxtrix,predict_matrix = X_train.reshape(X_train.shape[0],1,X_train.shape[1]), \
                                 X_test.reshape(X_test.shape[0],1,X_test.shape[1]), \
-                                test_maxtrix.reshape(test_maxtrix.shape[0],1,test_maxtrix.shape[1])
+                                test_maxtrix.reshape(test_maxtrix.shape[0],1,test_maxtrix.shape[1]), \
+                                predict_matrix.reshape(predict_matrix.shape[0],1,predict_matrix.shape[1])
 
 
 print (X_train.shape)
@@ -137,6 +141,7 @@ print ("model trained time: ", time.time()-start)
 print("Evaluate on test data")
 results = model.evaluate(test_maxtrix, test_target, batch_size=64)
 print("test loss, test acc:", results)
+print (np.argmax(model.predict(predict_matrix), axis=-1))
 
 # print (history.history)
 # plt.plot(history.history['val_loss'], label='val_loss')
@@ -202,3 +207,4 @@ plt.ylabel('True Positive Rate')
 plt.title('ROC')
 plt.legend(loc="lower right")
 plt.show()
+
