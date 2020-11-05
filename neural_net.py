@@ -41,7 +41,7 @@ def cnn():
 def lstm():
     model = models.Sequential()
     # model.add(layers.Embedding(30, 64, input_length=31))  # 21 integers encode, output 64 dimension, input 31 dimension
-    model.add(layers.LSTM(64, input_shape=(1,645)))
+    model.add(layers.LSTM(64, input_shape=(1,646)))
     model.add(layers.Dense(64, activation='relu'))
     model.add(layers.Dense(2, activation='softmax'))
     return model
@@ -67,7 +67,7 @@ def compile_model(un_compiled_model):
 # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_240min_new.p','rb'))
-test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
+test_dataset_dict = ppp.load(open('P62908_polymer_dict.p','rb'))
 # print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
 # df_dummy = df_dummy_getter(t_37C_240min_dict)
 # matrix, target = matrix_target_getter(df_dummy)

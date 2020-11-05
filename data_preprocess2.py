@@ -115,7 +115,7 @@ def map_to_cleavage(id_pep_dict,
                 pep_end_loc = pep_loc+len(pep)
                 # print (pep,pep_loc,pep_end_loc)
                 # get missed cleavage location within peptide
-                missed_cleav_array = cleavage_array[np.where((cleavage_array>pep_loc)&(cleavage_array<pep_end_loc-1))]
+                missed_cleav_array = cleavage_array[np.where((cleavage_array>=pep_loc)&(cleavage_array<pep_end_loc-1))]
                 # print (missed_cleav_array)
                 if pep_end_loc-1 not in cleavage_array and pep_loc-1 in cleavage_array: # protein end
                     pep_start_polymer = cleav_polymer_dict[pep_loc - 1]
@@ -182,11 +182,11 @@ if __name__ == '__main__':
     from tsv_reader import peptide_counting,psm_reader,protein_tsv_reader_no_contam
     import pickle as ppp
     from collections import Counter
-    protein_tsv_path = "D:/data/phospho_wang/2020-09-06/result/B_FT/protein.tsv"
-    peptide_tsv_path = "D:/data/phospho_wang/2020-09-06/result/B_FT/peptide.tsv"
-    psm_tsv_path = "D:/data/phospho_wang/2020-09-06/result/B_FT/psm.tsv"
+    protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_240min/protein.tsv"
+    peptide_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_240min/peptide.tsv"
+    psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_240min/psm.tsv"
 
-    fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000000589_mouse.fasta'
+    fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
     proteome_dict = fasta_reader2(fasta_path)
     pep_list = peptide_counting(peptide_tsv_path)
     id_pep_dict,protein_list = protein_id_peplist_dict_getter(proteome_dict, pep_list)
@@ -206,5 +206,5 @@ if __name__ == '__main__':
     print(Counter([v for v in cleavage_site_label_dict.values()]), len(cleavage_site_label_dict))
     print('uncertain ploymer number: %i' % uncertain_polymer_no)
     # print (cleavage_site_label_dict)
-    ppp.dump(cleavage_site_label_dict, open('mouse_B_FT_31mer_dict.p', 'wb'))
+    ppp.dump(cleavage_site_label_dict, open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_240min_new.p', 'wb'))
     print(len(cleavage_site_label_dict), len(protein_poly_dict))

@@ -199,7 +199,7 @@ if __name__=='__main__':
     import time
 
     t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_240min_new.p','rb'))
-    test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
+    test_dataset_dict = ppp.load(open('P62908_polymer_dict.p','rb'))
     print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
     print (Counter([v for v in test_dataset_dict.values()]))
     pd.set_option('display.max_columns', 1000)
@@ -217,7 +217,7 @@ if __name__=='__main__':
 
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
     time_start = time.time()
-    svm_clf = random_forest_classifer(X_train,target_train)
+    svm_clf = dummy_clf(X_train,target_train)
     print('model trained time:',time.time() - time_start)
     # score = cross_validate(svm_clf,matrix,target)
     # print (score)
