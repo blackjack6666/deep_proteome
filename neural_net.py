@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, precision_score, recall_score, f1_score, cohen_kappa_score, roc_curve,auc, confusion_matrix
 import time
 from scipy.sparse import csr_matrix
+from parameters import custom_ohe
 
 def sequential_nn():
     model = keras.Sequential()
@@ -41,7 +42,7 @@ def cnn():
 def lstm():
     model = models.Sequential()
     # model.add(layers.Embedding(30, 64, input_length=31))  # 21 integers encode, output 64 dimension, input 31 dimension
-    model.add(layers.LSTM(64, input_shape=(1,646)))
+    model.add(layers.LSTM(64, input_shape=(1,682)))
     model.add(layers.Dense(64, activation='relu'))
     model.add(layers.Dense(2, activation='softmax'))
     return model
@@ -67,7 +68,7 @@ def compile_model(un_compiled_model):
 # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_1440min_new.p','rb'))
-test_dataset_dict = ppp.load(open('P62908_polymer_dict.p','rb'))
+test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
 predict_matrix_array = ppp.load(open('P62908_matrix_2d_array.p', 'rb'))
 
 # print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
@@ -77,13 +78,16 @@ predict_matrix_array = ppp.load(open('P62908_matrix_2d_array.p', 'rb'))
 # print (matrix)
 
 matrix,target = matrix_target(t_37C_240min_dict)
-encoder,matrix = ohe(matrix)
+matrix = custom_ohe(matrix)
+# encoder,matrix = ohe(matrix)
 # matrix = csr_matrix.toarray(matrix)
 print (matrix.shape)
 # test set from different dataset
 test_maxtrix, test_target = matrix_target(test_dataset_dict)
-test_maxtrix = encoder.transform(test_maxtrix)
-predict_matrix = encoder.transform(predict_matrix_array)
+# test_maxtrix = encoder.transform(test_maxtrix)
+test_maxtrix = custom_ohe(test_maxtrix)
+# predict_matrix = encoder.transform(predict_matrix_array)
+predict_matrix = custom_ohe(predict_matrix_array)
 # test_maxtrix = csr_matrix.toarray(test_maxtrix)
 
 # one-hot encode, optional

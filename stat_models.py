@@ -198,12 +198,13 @@ def roc_curve(trained_clf,X_test,y_test):
 if __name__=='__main__':
     from collections import Counter
     import time
+    from parameters import custom_ohe
 
     t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_1440min_new.p','rb'))
 
-    test_dataset_dict = ppp.load(open('P62908_polymer_dict.p','rb'))
+    test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
     predict_matrix = ppp.load(open('P62918_matrix_2d_array.p', 'rb'))
-    print (predict_matrix)
+
     print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
     print (Counter([v for v in test_dataset_dict.values()]))
     pd.set_option('display.max_columns', 1000)
@@ -211,27 +212,29 @@ if __name__=='__main__':
     # print (df_dummy.head())
 
     matrix,target = matrix_target(t_37C_240min_dict)
-    encoder,matrix = ohe(matrix)
-    print (matrix.shape)
-    # test set from different dataset
+    matrix = custom_ohe(matrix)
+    # encoder,matrix = ohe(matrix)
+    # print (matrix.shape)
+    # # test set from different dataset
     test_maxtrix, test_target = matrix_target(test_dataset_dict)
-    print (test_maxtrix,test_target)
-    test_maxtrix = encoder.transform(test_maxtrix)
-    print(test_maxtrix.shape)
-    predict_matrix = encoder.transform(predict_matrix)
+    # print (test_maxtrix,test_target)
+    test_maxtrix = cust.transform(test_maxtrix)
+    # print(test_maxtrix.shape)
+    # predict_matrix = encoder.transform(predict_matrix)
     # matrix, target = matrix_target_getter(df_dummy)
 
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
     time_start = time.time()
     svm_clf = random_forest_classifer(X_train,target_train)
+    ppp.dump(svm_clf, open('randomf_tryp37c_1440.p','wb'))
     print('model trained time:',time.time() - time_start)
     # score = cross_validate(svm_clf,matrix,target)
     # print (score)
-    print (plot_confusion_mtx(svm_clf,test_maxtrix,test_target))
-    print(classifi_report(svm_clf,test_maxtrix, test_target))
-    precision_recall_curv(svm_clf,test_maxtrix,test_target)
-    roc_curve(svm_clf,test_maxtrix,test_target)
-    print (svm_clf.predict(predict_matrix))
+    print (plot_confusion_mtx(svm_clf,X_test,target_test))
+    print(classifi_report(svm_clf,X_test, target_test))
+    # precision_recall_curv(svm_clf,X_test,target_test)
+    # roc_curve(svm_clf,X_test,target_test)
+    # print (svm_clf.predict(predict_matrix))
 # two_d_list = []
 # for polymer in t_37C_240min:
 #     one_d_list = []
