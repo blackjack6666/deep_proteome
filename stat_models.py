@@ -200,13 +200,13 @@ if __name__=='__main__':
     import time
     from parameters import custom_ohe
 
-    t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_1440min_new.p','rb'))
+    t_37C_240min_dict = ppp.load(open('tryp_24h_label_dict_11_8.p','rb'))
 
-    test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
-    predict_matrix = ppp.load(open('P62918_matrix_2d_array.p', 'rb'))
+    # test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
+    # predict_matrix = ppp.load(open('P62918_matrix_2d_array.p', 'rb'))
 
-    print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
-    print (Counter([v for v in test_dataset_dict.values()]))
+    # print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
+    # print (Counter([v for v in test_dataset_dict.values()]))
     pd.set_option('display.max_columns', 1000)
     df_dummy = df_dummy_getter(t_37C_240min_dict)
     # print (df_dummy.head())
@@ -216,9 +216,9 @@ if __name__=='__main__':
     # encoder,matrix = ohe(matrix)
     # print (matrix.shape)
     # # test set from different dataset
-    test_maxtrix, test_target = matrix_target(test_dataset_dict)
+    # test_maxtrix, test_target = matrix_target(test_dataset_dict)
     # print (test_maxtrix,test_target)
-    test_maxtrix = cust.transform(test_maxtrix)
+    # test_maxtrix = cust.transform(test_maxtrix)
     # print(test_maxtrix.shape)
     # predict_matrix = encoder.transform(predict_matrix)
     # matrix, target = matrix_target_getter(df_dummy)
@@ -226,40 +226,14 @@ if __name__=='__main__':
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
     time_start = time.time()
     svm_clf = random_forest_classifer(X_train,target_train)
-    ppp.dump(svm_clf, open('randomf_tryp37c_1440.p','wb'))
+    # ppp.dump(svm_clf, open('randomf_tryp37c_1440_11_8.p','wb'))
     print('model trained time:',time.time() - time_start)
     # score = cross_validate(svm_clf,matrix,target)
     # print (score)
     print (plot_confusion_mtx(svm_clf,X_test,target_test))
     print(classifi_report(svm_clf,X_test, target_test))
-    # precision_recall_curv(svm_clf,X_test,target_test)
-    # roc_curve(svm_clf,X_test,target_test)
+    precision_recall_curv(svm_clf,X_test,target_test)
+    roc_curve(svm_clf,X_test,target_test)
     # print (svm_clf.predict(predict_matrix))
-# two_d_list = []
-# for polymer in t_37C_240min:
-#     one_d_list = []
-#     for aa in polymer:
-#         one_d_list.append(aa)
-#     one_d_list.append(t_37C_240min[polymer])
-#     two_d_list.append(one_d_list)
-#
-# pd.set_option('display.max_columns', None)
-#
-# columns = [i for i in range(31)]
-# columns.append('label')
-# df = pd.DataFrame(two_d_list, columns=columns)
-#
-# df_dummy = pd.get_dummies(df)
-#
-# target = df_dummy['label']
-# matrix = df_dummy.drop('label',axis=1)
-# X_train, X_test, target_train, target_test = train_test_split(matrix,target)
-# print (X_train.shape, X_test.shape)
-#
-# treeclf = tree.DecisionTreeClassifier(criterion='entropy', min_samples_split=5)
-# treeclf = treeclf.fit(X_train,target_train)
-# treepreds_test = treeclf.predict(X_test)
-# print (treeclf.score(X_test,target_test))
-#
-# cv_scores = cross_val_score(treeclf,matrix,target,cv=10)
-# print (cv_scores)
+    print (target_test[0])
+

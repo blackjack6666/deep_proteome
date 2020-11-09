@@ -1,5 +1,5 @@
 # enzyme specificity
-
+import numpy as np
 enzyme_spec = {'trypsin':'KR','chymotrypsin':'FWY'}
 
 aa_interger_dict = {
@@ -34,7 +34,7 @@ from stat_models import matrix_target
 def custom_ohe(matrix):
     """
     customized one hot encoder
-    :param matrix: [[31mer1],[31mer2]...]
+    :param matrix: [[31mer1],[31mer2]...], 2d-array
     :return:
     """
 
@@ -48,8 +48,26 @@ def custom_ohe(matrix):
     encoding_matrix = np.array(encoding_matrix)
     return encoding_matrix
 
-t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_1440min_new.p','rb'))
-matrix,target = matrix_target(t_37C_240min_dict)
-matrix = matrix[:5]
 
-print (custom_ohe(matrix))
+def array_to_seq(array):
+    """
+
+    :param array: one-d numpy array
+    :return:
+    """
+    aa_seq = ""
+    int_aa_dict = {aa_interger_dict[each]:each for each in aa_interger_dict}
+    array_bin = range(0,len(array)+22,22)
+    for i in range(len(array_bin)-1):
+        sub_array = array[array_bin[i]:array_bin[i+1]]
+        aa = int_aa_dict[np.nonzero(sub_array)[0][0]]
+        aa_seq+=aa
+    return aa_seq
+
+if __name__ == '__main__':
+    t_37C_240min_dict = ppp.load(open('tryp_24h_label_dict_11_8.p','rb'))
+    matrix,target = matrix_target(t_37C_240min_dict)
+    matrix = matrix[0]
+    print (matrix)
+
+    print (array_to_seq(custom_ohe([matrix])[0]))
