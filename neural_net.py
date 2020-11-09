@@ -41,7 +41,7 @@ def cnn():
 
 def lstm():
     model = models.Sequential()
-    # model.add(layers.Embedding(30, 64, input_length=31))  # 21 integers encode, output 64 dimension, input 31 dimension
+    model.add(layers.Embedding(30, 64, input_length=682))  # 21 integers encode, output 64 dimension, input 31 dimension
     model.add(layers.LSTM(64, input_shape=(1,682)))
     model.add(layers.Dense(64, activation='relu'))
     model.add(layers.Dense(2, activation='softmax'))
@@ -67,7 +67,7 @@ def compile_model(un_compiled_model):
 #     return auc
 # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/pickle_file/20200915_tryp_37C_1440min_new.p','rb'))
+t_37C_240min_dict = ppp.load(open('tryp_24h_label_dict_11_8.p','rb'))
 test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
 predict_matrix_array = ppp.load(open('P62908_matrix_2d_array.p', 'rb'))
 
@@ -103,10 +103,10 @@ X_train, X_test, target_train, target_test = train_test_data_split(matrix,target
 # X_train, X_test = X_train.values.reshape(X_train.shape[0],15,43,1), X_test.values.reshape(X_test.shape[0],15,43,1)
 
 # convert in to 3d array for lstm
-X_train, X_test, test_maxtrix,predict_matrix = X_train.reshape(X_train.shape[0],1,X_train.shape[1]), \
-                                X_test.reshape(X_test.shape[0],1,X_test.shape[1]), \
-                                test_maxtrix.reshape(test_maxtrix.shape[0],1,test_maxtrix.shape[1]), \
-                                predict_matrix.reshape(predict_matrix.shape[0],1,predict_matrix.shape[1])
+# X_train, X_test, test_maxtrix,predict_matrix = X_train.reshape(X_train.shape[0],1,X_train.shape[1]), \
+#                                 X_test.reshape(X_test.shape[0],1,X_test.shape[1]), \
+#                                 test_maxtrix.reshape(test_maxtrix.shape[0],1,test_maxtrix.shape[1]), \
+#                                 predict_matrix.reshape(predict_matrix.shape[0],1,predict_matrix.shape[1])
 
 
 print (X_train.shape)

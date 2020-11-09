@@ -46,7 +46,7 @@ def polymer_gen(protein_seq, aa_loc):
 
     else:
         print (protein_seq,aa_loc)
-
+        raise ValueError('No polymer being generated')
     return polymer
 
 
@@ -122,14 +122,14 @@ if __name__=='__main__':
     from protein_coverage import fasta_reader2
 
     # protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/protein.tsv"
-    peptide_tsv_path = "C:/uic/lab/data/Deep_proteome/20200915/20200915_tryp_37C_24h/peptide.tsv"
+    peptide_tsv_path = "D:/data/non_specific_search/peptide.tsv"
     # psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/psm.tsv"
 
-    fasta_path = 'C:/uic/lab/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
+    fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000000558_ecoli.fasta'
     proteome_dict = fasta_reader2(fasta_path)
-    protein_seq = proteome_dict['P22234']
+    # protein_seq = proteome_dict['P22234']
 
-    print (protein_seq[410])
+    # print (protein_seq[410])
     pep_list = peptide_counting(peptide_tsv_path)
     id_pep_dict,protein_list = protein_id_peplist_dict_getter(proteome_dict, pep_list)
     protein_polymer_sc_dict = cleavage_map(id_pep_dict,proteome_dict)
@@ -137,4 +137,4 @@ if __name__=='__main__':
     print('number of proteins with polymers reported: %i' % len(protein_poly_dict))
     print(Counter([v for v in polymer_label_dict.values()]), len(polymer_label_dict))
     print('uncertain ploymer number: %i' % uncertain_polymer_no)
-    ppp.dump(polymer_label_dict, open('tryp_24h_label_dict_11_8.p', 'wb'))
+    ppp.dump(polymer_label_dict, open('D:/data/non_specific_search/ecoli_non_specific_search_poly_dict.p', 'wb'))

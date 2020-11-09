@@ -200,7 +200,7 @@ if __name__=='__main__':
     import time
     from parameters import custom_ohe
 
-    t_37C_240min_dict = ppp.load(open('tryp_24h_label_dict_11_8.p','rb'))
+    t_37C_240min_dict = ppp.load(open('D:/data/non_specific_search/ecoli_non_specific_search_poly_dict.p','rb'))
 
     # test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
     # predict_matrix = ppp.load(open('P62918_matrix_2d_array.p', 'rb'))
@@ -226,7 +226,7 @@ if __name__=='__main__':
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
     time_start = time.time()
     svm_clf = random_forest_classifer(X_train,target_train)
-    # ppp.dump(svm_clf, open('randomf_tryp37c_1440_11_8.p','wb'))
+    ppp.dump(svm_clf, open('randomf_ecoli_non_spec_search.p','wb'))
     print('model trained time:',time.time() - time_start)
     # score = cross_validate(svm_clf,matrix,target)
     # print (score)
