@@ -2,7 +2,8 @@ import lime.lime_tabular
 import pickle as ppp
 from stat_models import matrix_target, train_test_data_split
 from parameters import custom_ohe, array_to_seq
-
+from sklearn.tree import export_graphviz, plot_tree
+import matplotlib.pyplot as plt
 
 t_37C_240min_dict = ppp.load(open('D:/data/non_specific_search/ecoli_non_specific_search_poly_dict.p','rb'))
 matrix,target = matrix_target(t_37C_240min_dict)
@@ -17,6 +18,21 @@ print(array_to_seq(X_test[3]))
 print (target_test[3])
 print (svm_clf.predict_proba([X_test[3]]))
 print (svm_clf.predict([X_test[3]]))
-explainer = lime.lime_tabular.LimeTabularExplainer(X_train)
-exp = explainer.explain_instance(X_test[3], svm_clf.predict_proba, num_features=10)
-print (exp.as_list())
+
+estimator = svm_clf.estimators_[80]
+# Export as dot file
+# export_graphviz(estimator, out_file='tree.dot',
+#
+#                 class_names = ['miss cleaved', 'cleaved'],
+#                 rounded = True, proportion = False,
+#                 precision = 2, filled = True)
+
+plt.figure(figsize=(40,20))
+plot_tree(estimator,
+          max_depth=3,
+                rounded = True, proportion = False,
+                 filled = True)
+plt.show()
+# explainer = lime.lime_tabular.LimeTabularExplainer(X_train)
+# exp = explainer.explain_instance(X_test[3], svm_clf.predict_proba, num_features=10)
+# print (exp.as_list())
