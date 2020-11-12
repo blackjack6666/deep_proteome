@@ -132,24 +132,52 @@ def combined_proteintsv_map(combined_protein_tsv):
             info_dict[file_name] = protein_spec_dict
     return info_dict
 
+
+def protein_info_from_combined(combined_protein_tsv):
+    """
+    get protein name, gene name, entry name, gene name and Description
+
+    :param combined_protein_tsv:
+    :return:
+    """
+    info_dict = {}
+    with open(combined_protein_tsv, 'r') as f_open:
+        next(f_open)
+        for line in f_open:
+            line_split = line.split('\t')
+            protein_id = line_split[3]
+            protein_name = line_split[4]
+            gene_name = line_split[5]
+            description = line_split[10]
+            info_dict[protein_id] = (protein_name,gene_name,description)
+    return info_dict
+
 if __name__=="__main__":
     from glob import glob
     import numpy as np
+    import pandas as pd
+    from pandas import ExcelWriter
     path = 'C:/uic/lab/data/naba/search_result/*/peptide.tsv'
     file_list = glob(path)
     print (file_list)
     # for f in file_list:
     #     print (f.split('\\')[-2], sum([v for v in psm_reader(f)[0].values()]))
-    info_dict = combined_proteintsv_map('C:/uic/lab/data/naba/search_result/combined_protein.tsv')
+    protein_info_dict = protein_info_from_combined('D:/data/Naba_deep_matrisome/11_11_combined_search/combined_protein.tsv')
+    info_dict = combined_proteintsv_map('D:/data/Naba_deep_matrisome/11_11_combined_search/combined_protein.tsv')
     # venn_dict = {'163_3_dec': [k for k in info_dict['163_3_dec']],'163_3_extr': [k for k in info_dict['163_3_extr']]}
-    venn_dict = {each_file.split('\\')[-2]:peptide_counting(each_file)
-                 for each_file in file_list[:2]}
-    venn_diagram_gen(venn_dict,title='peptide compare')
+    # venn_dict = {each_file.split('\\')[-2]:peptide_counting(each_file)
+    #              for each_file in file_list[:2]}
+    # venn_diagram_gen(venn_dict,title='peptide compare')
 
+    for each in info_dict:
+        print (each,len(info_dict[each]))
 
-    for each_file in info_dict:
-        print (each_file,len(info_dict[each_file]))
-
+    with ExcelWriter('D:/data/Naba_deep_matrisome/11_11_protein_ids.xlsx') as writer:
+        for each in info_dict:
+            info_list = [[prot,info_dict[each][prot],protein_info_dict[prot][0],protein_info_dict[prot][1],protein_info_dict[prot][2]]
+                         for prot in info_dict[each]]
+            df = pd.DataFrame(info_list, columns=['protein id', 'spectra count', 'entry name', 'gene name', 'description'])
+            df.to_excel(writer,'%s' % each)
     # from calculations_and_plot import miss_cleavage_identify
     # for each_file in file_list:
     #     print (each_file)
