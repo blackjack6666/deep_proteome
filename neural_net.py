@@ -41,12 +41,19 @@ def cnn():
 
 def lstm():
     model = models.Sequential()
-    model.add(layers.Embedding(30, 64, input_length=682))  # 21 integers encode, output 64 dimension, input 31 dimension
-    model.add(layers.LSTM(64, input_shape=(1,682)))
-    model.add(layers.Dense(64, activation='relu'))
+    # model.add(layers.Embedding(30, 64, input_length=682))  # 21 integers encode, output 64 dimension, input 31 dimension
+    model.add(layers.LSTM(64, input_shape=(1,682),return_sequences=True))
+    # model.add(layers.TimeDistributed(layers.Dense(2, activation='softmax')))
+    # model.add(layers.Dense(64, activation='relu'))
     model.add(layers.Dense(2, activation='softmax'))
     return model
 
+def bi_lsmtm():
+    model = models.Sequential()
+    model.add(layers.Bidirectional(layers.LSTM(64, return_sequences=True), input_shape=(1,682)))
+    # model.add(layers.TimeDistributed(layers.Dense(2, activation='sigmoid')))
+    model.add(layers.Dense(2, activation='softmax'))
+    return model
 
 def compile_model(un_compiled_model):
     un_compiled_model.compile(
@@ -67,7 +74,7 @@ def compile_model(un_compiled_model):
 #     return auc
 # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-t_37C_240min_dict = ppp.load(open('tryp_24h_label_dict_11_8.p','rb'))
+t_37C_240min_dict = ppp.load(open('D:/data/non_specific_search/ecoli_non_specific_search_poly_dict.p','rb'))
 test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
 predict_matrix_array = ppp.load(open('P62908_matrix_2d_array.p', 'rb'))
 
@@ -102,11 +109,11 @@ X_train, X_test, target_train, target_test = train_test_data_split(matrix,target
 # convert into 4d array for CNN
 # X_train, X_test = X_train.values.reshape(X_train.shape[0],15,43,1), X_test.values.reshape(X_test.shape[0],15,43,1)
 
-# convert in to 3d array for lstm
-# X_train, X_test, test_maxtrix,predict_matrix = X_train.reshape(X_train.shape[0],1,X_train.shape[1]), \
-#                                 X_test.reshape(X_test.shape[0],1,X_test.shape[1]), \
-#                                 test_maxtrix.reshape(test_maxtrix.shape[0],1,test_maxtrix.shape[1]), \
-#                                 predict_matrix.reshape(predict_matrix.shape[0],1,predict_matrix.shape[1])
+#convert in to 3d array for lstm
+X_train, X_test, test_maxtrix,predict_matrix = X_train.reshape(X_train.shape[0],1,X_train.shape[1]), \
+                                X_test.reshape(X_test.shape[0],1,X_test.shape[1]), \
+                                test_maxtrix.reshape(test_maxtrix.shape[0],1,test_maxtrix.shape[1]), \
+                                predict_matrix.reshape(predict_matrix.shape[0],1,predict_matrix.shape[1])
 
 
 print (X_train.shape)
@@ -132,7 +139,7 @@ history = model.fit(
     X_train,
     y_train,
     batch_size=64,
-    epochs=20,
+    epochs=10,
     # We pass some validation for
     # monitoring validation loss and metrics
     # at the end of each epoch
@@ -180,25 +187,27 @@ plt.show()
 # yhat_probs = model.predict(X_test, verbose=0)
 # print (yhat_probs)
 # predict crisp classes for test set
-yhat_classes = np.argmax(model.predict(test_maxtrix), axis=-1)
-# print (yhat_classes.shape)
+yhat_classes = np.argmax(model.predict(X_test), axis=-1)
+# print (model.predict(test_maxtrix))
+print (yhat_classes.shape)
 # print (model.predict(X_test))
-yhat_score = model.predict(test_maxtrix)[:,-1]
-# print (yhat_score)
-fpr_keras, tpr_keras, thresholds_keras = roc_curve(test_target, yhat_score)
+yhat_score = model.predict(X_test)[:,:,-1]  # probability of class 1 for each instance
+
+print (yhat_score)
+fpr_keras, tpr_keras, thresholds_keras = roc_curve(target_test, yhat_score)
 auc_keras = auc(fpr_keras, tpr_keras)
 print ('AUC: %f' % auc_keras)
 # precision tp / (tp + fp)
-precision = precision_score(test_target, yhat_classes)
+precision = precision_score(target_test, yhat_classes)
 print('Precision: %f' % precision)
 # recall: tp / (tp + fn)
-recall = recall_score(test_target, yhat_classes)
+recall = recall_score(target_test, yhat_classes)
 print('Recall: %f' % recall)
 # f1: 2 tp / (2 tp + fp + fn)
-f1 = f1_score(test_target, yhat_classes)
+f1 = f1_score(target_test, yhat_classes)
 print('F1 score: %f' % f1)
 
-classify_report = classification_report(test_target,yhat_classes)
+classify_report = classification_report(target_test,yhat_classes)
 print (classify_report)
 
 plt.plot(fpr_keras, tpr_keras, color='darkorange',
