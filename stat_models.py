@@ -205,7 +205,7 @@ if __name__=='__main__':
     # test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
     # predict_matrix = ppp.load(open('P62918_matrix_2d_array.p', 'rb'))
 
-    # print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
+    print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
     # print (Counter([v for v in test_dataset_dict.values()]))
     pd.set_option('display.max_columns', 1000)
     df_dummy = df_dummy_getter(t_37C_240min_dict)
