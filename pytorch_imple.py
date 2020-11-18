@@ -51,7 +51,7 @@ def cosine(t_max, eta_min=0):
 
     return scheduler
 
-t_37C_240min_dict = ppp.load(open('D:/data/non_specific_search/ecoli_non_specific_search_poly_dict.p','rb'))
+t_37C_240min_dict = ppp.load(open('tryp_37C_4h_cleavage_label_new.p','rb'))
 matrix,target = matrix_target(t_37C_240min_dict)
 matrix = custom_ohe(matrix)
 X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
