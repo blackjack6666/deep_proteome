@@ -51,7 +51,7 @@ def cosine(t_max, eta_min=0):
 
     return scheduler
 
-t_37C_240min_dict = ppp.load(open('tryp_37C_4h_cleavage_label_new.p','rb'))
+t_37C_240min_dict = ppp.load(open('D:/uic/lab/data/pickle_files/ecoli_non_specific_search_poly_dict.p','rb'))
 matrix,target = matrix_target(t_37C_240min_dict)
 matrix = custom_ohe(matrix)
 X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
@@ -79,6 +79,7 @@ n_epochs = 1000
 iterations_per_epoch = len(train_loader)
 best_acc = 0
 patience, trials = 100, 0
+history = []
 
 model = LSTMClassifier(input_dim, hidden_dim, layer_dim, output_dim)
 model = model.cuda()
@@ -106,14 +107,15 @@ for epoch in range(1, n_epochs + 1):
     for x_val, y_val in test_loader :
         x_val, y_val = [t.cuda() for t in (x_val, y_val)]
         out = model(x_val)
+        val_loss = criterion(out,y_val)
         preds = F.log_softmax(out, dim=1).argmax(dim=1)
         total += y_val.size(0)
         correct += (preds == y_val).sum().item()
 
     acc = correct / total
-
+    history.append((epoch,loss.item(),val_loss.item(), acc))
     if epoch % 5 == 0:
-        print(f'Epoch: {epoch:3d}. Loss: {loss.item():.4f}. Acc.: {acc:2.2%}')
+        print(f'Epoch: {epoch:3d}. Loss: {loss.item():.4f}. Val_loss: {val_loss.item():.4f}. Acc.: {acc:2.2%}')
 
     if acc > best_acc:
         trials = 0
@@ -127,6 +129,7 @@ for epoch in range(1, n_epochs + 1):
             print(f'Early stopping on epoch {epoch}')
             break
 
+ppp.dump(history, open('pytorch_history.p', 'wb'))
 # model = LSTMClassifier(input_dim, hidden_dim, layer_dim, output_dim)
 # model.load_state_dict(torch.load('best.pth'))
 # model.eval()
