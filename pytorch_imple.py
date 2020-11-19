@@ -55,10 +55,12 @@ t_37C_240min_dict = ppp.load(open('tryp_37C_4h_cleavage_label_new.p','rb'))
 matrix,target = matrix_target(t_37C_240min_dict)
 matrix = custom_ohe(matrix)
 X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
+X_train, X_test = X_train.reshape(X_train.shape[0],1,X_train.shape[1]), \
+                        X_test.reshape(X_test.shape[0], 1, X_test.shape[1])
 
 # convert numpy array data into tensor
-X_train_tensor,target_train_tensor = torch.from_numpy(X_train), torch.from_numpy(target_train)
-X_test_tensor, target_test_tensor = torch.from_numpy(X_test), torch.from_numpy(target_test)
+X_train_tensor,target_train_tensor = torch.Tensor(X_train), torch.tensor(target_train,dtype=torch.long)
+X_test_tensor, target_test_tensor = torch.Tensor(X_test), torch.tensor(target_test,dtype=torch.long)
 
 train_tensor = TensorDataset(X_train_tensor,target_train_tensor)
 train_loader = DataLoader(dataset=train_tensor, batch_size=64, shuffle=True)
@@ -66,10 +68,10 @@ test_tensor = TensorDataset(X_test_tensor,target_test_tensor)
 test_loader = DataLoader(dataset=test_tensor, batch_size=64, shuffle=True)
 
 
-input_dim = 10
+input_dim = 682
 hidden_dim = 256
 layer_dim = 3
-output_dim = 9
+output_dim = 2
 seq_dim = 128
 
 lr = 0.0005
@@ -120,6 +122,7 @@ for epoch in range(1, n_epochs + 1):
         print(f'Epoch {epoch} best model saved with accuracy: {best_acc:2.2%}')
     else:
         trials += 1
+        # if try 100 times and still no better accuracy, terminate the training
         if trials >= patience:
             print(f'Early stopping on epoch {epoch}')
             break
