@@ -70,7 +70,7 @@ test_loader = DataLoader(dataset=test_tensor, batch_size=64, shuffle=True)
 
 input_dim = 682
 hidden_dim = 256
-layer_dim = 3
+layer_dim = 2
 output_dim = 2
 seq_dim = 128
 
@@ -126,3 +126,7 @@ for epoch in range(1, n_epochs + 1):
         if trials >= patience:
             print(f'Early stopping on epoch {epoch}')
             break
+
+# model = LSTMClassifier(input_dim, hidden_dim, layer_dim, output_dim)
+# model.load_state_dict(torch.load('best.pth'))
+# model.eval()
