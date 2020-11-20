@@ -198,7 +198,7 @@ def roc_curve(trained_clf,X_test,y_test):
 if __name__=='__main__':
     from collections import Counter
     import time
-    from parameters import custom_ohe
+    from parameters import custom_ohe, hydrophobicity_cal,matrix_addup
 
     t_37C_240min_dict = ppp.load(open('D:/data/non_specific_search/ecoli_non_specific_search_poly_dict.p','rb'))
 
@@ -211,8 +211,13 @@ if __name__=='__main__':
     df_dummy = df_dummy_getter(t_37C_240min_dict)
     # print (df_dummy.head())
 
+    # training data preparation
     matrix,target = matrix_target(t_37C_240min_dict)
-    matrix = custom_ohe(matrix)
+    hydro_matrix = hydrophobicity_cal(matrix)
+    ohe_matrix = custom_ohe(matrix)
+    matrix = ohe_matrix
+    # matrix = matrix_addup(ohe_matrix,hydro_matrix)
+
     # encoder,matrix = ohe(matrix)
     # print (matrix.shape)
     # # test set from different dataset
@@ -226,7 +231,7 @@ if __name__=='__main__':
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
     time_start = time.time()
     svm_clf = random_forest_classifer(X_train,target_train)
-    ppp.dump(svm_clf, open('randomf_ecoli_non_spec_search.p','wb'))
+    # ppp.dump(svm_clf, open('randomf_ecoli_non_spec_search.p','wb'))
     print('model trained time:',time.time() - time_start)
     # score = cross_validate(svm_clf,matrix,target)
     # print (score)
