@@ -19,6 +19,9 @@ matrisome_cov_csv = 'D:/uic/lab/data/naba/matrisome coverage.xlsx'
 df = pd.read_excel(matrisome_cov_csv)
 ecm_class = set(df['class'].tolist())
 
+df = df.drop_duplicates()
+print (df.shape)
+
 # subplots
 rows = [0,0,0,1,1,1]
 colums = [0,1,2,0,1,2]
@@ -29,7 +32,7 @@ for each,row,col in zip(ecm_class,rows,colums):
     print (statistics.mean(cov_list),statistics.median(cov_list))
     axs[row,col].hist(cov_list,bins=50,color='black')
     axs[row,col].set_xticks(np.arange(0,1.2,0.2))
-    axs[row,col].set_ylim(0,3500)
+    #axs[row,col].set_ylim(0,3500)
     axs[row,col].set_xlabel('sequence coverage')
     axs[row,col].set_ylabel('frequency')
     axs[row,col].set_title(each)
