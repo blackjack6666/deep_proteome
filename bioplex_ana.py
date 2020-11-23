@@ -31,9 +31,10 @@ for each,row,col in zip(ecm_class,rows,colums):
     cov_list = sub_df['sequence_cov'].tolist()
     print (statistics.mean(cov_list),statistics.median(cov_list))
     axs[row,col].hist(cov_list,bins=50,color='black')
-    axs[row,col].set_xticks(np.arange(0,1.2,0.2))
+    axs[row,col].set_xticks(np.arange(0,110,10))
+    axs[row,col].set_xticklabels(np.arange(0,110,10),rotation=45)
     #axs[row,col].set_ylim(0,3500)
-    axs[row,col].set_xlabel('sequence coverage')
+    axs[row,col].set_xlabel('sequence coverage%')
     axs[row,col].set_ylabel('frequency')
     axs[row,col].set_title(each)
 

@@ -55,12 +55,15 @@ t_37C_240min_dict = ppp.load(open('D:/uic/lab/data/pickle_files/ecoli_non_specif
 matrix,target = matrix_target(t_37C_240min_dict)
 matrix = custom_ohe(matrix)
 X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
-X_train, X_test = X_train.reshape(X_train.shape[0],1,X_train.shape[1]), \
-                        X_test.reshape(X_test.shape[0], 1, X_test.shape[1])
+# X_train, X_test = X_train.reshape(X_train.shape[0],31,int(X_train.shape[1]/31)), \
+#                         X_test.reshape(X_test.shape[0], 31, int(X_test.shape[1]/31))
 
 # convert numpy array data into tensor
-X_train_tensor,target_train_tensor = torch.Tensor(X_train), torch.tensor(target_train,dtype=torch.long)
-X_test_tensor, target_test_tensor = torch.Tensor(X_test), torch.tensor(target_test,dtype=torch.long)
+X_train_tensor,target_train_tensor = torch.tensor(X_train,dtype=torch.float32), torch.tensor(target_train,dtype=torch.long)
+X_test_tensor, target_test_tensor = torch.tensor(X_test,dtype=torch.float32), torch.tensor(target_test,dtype=torch.long)
+X_train_tensor = torch.reshape(X_train_tensor,(X_train_tensor.shape[0],31,22)) # samples, timesteps, number of features
+X_test_tensor = torch.reshape(X_test_tensor,(X_test_tensor.shape[0],31,22))
+
 
 train_tensor = TensorDataset(X_train_tensor,target_train_tensor)
 train_loader = DataLoader(dataset=train_tensor, batch_size=64, shuffle=True)
@@ -68,14 +71,14 @@ test_tensor = TensorDataset(X_test_tensor,target_test_tensor)
 test_loader = DataLoader(dataset=test_tensor, batch_size=64, shuffle=True)
 
 
-input_dim = 682
-hidden_dim = 256
+input_dim = 22  # length of one-hot encoding 31mer
+hidden_dim = 16
 layer_dim = 2
 output_dim = 2
 seq_dim = 128
 
 lr = 0.0005
-n_epochs = 1000
+n_epochs = 100
 iterations_per_epoch = len(train_loader)
 best_acc = 0
 patience, trials = 100, 0
