@@ -9,14 +9,14 @@ import multiprocessing_naive_algorithym
 
 #custom_db build
 
-file_path = 'C:/uic/lab/data/naba/matrisome coverage.xlsx'
-
-df = pd.read_excel(file_path)
-df = df.drop_duplicates()
-print(df.shape)
-
-ecm_protein_id_set = set(df['protein_id'].to_list())
-print (len(ecm_protein_id_set))
+# file_path = 'C:/uic/lab/data/naba/matrisome coverage.xlsx'
+#
+# df = pd.read_excel(file_path)
+# df = df.drop_duplicates()
+# print(df.shape)
+#
+# ecm_protein_id_set = set(df['protein_id'].to_list())
+# print (len(ecm_protein_id_set))
 #
 # fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000000589_mouse.fasta'
 # protein_dict = fasta_reader(fasta_path)
@@ -78,41 +78,84 @@ print (len(ecm_protein_id_set))
 
 # collagen length distribution
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
+#
+# file_path = 'C:/uic/lab/data/naba/matrisome coverage.xlsx'
+# human_fasta = 'C:/uic/lab/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
+# mouse_fasta = 'C:/uic/lab/data/proteome_fasta/uniprot-proteome_UP000000589_mouse.fasta'
+#
+# human_dict,mouse_dict = fasta_reader(human_fasta), fasta_reader(mouse_fasta)
+#
+# df = pd.read_excel(file_path)
+# df = df.drop_duplicates()
+# print (df.shape)
+# df_human = df[df['protein_id'].isin(human_dict)]
+# print (df_human.shape)
+# df_mouse = df[df['protein_id'].isin(mouse_dict)]
+# print (df_mouse.shape)
+#
+# human_collagen_list = df_human[df_human['category']=='Collagens']['protein_id'].tolist()
+# mouse_collagen_list = df_mouse[df_mouse['category']=='Collagens']['protein_id'].tolist()
+#
+# human_collagen_length_list = [len(human_dict[each]) for each in human_collagen_list]
+# mouse_collagen_length_list = [len(mouse_dict[each]) for each in mouse_collagen_list]
+# print (np.mean(human_collagen_length_list),np.mean(mouse_collagen_length_list))
+#
+#
+#
+# human_core_list = [len(human_dict[each]) for each in df_human[df_human['loc']=='Core matrisome']['protein_id'].tolist()]
+# mouse_core_list = [len(mouse_dict[each]) for each in df_mouse[df_mouse['loc']=='Core matrisome']['protein_id'].tolist()]
+# print (np.mean(human_core_list),np.mean(mouse_core_list))
+#
+# fig,(ax0,ax1) = plt.subplots(1,2,figsize=(15,10))
+# n_bins = 50
+#
+# ax0.hist(human_core_list,bins=n_bins)
+# ax0.set_title('human core matrisome length dist')
+# ax1.hist(mouse_core_list,bins=n_bins)
+# ax1.set_title('mouse core matrisome length dist')
+#
+# plt.show()
 
-file_path = 'C:/uic/lab/data/naba/matrisome coverage.xlsx'
-human_fasta = 'C:/uic/lab/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
-mouse_fasta = 'C:/uic/lab/data/proteome_fasta/uniprot-proteome_UP000000589_mouse.fasta'
+from glob import glob
+from collections import defaultdict
+import os
+import aho_corasick
+from multiprocessing_naive_algorithym import extract_UNID_and_seq, creat_total_seq_line, creat_ID_pep_dict,read_position_ID_into_dict
+from tsv_reader import peptide_counting, map_psm_file, protein_info_from_combined, protein_info_from_fasta
+from protein_coverage import fasta_reader
+from pandas import ExcelWriter
 
-human_dict,mouse_dict = fasta_reader(human_fasta), fasta_reader(mouse_fasta)
+fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000000589_mouse.fasta'
+protein_dict = fasta_reader(fasta_path)
+id_list,seq_list = extract_UNID_and_seq(protein_dict)
+seq_line = creat_total_seq_line(seq_list)
+pos_id_dict = read_position_ID_into_dict(id_list,seq_list,seq_line)
+protein_info_dict = protein_info_from_fasta(fasta_path)
+print ('done')
 
-df = pd.read_excel(file_path)
-df = df.drop_duplicates()
-print (df.shape)
-df_human = df[df['protein_id'].isin(human_dict)]
-print (df_human.shape)
-df_mouse = df[df['protein_id'].isin(mouse_dict)]
-print (df_mouse.shape)
-
-human_collagen_list = df_human[df_human['category']=='Collagens']['protein_id'].tolist()
-mouse_collagen_list = df_mouse[df_mouse['category']=='Collagens']['protein_id'].tolist()
-
-human_collagen_length_list = [len(human_dict[each]) for each in human_collagen_list]
-mouse_collagen_length_list = [len(mouse_dict[each]) for each in mouse_collagen_list]
-print (np.mean(human_collagen_length_list),np.mean(mouse_collagen_length_list))
+base_path = 'D:/data/Naba_deep_matrisome/11_11_combined_search/'
+folders = [f for f in os.listdir(base_path) if '.' not in f]
+psm_path_list = [base_path+each+'/psm.tsv' for each in folders]
 
 
+with ExcelWriter('D:/data/Naba_deep_matrisome/1218_protein_ids.xlsx') as writer:
+    for each_psm_path in psm_path_list:
+        file_pep_dict = map_psm_file(each_psm_path)
+        # print ([(k,len(file_pep_dict[k])) for k in file_pep_dict])
+        for each_file in file_pep_dict:
+            pep_list = list(file_pep_dict[each_file])
+            automaton = aho_corasick.automaton_trie(pep_list)
+            aho_result = aho_corasick.automaton_matching(automaton,seq_line)
+            id_pep_dict = creat_ID_pep_dict(aho_result,pos_id_dict)
+            protein_id_ls = [k for k in id_pep_dict]
 
-human_core_list = [len(human_dict[each]) for each in df_human[df_human['loc']=='Core matrisome']['protein_id'].tolist()]
-mouse_core_list = [len(mouse_dict[each]) for each in df_mouse[df_mouse['loc']=='Core matrisome']['protein_id'].tolist()]
-print (np.mean(human_core_list),np.mean(mouse_core_list))
+            info_list = [[prot,
+                          protein_info_dict[prot][0],
+                          protein_info_dict[prot][1]]
+                         for prot in protein_id_ls]
+            df = pd.DataFrame(info_list, columns=['protein ID', 'gene name', 'description'])
+            df.to_excel(writer,'%s' % each_file)
 
-fig,(ax0,ax1) = plt.subplots(1,2,figsize=(15,10))
-n_bins = 50
 
-ax0.hist(human_core_list,bins=n_bins)
-ax0.set_title('human core matrisome length dist')
-ax1.hist(mouse_core_list,bins=n_bins)
-ax1.set_title('mouse core matrisome length dist')
 
-plt.show()

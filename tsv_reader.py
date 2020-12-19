@@ -152,6 +152,40 @@ def protein_info_from_combined(combined_protein_tsv):
             info_dict[protein_id] = (protein_name,gene_name,description)
     return info_dict
 
+def protein_info_from_fasta(fasta_path):
+    """
+    get protein name, gene name, entry name, and description
+    :param fasta_path:
+    :return:
+    """
+    info_dict = {}
+    with open(fasta_path,'r') as f:
+        for line in f:
+            if line.startswith('>'):
+                protein_id = line.split('|')[1]
+                # print (protein_id)
+                description = ' '.join(line.split('OS=')[0].split(' ')[1:])
+
+                gene_name = line.split('GN=')[1].split(' ')[0] if 'GN=' in line else 'N/A'
+                info_dict[protein_id] = (gene_name,description)
+    return info_dict
+
+def map_psm_file(psm_tsv):
+    """
+    map each peptide to the file where it's from
+    :param psm_tsv:
+    :return:
+    """
+
+    file_peptide_dict = defaultdict(set)
+    with open(psm_tsv,'r') as f:
+        next(f)
+        for line in f:
+            line_split = line.split('\t')
+            file_name,psm = line_split[0].split('.')[0],line_split[2]
+            file_peptide_dict[file_name].add(psm)
+    return file_peptide_dict
+
 if __name__=="__main__":
     from glob import glob
     import numpy as np
@@ -172,12 +206,12 @@ if __name__=="__main__":
     for each in info_dict:
         print (each,len(info_dict[each]))
 
-    with ExcelWriter('D:/data/Naba_deep_matrisome/11_11_protein_ids.xlsx') as writer:
-        for each in info_dict:
-            info_list = [[prot,info_dict[each][prot],protein_info_dict[prot][0],protein_info_dict[prot][1],protein_info_dict[prot][2]]
-                         for prot in info_dict[each]]
-            df = pd.DataFrame(info_list, columns=['protein id', 'spectra count', 'entry name', 'gene name', 'description'])
-            df.to_excel(writer,'%s' % each)
+    # with ExcelWriter('D:/data/Naba_deep_matrisome/11_11_protein_ids.xlsx') as writer:
+    #     for each in info_dict:
+    #         info_list = [[prot,info_dict[each][prot],protein_info_dict[prot][0],protein_info_dict[prot][1],protein_info_dict[prot][2]]
+    #                      for prot in info_dict[each]]
+    #         df = pd.DataFrame(info_list, columns=['protein id', 'spectra count', 'entry name', 'gene name', 'description'])
+    #         df.to_excel(writer,'%s' % each)
     # from calculations_and_plot import miss_cleavage_identify
     # for each_file in file_list:
     #     print (each_file)
