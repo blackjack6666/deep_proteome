@@ -27,29 +27,29 @@
 #
 # venn_diagram_gen(venn_dict, title='pep comparison')
 
-from data_preprocess2 import *
-import pickle as ppp
-from tsv_reader import peptide_counting,psm_reader
-import numpy as np
-
-fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000000589_mouse.fasta'
-proteome_dict = fasta_reader2(fasta_path)
-protein_list = ['P62918']
-protein_miss_clea_loc_dict = cleavage_site_identify(protein_list, proteome_dict, 'trypsin')
-
-# therotical
-polymers_dict = polymer_miss_cleav_charc(protein_miss_clea_loc_dict, proteome_dict)
-polymers_list = [polymers_dict[each][each_i] for each in polymers_dict for each_i in polymers_dict[each]]
-
-matrix = []
-for each_polymer in polymers_list:
-    one_d_arry = []
-    for each_aa in each_polymer:
-        one_d_arry.append(each_aa)
-    matrix.append(one_d_arry)
-matrix = np.array(matrix)
-print (matrix.shape)
-ppp.dump(matrix, open('P62918_matrix_2d_array.p', 'wb'))
+# from data_preprocess2 import *
+# import pickle as ppp
+# from tsv_reader import peptide_counting,psm_reader
+# import numpy as np
+#
+# fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000000589_mouse.fasta'
+# proteome_dict = fasta_reader2(fasta_path)
+# protein_list = ['P62918']
+# protein_miss_clea_loc_dict = cleavage_site_identify(protein_list, proteome_dict, 'trypsin')
+#
+# # therotical
+# polymers_dict = polymer_miss_cleav_charc(protein_miss_clea_loc_dict, proteome_dict)
+# polymers_list = [polymers_dict[each][each_i] for each in polymers_dict for each_i in polymers_dict[each]]
+#
+# matrix = []
+# for each_polymer in polymers_list:
+#     one_d_arry = []
+#     for each_aa in each_polymer:
+#         one_d_arry.append(each_aa)
+#     matrix.append(one_d_arry)
+# matrix = np.array(matrix)
+# print (matrix.shape)
+# ppp.dump(matrix, open('P62918_matrix_2d_array.p', 'wb'))
 
 
 # peptide_tsv_path = "D:/data/Naba_deep_matrisome/10_30/search_result/18_2_dec/peptide.tsv"
@@ -61,3 +61,18 @@ ppp.dump(matrix, open('P62918_matrix_2d_array.p', 'wb'))
 # cleavage_site_label_dict, protein_poly_dict, uncertain_polymer_no = cleavage_site_label(protein_polymer_sc_dict, protein_polymer_convert(polymers_dict))
 # print (cleavage_site_label_dict)
 # ppp.dump(cleavage_site_label_dict, open('P62918_polymer_dict.p', 'wb'))
+
+import re
+with open('D:/data/pats/new 3.txt','r') as f:
+    for line in f:
+        # match = re.findall('Xenopus\w?\_[a-zA-Z]+',line)
+        # # print (match)
+        # for each in match:
+        #     print (each.split('_')[1])
+
+
+        if 'trypsin' in line or 'lysc' in line:
+            print (line.split('_')[2]+' ,'+line.split('_')[3])
+
+        else:
+            print (line.split('_')[2])
