@@ -71,8 +71,4 @@ with open('D:/data/pats/new 3.txt','r') as f:
         #     print (each.split('_')[1])
 
 
-        if 'trypsin' in line or 'lysc' in line:
-            print (line.split('_')[2]+' ,'+line.split('_')[3])
-
-        else:
-            print (line.split('_')[2])
+        print (line.split('_')[-2]+'\n')
