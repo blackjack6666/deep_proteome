@@ -122,7 +122,7 @@ from collections import defaultdict
 import os
 import aho_corasick
 from multiprocessing_naive_algorithym import extract_UNID_and_seq, creat_total_seq_line, creat_ID_pep_dict,read_position_ID_into_dict
-from tsv_reader import peptide_counting, map_psm_file, protein_info_from_combined, protein_info_from_fasta
+from tsv_reader import peptide_counting, map_psm_file, protein_info_from_combined, protein_info_from_fasta, psm_reader
 from protein_coverage import fasta_reader
 from pandas import ExcelWriter
 
@@ -136,12 +136,15 @@ print ('done')
 
 
 # write protein IDs from different exp into excel
-base_path = 'D:/data/Naba_deep_matrisome/010721_search/'
+base_path = 'D:/data/Naba_deep_matrisome/01102021/'
 folders = [f for f in os.listdir(base_path) if '.' not in f]
 psm_path_list = [base_path+each+'/psm.tsv' for each in folders]
 pep_path_list = [base_path+each+'/peptide.tsv' for each in folders]
+protein_path_list = [base_path+each+'/protein.tsv' for each in folders]
 
-with ExcelWriter('D:/data/Naba_deep_matrisome/010721_protein_ids.xlsx') as writer:
+
+
+with ExcelWriter('D:/data/Naba_deep_matrisome/011021_protein_ids.xlsx') as writer:
     for pep_path in pep_path_list:
         file_name = pep_path.split('/')[-2]
         print (file_name)
