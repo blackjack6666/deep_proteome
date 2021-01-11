@@ -133,6 +133,38 @@ def combined_proteintsv_map(combined_protein_tsv):
     return info_dict
 
 
+def plot_prot_combined_tsv(combined_protein_tsv):
+    """
+    plot identified proteins from combined protein tsv file
+    :param combined_protein_tsv:
+    :return:
+    """
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    file_path = 'D:/data/Naba_deep_matrisome/matrisome coverage.xlsx'
+    df_cov = pd.read_excel(file_path).drop_duplicates()
+    ecm_prot_list = df_cov['protein_id']
+
+    df = pd.read_csv(combined_protein_tsv,delimiter='\t')
+    filt_col_list = [each for each in df.columns.tolist()
+                     if 'Total Spectral Count' in each and 'Summarized Total' not in each][7:]
+    filt_new_col_list = [each.split(' ')[0] for each in filt_col_list]
+    filt_col_list.insert(0,'Protein ID')
+    print (filt_col_list)
+
+    filt_df = df[filt_col_list]
+    filt_df = filt_df[filt_df['Protein ID'].isin(ecm_prot_list)]
+    print (filt_df.shape)
+    filt_df = filt_df.set_index('Protein ID')
+    filt_df.columns = filt_new_col_list
+    print(filt_df.loc[filt_df['18_2B05'].idxmax()])
+    # print (filt_df.head())
+    #
+    filt_df.T.plot.line(legend=False,figsize=(15,8))
+    # plt.xticks(rotation=30)
+    plt.show()
+
 def protein_info_from_combined(combined_protein_tsv):
     """
     get protein name, gene name, entry name, gene name and Description
