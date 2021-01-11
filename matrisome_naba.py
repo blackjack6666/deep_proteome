@@ -122,43 +122,47 @@ from collections import defaultdict
 import os
 import aho_corasick
 from multiprocessing_naive_algorithym import extract_UNID_and_seq, creat_total_seq_line, creat_ID_pep_dict,read_position_ID_into_dict
-from tsv_reader import peptide_counting, map_psm_file, protein_info_from_combined, protein_info_from_fasta, psm_reader
+from tsv_reader import peptide_counting, map_psm_file, protein_info_from_combined, protein_info_from_fasta, psm_reader, combined_proteintsv_map
 from protein_coverage import fasta_reader
 from pandas import ExcelWriter
 
-fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
-protein_dict = fasta_reader(fasta_path)
-id_list,seq_list = extract_UNID_and_seq(protein_dict)
-seq_line = creat_total_seq_line(seq_list)
-pos_id_dict = read_position_ID_into_dict(id_list,seq_list,seq_line)
-protein_info_dict = protein_info_from_fasta(fasta_path)
-print ('done')
+combined_prot = 'D:/data/Naba_deep_matrisome/01102021/combined_protein.tsv'
+combined_protein_dict = combined_proteintsv_map(combined_prot)
+print (len(combined_protein_dict['18_2B20']))
 
-
-# write protein IDs from different exp into excel
-base_path = 'D:/data/Naba_deep_matrisome/01102021/'
-folders = [f for f in os.listdir(base_path) if '.' not in f]
-psm_path_list = [base_path+each+'/psm.tsv' for each in folders]
-pep_path_list = [base_path+each+'/peptide.tsv' for each in folders]
-protein_path_list = [base_path+each+'/protein.tsv' for each in folders]
-
-
-
-with ExcelWriter('D:/data/Naba_deep_matrisome/011021_protein_ids.xlsx') as writer:
-    for pep_path in pep_path_list:
-        file_name = pep_path.split('/')[-2]
-        print (file_name)
-        pep_list = peptide_counting(pep_path)
-        automaton = aho_corasick.automaton_trie(pep_list)
-        aho_result = aho_corasick.automaton_matching(automaton, seq_line)
-        id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
-        protein_id_ls = [k for k in id_pep_dict]
-        info_list = [[prot,
-                      protein_info_dict[prot][0],
-                      protein_info_dict[prot][1]]
-                      for prot in protein_id_ls]
-        df = pd.DataFrame(info_list, columns=['protein ID', 'gene name', 'description'])
-        df.to_excel(writer, '%s' % file_name)
+# fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
+# protein_dict = fasta_reader(fasta_path)
+# id_list,seq_list = extract_UNID_and_seq(protein_dict)
+# seq_line = creat_total_seq_line(seq_list)
+# pos_id_dict = read_position_ID_into_dict(id_list,seq_list,seq_line)
+# protein_info_dict = protein_info_from_fasta(fasta_path)
+# print ('done')
+#
+#
+# # write protein IDs from different exp into excel
+# base_path = 'D:/data/Naba_deep_matrisome/01102021/'
+# folders = [f for f in os.listdir(base_path) if '.' not in f]
+# psm_path_list = [base_path+each+'/psm.tsv' for each in folders]
+# pep_path_list = [base_path+each+'/peptide.tsv' for each in folders]
+# protein_path_list = [base_path+each+'/protein.tsv' for each in folders]
+#
+#
+#
+# with ExcelWriter('D:/data/Naba_deep_matrisome/011021_protein_ids.xlsx') as writer:
+#     for pep_path in pep_path_list:
+#         file_name = pep_path.split('/')[-2]
+#         print (file_name)
+#         pep_list = peptide_counting(pep_path)
+#         automaton = aho_corasick.automaton_trie(pep_list)
+#         aho_result = aho_corasick.automaton_matching(automaton, seq_line)
+#         id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
+#         protein_id_ls = [k for k in id_pep_dict]
+#         info_list = [[prot,
+#                       protein_info_dict[prot][0],
+#                       protein_info_dict[prot][1]]
+#                       for prot in protein_id_ls]
+#         df = pd.DataFrame(info_list, columns=['protein ID', 'gene name', 'description'])
+#         df.to_excel(writer, '%s' % file_name)
 
 # with ExcelWriter('D:/data/Naba_deep_matrisome/1218_protein_ids.xlsx') as writer:
 #     for each_psm_path in psm_path_list:
