@@ -7,8 +7,16 @@ from collections import defaultdict
 import multiprocessing_naive_algorithym
 from aho_corasick import automaton_trie, automaton_matching
 import glob
+from parameters import aa_mass_table
 
 
+def protein_mass(protein_seq):
+    mass = 0
+    for aa in protein_seq:
+        mass += aa_mass_table[aa]
+    mass += 18.01528 # add the weight of water
+
+    return mass
 
 def coverage_calculation(zero_line, sep_pos_array, ID_list):
     coverage_list_ordered = [] # append the coverage starting from left of zeroline all the way to right
