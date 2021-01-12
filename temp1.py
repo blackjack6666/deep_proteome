@@ -63,24 +63,16 @@
 # ppp.dump(cleavage_site_label_dict, open('P62918_polymer_dict.p', 'wb'))
 
 import re
-# with open('D:/data/pats/new 3.txt','r') as f:
-#     for line in f:
-#         # match = re.findall('Xenopus\w?\_[a-zA-Z]+',line)
-#         # # print (match)
-#         # for each in match:
-#         #     print (each.split('_')[1])
-#
-#
-#         print (line.split('_')[-2]+'\n')
+with open('D:/data/pats/new 3.txt','r') as f:
+    for line in f:
+        # match = re.findall('Xenopus\w?\_[a-zA-Z]+',line)
+        # # print (match)
+        # for each in match:
+        #     print (each.split('_')[1])
 
-import glob
-from fasta_reverse import fasta_reverse_generator
-base_path = 'D:/data/pats/fasta_files/'
 
-fasta_files = glob.glob(base_path+'*.fasta')
-for each_fasta in fasta_files:
-    print (each_fasta)
+        if 'WILDTYPE' in line:
+            print ('healthy')
+        elif 'R9C' in line:
+            print ('R9C mutation')
 
-    species_name = '_'.join(each_fasta.split('\\')[-1].split('_')[2:-1])
-    print (each_fasta.split('\\')[0]+'/pats_'+species_name+'_01082021_reverse.fasta')
-    fasta_reverse_generator(each_fasta,each_fasta.split('\\')[0]+'/pats_'+species_name+'_01082021_reverse.fasta')

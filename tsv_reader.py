@@ -148,7 +148,7 @@ def plot_prot_combined_tsv(combined_protein_tsv):
 
     df = pd.read_csv(combined_protein_tsv,delimiter='\t')
     filt_col_list = [each for each in df.columns.tolist()
-                     if 'Total Spectral Count' in each and 'Summarized Total' not in each][7:]
+                     if 'Total Spectral Count' in each and 'Summarized Total' not in each][:7]
     filt_new_col_list = [each.split(' ')[0] for each in filt_col_list]
     filt_col_list.insert(0,'Protein ID')
     print (filt_col_list)
@@ -158,7 +158,10 @@ def plot_prot_combined_tsv(combined_protein_tsv):
     print (filt_df.shape)
     filt_df = filt_df.set_index('Protein ID')
     filt_df.columns = filt_new_col_list
-    print(filt_df.loc[filt_df['18_2B05'].idxmax()])
+    print (filt_df.columns)
+    filt_df = filt_df.reindex(['163_3B_05','163_3B1','163_3B2','163_3B4','163_3B18','163_3B20','163_3A'],axis=1)
+    print (filt_df.columns)
+    # print(filt_df.loc[filt_df['18_2B05'].idxmax()])
     # print (filt_df.head())
     #
     filt_df.T.plot.line(legend=False,figsize=(15,8))
