@@ -71,8 +71,9 @@ with open('D:/data/pats/new 3.txt','r') as f:
         #     print (each.split('_')[1])
 
 
-        if 'WILDTYPE' in line:
-            print ('healthy')
-        elif 'R9C' in line:
-            print ('R9C mutation')
-
+        if 'adlt' in line or 'dult' in line:
+            print ('adult')
+        elif 'Larva' in line or 'larval' in line:
+            print ('larval')
+        elif 'upa' in line:
+            print ('pupal')

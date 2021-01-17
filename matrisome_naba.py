@@ -136,7 +136,8 @@ from pandas import ExcelWriter
 
 combined_prot = 'D:/data/Naba_deep_matrisome/01102021/combined_protein.tsv'
 combined_protein_dict = combined_proteintsv_map(combined_prot)
-# plot_prot_combined_tsv(combined_prot)
+print (combined_protein_dict['163_3B20']['A0A087WR50'])
+plot_prot_combined_tsv(combined_prot)
 # print (len(combined_protein_dict['18_2B20']))
 # file_list = [f for f in combined_protein_dict]
 # print (file_list)
@@ -145,21 +146,21 @@ combined_protein_dict = combined_proteintsv_map(combined_prot)
 #              '163_3B20': [prot for prot in combined_protein_dict['163_3B20'] if prot in ecm_prot_list]}
 # venn_diagram_gen(venn_dict)
 
-fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
-protein_dict = fasta_reader(fasta_path)
-id_list,seq_list = extract_UNID_and_seq(protein_dict)
-seq_line = creat_total_seq_line(seq_list)
-pos_id_dict = read_position_ID_into_dict(id_list,seq_list,seq_line)
-protein_info_dict = protein_info_from_fasta(fasta_path)
-print ('done')
-#
-#
-# write protein IDs from different exp into excel
-base_path = 'D:/data/Naba_deep_matrisome/01102021/'
-folders = [f for f in os.listdir(base_path) if '.' not in f]
-psm_path_list = [base_path+each+'/psm.tsv' for each in folders]
-pep_path_list = [base_path+each+'/peptide.tsv' for each in folders]
-protein_path_list = [base_path+each+'/protein.tsv' for each in folders]
+# fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
+# protein_dict = fasta_reader(fasta_path)
+# id_list,seq_list = extract_UNID_and_seq(protein_dict)
+# seq_line = creat_total_seq_line(seq_list)
+# pos_id_dict = read_position_ID_into_dict(id_list,seq_list,seq_line)
+# protein_info_dict = protein_info_from_fasta(fasta_path)
+# print ('done')
+# #
+# #
+# # write protein IDs from different exp into excel
+# base_path = 'D:/data/Naba_deep_matrisome/01102021/'
+# folders = [f for f in os.listdir(base_path) if '.' not in f]
+# psm_path_list = [base_path+each+'/psm.tsv' for each in folders]
+# pep_path_list = [base_path+each+'/peptide.tsv' for each in folders]
+# protein_path_list = [base_path+each+'/protein.tsv' for each in folders]
 #
 #
 #
@@ -198,40 +199,42 @@ protein_path_list = [base_path+each+'/protein.tsv' for each in folders]
 #             df.to_excel(writer,'%s' % each_file)
 
 
-# dataframe for Dash build, only include ecm proteins
-file_name_number_dict = {pep_tsv.split('/')[-2]:i for pep_tsv, i in zip(pep_path_list,range(len(pep_path_list)))}
+def dash_dataframe(pep_path_list,psm_path_list,protein_dict,ecm_prot_list):
+
+    file_name_number_dict = {pep_tsv.split('/')[-2]:i for pep_tsv, i in zip(pep_path_list,range(len(pep_path_list)))}
+    id_list, seq_list = extract_UNID_and_seq(protein_dict)
+    seq_line = creat_total_seq_line(seq_list)
+    pos_id_dict = read_position_ID_into_dict(id_list, seq_list, seq_line)
+
+    info_list = []
+    for pep_tsv,psm_tsv in zip(pep_path_list,psm_path_list):
+        file_name = pep_tsv.split('/')[-2]
+        print (file_name)
+        pep_list = peptide_counting(pep_tsv)
+        automaton = aho_corasick.automaton_trie(pep_list)
+        aho_result = aho_corasick.automaton_matching(automaton, seq_line)
+        coverage_dict = identified_proteome_cov(aho_result,protein_dict)[1]
+        id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
+        psm_dict = psm_reader(psm_tsv)[0]
+        prot_spec_dict = {}
+        for id in id_pep_dict:
+            spec = 0
+            for pep in id_pep_dict[id]:
+                spec+=psm_dict[pep]
+            prot_spec_dict[id] = spec
+        protein_id_ls = [k for k in id_pep_dict if k in ecm_prot_list]
+
+        file_list = [[prot,
+                      len(protein_dict[prot]),
+                      coverage_dict[prot],
+                      ecm_info_dict[prot][0],
+                      prot_spec_dict[prot],
+                      ecm_info_dict[prot][2],
+                      file_name,
+                      file_name_number_dict[file_name]] for prot in protein_id_ls]
+        info_list += file_list
 
 
-info_list = []
-for pep_tsv,psm_tsv in zip(pep_path_list,psm_path_list):
-    file_name = pep_tsv.split('/')[-2]
-    print (file_name)
-    pep_list = peptide_counting(pep_tsv)
-    automaton = aho_corasick.automaton_trie(pep_list)
-    aho_result = aho_corasick.automaton_matching(automaton, seq_line)
-    coverage_dict = identified_proteome_cov(aho_result,protein_dict)[1]
-    id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
-    psm_dict = psm_reader(psm_tsv)[0]
-    prot_spec_dict = {}
-    for id in id_pep_dict:
-        spec = 0
-        for pep in id_pep_dict[id]:
-            spec+=psm_dict[pep]
-        prot_spec_dict[id] = spec
-    protein_id_ls = [k for k in id_pep_dict if k in ecm_prot_list]
 
-    prot_psm_dict = {prot for prot in protein_id_ls}
-    file_list = [[prot,
-                  len(protein_dict[prot]),
-                  coverage_dict[prot],
-                  ecm_info_dict[prot][0],
-                  prot_spec_dict[prot],
-                  ecm_info_dict[prot][2],
-                  file_name,
-                  file_name_number_dict[file_name]] for prot in protein_id_ls]
-    info_list += file_list
-
-
-
-info_df = pd.DataFrame(info_list, columns=['protein_id','length','coverage','gene','spec_count','ecm_class','file_name', 'file_number'])
-info_df.to_csv('D:/data/Naba_deep_matrisome/01102021/dash_info.csv')
+    info_df = pd.DataFrame(info_list, columns=['protein_id','length','coverage','gene','spec_count','ecm_class','file_name', 'file_number'])
+    info_df.to_csv('D:/data/Naba_deep_matrisome/01102021/dash_info.csv')

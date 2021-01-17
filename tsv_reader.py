@@ -140,6 +140,7 @@ def plot_prot_combined_tsv(combined_protein_tsv):
     :return:
     """
     import pandas as pd
+    import numpy as np
     import matplotlib.pyplot as plt
 
     file_path = 'D:/data/Naba_deep_matrisome/matrisome coverage.xlsx'
@@ -148,7 +149,7 @@ def plot_prot_combined_tsv(combined_protein_tsv):
 
     df = pd.read_csv(combined_protein_tsv,delimiter='\t')
     filt_col_list = [each for each in df.columns.tolist()
-                     if 'Total Spectral Count' in each and 'Summarized Total' not in each][:7]
+                     if 'Total Spectral Count' in each and 'Summarized Total' not in each][7:]
     filt_new_col_list = [each.split(' ')[0] for each in filt_col_list]
     filt_col_list.insert(0,'Protein ID')
     print (filt_col_list)
@@ -159,12 +160,18 @@ def plot_prot_combined_tsv(combined_protein_tsv):
     filt_df = filt_df.set_index('Protein ID')
     filt_df.columns = filt_new_col_list
     print (filt_df.columns)
-    filt_df = filt_df.reindex(['163_3B_05','163_3B1','163_3B2','163_3B4','163_3B18','163_3B20','163_3A'],axis=1)
-    print (filt_df.columns)
+    filt_df = filt_df.reindex(['18_2B05','18_2B1','18_2B2','18_2B4','18_2B18','18_2B20','18_2A'],axis=1)
+
+
+    filt_df = filt_df.apply(np.log10)
+    # fill infinite number with 0, infinite number comes from log10 of zero
+    filt_df[filt_df==-np.inf] = 0
+    print (filt_df.head())
+
     # print(filt_df.loc[filt_df['18_2B05'].idxmax()])
     # print (filt_df.head())
     #
-    filt_df.T.plot.line(legend=False,figsize=(15,8))
+    filt_df.T.plot.line(legend=False,figsize=(15,8),ylabel='Log10 spectra count')
     # plt.xticks(rotation=30)
     plt.show()
 

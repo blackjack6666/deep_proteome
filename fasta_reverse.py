@@ -34,8 +34,8 @@ def fasta_reverse_generator(fasta_file_in, fasta_file_out):
 
 
 if __name__=='__main__':
-    fasta_file_in = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
+    fasta_file_in = 'D:/data/pats/fasta_files/uniprot-proteome_UP000002311_yeast.fasta'
     proteome_dict = fasta_reader(fasta_file_in)
-    id_list = [k for k in proteome_dict]
 
-    fasta_reverse_generator(fasta_file_in,'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1_rev.fasta')
+
+    fasta_reverse_generator(fasta_file_in,'D:/data/pats/fasta_files/pats_yeast_01082021_reverse.fasta')
