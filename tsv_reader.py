@@ -205,11 +205,12 @@ def protein_info_from_fasta(fasta_path):
         for line in f:
             if line.startswith('>'):
                 protein_id = line.split('|')[1]
+                cls = line.split('|')[0].split('>')[1]
                 # print (protein_id)
                 description = ' '.join(line.split('OS=')[0].split(' ')[1:])
 
-                gene_name = line.split('GN=')[1].split(' ')[0] if 'GN=' in line else 'N/A'
-                info_dict[protein_id] = (gene_name,description)
+                gene_name = line.split('GN=')[1].split(' ')[0].rstrip('\n') if 'GN=' in line else 'N/A'
+                info_dict[protein_id] = (gene_name,description,cls)
     return info_dict
 
 def map_psm_file(psm_tsv):
@@ -219,13 +220,13 @@ def map_psm_file(psm_tsv):
     :return:
     """
 
-    file_peptide_dict = defaultdict(set)
+    file_peptide_dict = defaultdict(list)
     with open(psm_tsv,'r') as f:
         next(f)
         for line in f:
             line_split = line.split('\t')
             file_name,psm = line_split[0].split('.')[0],line_split[2]
-            file_peptide_dict[file_name].add(psm)
+            file_peptide_dict[file_name].append(psm)
     return file_peptide_dict
 
 if __name__=="__main__":
