@@ -1,32 +1,32 @@
 import aho_corasick
 from protein_coverage import fasta_reader, fasta_reader2
 from glob import glob
-from tsv_reader import peptide_counting, psm_reader
+from tsv_reader import peptide_counting, psm_reader,venn_diagram_gen2, map_psm_file
 from calculations_and_plot import whole_proteome_cov, identified_proteome_cov
 import multiprocessing_naive_algorithym
 import pandas as pd
 import numpy as np
 import time
 
-tryp_path = 'D:/data/deep_proteome/20200915_tryp*/peptide.tsv'
-ct_path = 'D:/data/deep_proteome/20200915_ct*/peptide.tsv'
-tryp_file_list = glob(tryp_path)
-ct_file_list = glob(ct_path)
-
-tryp_psm_path = 'D:/data/deep_proteome/20200915_tryp*/psm.tsv'
-ct_psm_path = 'D:/data/deep_proteome/20200915_ct*/psm.tsv'
-tryp_psm_file_list = glob(tryp_psm_path)
-ct_psm_file_list = glob(ct_psm_path)
-
-time_start = time.time()
+# tryp_path = 'D:/data/deep_proteome/20200915_tryp*/peptide.tsv'
+# ct_path = 'D:/data/deep_proteome/20200915_ct*/peptide.tsv'
+# tryp_file_list = glob(tryp_path)
+# ct_file_list = glob(ct_path)
+#
+# tryp_psm_path = 'D:/data/deep_proteome/20200915_tryp*/psm.tsv'
+# ct_psm_path = 'D:/data/deep_proteome/20200915_ct*/psm.tsv'
+# tryp_psm_file_list = glob(tryp_psm_path)
+# ct_psm_file_list = glob(ct_psm_path)
+#
+# time_start = time.time()
 fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
-protein_dict = fasta_reader2(fasta_path)
+protein_dict = fasta_reader(fasta_path)
 
 ID_list, seq_list = multiprocessing_naive_algorithym.extract_UNID_and_seq(protein_dict)
 seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list)
-coverage_dict = {}
-#df = pd.DataFrame()
-pd.set_option('display.max_rows', None)
+# coverage_dict = {}
+# #df = pd.DataFrame()
+# pd.set_option('display.max_rows', None)
 
 # whole proteome coverage calculation, singe file and combined
 # for each_tryp_file in tryp_file_list:
@@ -62,6 +62,18 @@ pd.set_option('display.max_rows', None)
 #     print (ez_tm,time, proteome_coverage)
 #     df.loc[ez_tm,time] = proteome_coverage
 
+# whole proteome coverage single psm file
+psm_path = 'D:/data/deep_proteome/20210114_chymo/psm.tsv'
+file_psm_dict = map_psm_file(psm_path)
+del file_psm_dict['CT_50C_0min']
+del file_psm_dict['CT_37C_0min']
+for file in file_psm_dict:
+    pep_list = list(set(file_psm_dict[file]))
+    automaton = aho_corasick.automaton_trie(pep_list)
+    aho_result = aho_corasick.automaton_matching(automaton,seq_line)
+    proteome_coverage = whole_proteome_cov(aho_result,protein_dict)
+    print (file,proteome_coverage)
+
 # identified protein coverage, single file
 # total_file_list = tryp_file_list+ct_file_list
 # for each_file in total_file_list:
@@ -77,6 +89,7 @@ pd.set_option('display.max_rows', None)
 #     for each_prot in identified_proteome_cov_dict:
 #         df.loc[each_prot,cond] = identified_proteome_cov_dict[each_prot]
 # df = df.fillna(0)
+
 
 #psm counting
 # total_file_list = tryp_psm_file_list+ct_psm_file_list
@@ -165,22 +178,23 @@ pd.set_option('display.max_rows', None)
 # df_combined.to_excel('D:/data/deep_proteome/9_20_cov_tryp_ct_comb.xlsx')
 
 # peptide charge ratio calculation
-from tsv_reader import peptide_charger_reader
-from collections import Counter
-total_file_list = tryp_file_list+ct_file_list
+# from tsv_reader import peptide_charger_reader
+# from collections import Counter
+# total_file_list = tryp_file_list+ct_file_list
+#
+# df = pd.DataFrame()
+#
+# for each_file in total_file_list:
+#     print (each_file)
+#     charge_count_dict = Counter([each for each_list in peptide_charger_reader(each_file).values() for each in each_list])
+#     print (charge_count_dict)
+#     for charge in charge_count_dict:
+#         df.loc[int(charge),'_'.join(each_file.split('\\')[-2].split('_')[1:])] = charge_count_dict[charge]
+#
+# df = df.fillna(0)
+# df = df.sort_index()
+# df_new = pd.DataFrame(index=[1,2,3,4,5,6])
+# for each_column in df.columns:
+#     df_new[each_column] = df[each_column]/df[each_column].sum()*100
+# df_new.to_excel('D:/data/deep_proteome/9_20_peptide_charge.xlsx')
 
-df = pd.DataFrame()
-
-for each_file in total_file_list:
-    print (each_file)
-    charge_count_dict = Counter([each for each_list in peptide_charger_reader(each_file).values() for each in each_list])
-    print (charge_count_dict)
-    for charge in charge_count_dict:
-        df.loc[int(charge),'_'.join(each_file.split('\\')[-2].split('_')[1:])] = charge_count_dict[charge]
-
-df = df.fillna(0)
-df = df.sort_index()
-df_new = pd.DataFrame(index=[1,2,3,4,5,6])
-for each_column in df.columns:
-    df_new[each_column] = df[each_column]/df[each_column].sum()*100
-df_new.to_excel('D:/data/deep_proteome/9_20_peptide_charge.xlsx')
