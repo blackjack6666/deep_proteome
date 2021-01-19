@@ -229,11 +229,17 @@ def map_psm_file(psm_tsv):
             file_peptide_dict[file_name].append(psm)
     return file_peptide_dict
 
+
+def convert_uniprot_tonum(uniprot_id):
+
+    return sum([ord(i) for i in uniprot_id])-320+ord(uniprot_id[-1])/10+ord(uniprot_id[-2])/100
+
 if __name__=="__main__":
     from glob import glob
     import numpy as np
     import pandas as pd
     from pandas import ExcelWriter
+    import matplotlib.pyplot as plt
     path = 'C:/uic/lab/data/naba/search_result/*/peptide.tsv'
     file_list = glob(path)
     print (file_list)
@@ -246,8 +252,8 @@ if __name__=="__main__":
     #              for each_file in file_list[:2]}
     # venn_diagram_gen(venn_dict,title='peptide compare')
 
-    for each in info_dict:
-        print (each,len(info_dict[each]))
+    # for each in info_dict:
+    #     print (each,len(info_dict[each]))
 
     # with ExcelWriter('D:/data/Naba_deep_matrisome/11_11_protein_ids.xlsx') as writer:
     #     for each in info_dict:
@@ -262,3 +268,30 @@ if __name__=="__main__":
     #     miss_cleav_dict = miss_cleavage_identify(pep_list,regex_pattern=r'(?:F|W|Y)\w+')
     #     print (float(np.count_nonzero([each for each in miss_cleav_dict.values()]))/len(pep_list))
 
+    # df = pd.read_csv('D:/data/deep_proteome/20210114_chymo/dash_info.csv')
+    # uniprot_num_list = [convert_uniprot_tonum(uni_id) for uni_id in df['protein id']]
+    # df['uniprot_num'] = uniprot_num_list
+    # df.to_csv('D:/data/deep_proteome/20210114_chymo/dash_info_1_19.csv')
+    # df = df.drop('Unnamed: 0', axis=1)
+
+
+    # tryp_2h_protein = df[df['file name']=='Tryp_37C_240min']['protein id'].tolist()
+    # tryp_72h_protein = df[df['file name']=='Tryp_37C_4320min']['protein id'].tolist()
+
+    # df_72 = df[df['file name']=='Tryp_37C_4320min']
+    # file_path = 'D:/data/Naba_deep_matrisome/matrisome coverage.xlsx'
+    # df_ecm = pd.read_excel(file_path)
+    # df_ecm = df_ecm.drop_duplicates()
+    # ecm_prot_list = df_ecm['protein_id'].tolist()
+    #
+    # unique = [i for i in tryp_72h_protein if i not in tryp_2h_protein]
+    # print (unique)
+    # unique_overlap_ecm = [i for i in unique if i in ecm_prot_list]
+    # print (unique_overlap_ecm,len(unique_overlap_ecm))
+    # unique_spec_dict = {}
+    #
+    # for each in unique:
+    #    unique_spec_dict[each] = df_72.loc[df_72['protein id']==each, 'spectra count'].values[0]
+    # for each in unique_spec_dict:
+    #     if unique_spec_dict[each] >10:
+    #         print (each,unique_spec_dict[each])

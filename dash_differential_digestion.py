@@ -12,7 +12,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
 import random
-
+import plotly.graph_objects as go
 
 # construct dash dataframe for plotting
 # fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
@@ -25,11 +25,12 @@ import random
 # pos_id_dict = multiprocessing_naive_algorithym.read_position_ID_into_dict(ID_list,seq_list,seq_line)
 #
 # info_list = []
-# psm_path = 'D:/data/deep_proteome/20210114_trypsin/psm.tsv'
+# psm_path = 'D:/data/deep_proteome/20210114_chymo/psm.tsv'
 # file_psm_dict = map_psm_file(psm_path)
-# del file_psm_dict['Tryp_50C_0min']
-#
-# # get overlapped proteins from all files
+# del file_psm_dict['CT_37C_0min']
+# del file_psm_dict['CT_50C_0min']
+
+# get overlapped proteins from all files
 # identified_protein_list = [p for p in protein_dict]
 # for f in file_psm_dict:
 #     psm_list = file_psm_dict[f]
@@ -39,9 +40,9 @@ import random
 #     aho_result = aho_corasick.automaton_matching(automaton, seq_line)
 #     id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
 #     identified_protein_list = [p for p in id_pep_dict if p in identified_protein_list]
-#
+
 # print (len(identified_protein_list))
-#
+
 # for ind,val in enumerate(file_psm_dict):
 #     print (val)
 #     psm_list = file_psm_dict[val]
@@ -64,14 +65,14 @@ import random
 #                        protein_info_dict[p][0],
 #                        protein_info_dict[p][-1],
 #                        val,
-#                        ind] for p in identified_protein_list]
+#                        ind] for p in id_pep_dict]
 #     info_list+=file_info_list
 #
 # df = pd.DataFrame(info_list, columns=['protein id','coverage','protein len','spectra count','gene name','class','file name','file number'])
-# df.to_csv('D:/data/deep_proteome/20210114_trypsin/dash_info_overlap.csv')
+# df.to_csv('D:/data/deep_proteome/20210114_chymo/dash_info.csv')
 
 
-df = pd.read_csv('D:/data/deep_proteome/20210114_trypsin/dash_info_overlap.csv')
+df = pd.read_csv('D:/data/deep_proteome/20210114_chymo/dash_info_1_19.csv')
 file_number_name_map = {f_number:f_name for f_name, f_number in zip(df['file name'],df['file number'])}
 protein_class = df['class'].unique()
 length_of_color_scheme = len(protein_class)
@@ -106,18 +107,22 @@ app.layout = html.Div([
 def update_figure(selected_file_number):
     filtered_df = df[df['file number'] == selected_file_number]
 
-    fig = px.scatter(filtered_df, x="coverage", y="protein len",
+    fig = px.scatter(filtered_df, x="uniprot_num", y="protein len",
                      color='class', hover_name="protein id",
-                     log_x=False, color_discrete_map=color_map,
-                     title='{}'.format(file_number_name_map[selected_file_number]))
+                     log_x=False, color_discrete_map=color_map, size= 'coverage', size_max=20,
+                     title='{}'.format(file_number_name_map[selected_file_number]),opacity=0.5)
+
+    # fig = px.scatter_3d(filtered_df, x='uniprot_num', y='protein len', z='coverage',
+    #                     color='class', size_max=5, color_discrete_map=color_map,log_x=True,
+    #                     hover_name="protein id",opacity=0.7)
 
     fig.update_layout(transition_duration=500)
 
-    return fig, "{} overlapped identified proteins, {} sp, {} tr, average coverage {:.2f}%, {} proteins coverage>50%".format(filtered_df.shape[0],
+    return fig, "{} identified proteins, {} sp, {} tr, average coverage {:.2f}%, {} proteins coverage>80%".format(filtered_df.shape[0],
                                                                          filtered_df[filtered_df['class']=='sp'].shape[0],
                                                                          filtered_df[filtered_df['class']=='tr'].shape[0],
                                                                          filtered_df['coverage'].mean(),
-                                                                         filtered_df[filtered_df['coverage']>50].shape[0])
+                                                                         filtered_df[filtered_df['coverage']>80].shape[0])
 
 
 if __name__ == '__main__':

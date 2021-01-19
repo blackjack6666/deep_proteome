@@ -2,7 +2,7 @@ import aho_corasick
 from protein_coverage import fasta_reader, fasta_reader2
 from glob import glob
 from tsv_reader import peptide_counting, psm_reader,venn_diagram_gen2, map_psm_file
-from calculations_and_plot import whole_proteome_cov, identified_proteome_cov
+from calculations_and_plot import whole_proteome_cov, identified_proteome_cov, creat_ID_pep_dict
 import multiprocessing_naive_algorithym
 import pandas as pd
 import numpy as np
@@ -24,6 +24,7 @@ protein_dict = fasta_reader(fasta_path)
 
 ID_list, seq_list = multiprocessing_naive_algorithym.extract_UNID_and_seq(protein_dict)
 seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list)
+pos_id_dict = multiprocessing_naive_algorithym.read_position_ID_into_dict(ID_list,seq_list,seq_line)
 # coverage_dict = {}
 # #df = pd.DataFrame()
 # pd.set_option('display.max_rows', None)
@@ -63,16 +64,18 @@ seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list)
 #     df.loc[ez_tm,time] = proteome_coverage
 
 # whole proteome coverage single psm file
-psm_path = 'D:/data/deep_proteome/20210114_chymo/psm.tsv'
+psm_path = 'D:/data/deep_proteome/20210114_trypsin/psm.tsv'
 file_psm_dict = map_psm_file(psm_path)
-del file_psm_dict['CT_50C_0min']
-del file_psm_dict['CT_37C_0min']
+del file_psm_dict['Tryp_50C_0min']
+
 for file in file_psm_dict:
+    psm = len(file_psm_dict[file])
     pep_list = list(set(file_psm_dict[file]))
     automaton = aho_corasick.automaton_trie(pep_list)
     aho_result = aho_corasick.automaton_matching(automaton,seq_line)
+    id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
     proteome_coverage = whole_proteome_cov(aho_result,protein_dict)
-    print (file,proteome_coverage)
+    print (file, len(id_pep_dict),len(pep_list),psm)
 
 # identified protein coverage, single file
 # total_file_list = tryp_file_list+ct_file_list
