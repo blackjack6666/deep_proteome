@@ -240,6 +240,7 @@ if __name__=="__main__":
     import pandas as pd
     from pandas import ExcelWriter
     import matplotlib.pyplot as plt
+    import math
     path = 'C:/uic/lab/data/naba/search_result/*/peptide.tsv'
     file_list = glob(path)
     print (file_list)
@@ -268,10 +269,11 @@ if __name__=="__main__":
     #     miss_cleav_dict = miss_cleavage_identify(pep_list,regex_pattern=r'(?:F|W|Y)\w+')
     #     print (float(np.count_nonzero([each for each in miss_cleav_dict.values()]))/len(pep_list))
 
-    # df = pd.read_csv('D:/data/deep_proteome/20210114_chymo/dash_info.csv')
-    # uniprot_num_list = [convert_uniprot_tonum(uni_id) for uni_id in df['protein id']]
-    # df['uniprot_num'] = uniprot_num_list
-    # df.to_csv('D:/data/deep_proteome/20210114_chymo/dash_info_1_19.csv')
+    df = pd.read_csv('D:/data/Naba_deep_matrisome/01102021/dash_info_new.csv')
+    uniprot_num_list = [convert_uniprot_tonum(uni_id) for uni_id in df['protein_id']]
+    df['uniprot_num'] = uniprot_num_list
+    df['log_protein_len'] = [math.log2(each) for each in df['length']]
+    df.to_csv('D:/data/Naba_deep_matrisome/01102021/dash_info_new_1_20.csv')
     # df = df.drop('Unnamed: 0', axis=1)
 
 

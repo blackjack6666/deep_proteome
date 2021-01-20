@@ -137,7 +137,17 @@ from pandas import ExcelWriter
 combined_prot = 'D:/data/Naba_deep_matrisome/01102021/combined_protein.tsv'
 combined_protein_dict = combined_proteintsv_map(combined_prot)
 print (combined_protein_dict['163_3B20']['A0A087WR50'])
-plot_prot_combined_tsv(combined_prot)
+
+protein_list_1805_1820 = list(set([prot for f in ['18_2B05', '18_2B1','18_2B2','18_2B4','18_2B18','18_2B20']
+                                   for prot in combined_protein_dict[f]]))
+ecm_1805_1820 = [each for each in protein_list_1805_1820 if each in ecm_prot_list]
+protein_list_182A = list(set([prot for prot in combined_protein_dict['18_2A']]))
+ecm_182A = [each for each in protein_list_182A if each in ecm_prot_list]
+print ([prot for prot in ecm_182A if prot not in ecm_1805_1820])
+print (len(protein_list_1805_1820),len(protein_list_182A))
+venn_dict = {'18_2_time_lapsed_digestion': ecm_1805_1820,'18_2_20hour_digestion': ecm_182A}
+# venn_diagram_gen(venn_dict,title='ECM proteins identified between time-lapsed digestion and normal digestion in 18_2')
+# plot_prot_combined_tsv(combined_prot)
 # print (len(combined_protein_dict['18_2B20']))
 # file_list = [f for f in combined_protein_dict]
 # print (file_list)
