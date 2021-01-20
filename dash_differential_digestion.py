@@ -72,7 +72,7 @@ import plotly.graph_objects as go
 # df.to_csv('D:/data/deep_proteome/20210114_chymo/dash_info.csv')
 
 
-df = pd.read_csv('D:/data/deep_proteome/20210114_chymo/dash_info_1_19.csv')
+df = pd.read_csv('D:/uic/lab/data/Deep_proteome/dash_info_1_19.csv')
 file_number_name_map = {f_number:f_name for f_name, f_number in zip(df['file name'],df['file number'])}
 protein_class = df['class'].unique()
 length_of_color_scheme = len(protein_class)
