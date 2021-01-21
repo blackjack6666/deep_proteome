@@ -51,7 +51,9 @@ def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ec
 
 
 if __name__=='__main__':
-
+    import plotly.express as px
+    import random
+    import numpy as np
     # file_path = 'D:/data/Naba_deep_matrisome/matrisome coverage.xlsx'
     # df = pd.read_excel(file_path)
     # df = df.drop_duplicates()
@@ -64,8 +66,8 @@ if __name__=='__main__':
     psm_path_list = [base_path + each + '/psm.tsv' for each in folders]
     pep_path_list = [base_path + each + '/peptide.tsv' for each in folders]
     peptide_163_05_20 = list(set([pep for pep_file in pep_path_list[8:] for pep in peptide_counting(pep_file)]))
-    # peptide_163_3A = peptide_counting(pep_path_list[7])
-    print (pep_path_list[8:])
+    peptide_163_3A = peptide_counting(pep_path_list[7])
+    print (pep_path_list[1:7])
 
     fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
     protein_dict = fasta_reader(fasta_path)
@@ -90,15 +92,47 @@ if __name__=='__main__':
     automaton = aho_corasick.automaton_trie(peptide_163_05_20)
     aho_result = aho_corasick.automaton_matching(automaton,seq_line)
     coverage_dict = identified_proteome_cov(aho_result, new_protein_dict)[1]
-    print (len(coverage_dict))
-    coverage_array = [v for v in coverage_dict.values()]
-    print (statistics.mean(coverage_array))
-    plt.hist(coverage_array,bins=15, color='black')
-    plt.xlim(0,100)
-    plt.xlabel('sequence coverage%')
-    plt.ylabel('frequency')
-    plt.title('ECM sequence coverage distribution in time lapsed 18_2B digestion')
-    plt.show()
+
+    automaton2 = aho_corasick.automaton_trie(peptide_163_3A)
+    aho_result2 = aho_corasick.automaton_matching(automaton2,seq_line)
+    coverage_dict2 = identified_proteome_cov(aho_result2,new_protein_dict)[1]
+    overlapped_ecm_dict = {each for each in coverage_dict if each in coverage_dict2}
+
+    new_cov_dict = {}
+    for prot in coverage_dict:
+        new_cov_dict[prot] = coverage_dict[prot]/coverage_dict2[prot] if prot in coverage_dict2 else 100
+
+    print (np.mean([new_cov_dict[each] for each in new_cov_dict if new_cov_dict[each]!=100]))
+
+    print (new_cov_dict)
+    df_dash = pd.read_csv('D:/data/Naba_deep_matrisome/01102021/dash_info_new_1_20.csv')
+    ecm_class = df_dash.ecm_class.unique()
+    length_of_color_scheme = len(ecm_class)
+    color = ["#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)])
+             for i in range(length_of_color_scheme)]
+
+    color_map = {each: c for each, c in zip(ecm_class, color)}
+    dash_info_dict = {row['protein_id']:(row['length'],row['gene'],row['uniprot_num'],row['ecm_class']) for index, row in df_dash.iterrows()}
+
+    info_list = [[each, new_cov_dict[each],dash_info_dict[each][0],dash_info_dict[each][1],dash_info_dict[each][2],dash_info_dict[each][3]]
+                 for each in new_cov_dict if new_cov_dict[each] != 100]
+
+
+    cov_ratio_df = pd.DataFrame(info_list, columns=['protein_id','coverage_ratio', 'length', 'gene','uniprot_num','ecm_class'])
+    print (cov_ratio_df.shape)
+    fig = px.scatter(cov_ratio_df, x="uniprot_num", y="length",
+                     size="coverage_ratio", color='ecm_class', hover_name="gene",
+                     log_x=False, size_max=55, color_discrete_map=color_map)
+    fig.show()
+
+    # coverage_array = [v for v in coverage_dict.values()]
+    # print (statistics.mean(coverage_array))
+    # plt.hist(coverage_array,bins=15, color='black')
+    # plt.xlim(0,100)
+    # plt.xlabel('sequence coverage%')
+    # plt.ylabel('frequency')
+    # plt.title('ECM sequence coverage distribution in time lapsed 18_2B digestion')
+    # plt.show()
     #
     # df = pd.read_csv('D:/data/Naba_deep_matrisome/01102021/dash_info_new.csv')
     # protein_18_2A_list = df[df['file_number']==0]['protein_id'].tolist()

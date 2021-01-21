@@ -8,8 +8,6 @@ import random
 import pandas as pd
 
 
-
-
 base_path = 'D:/data/Naba_deep_matrisome/01102021/'
 folders = [f for f in os.listdir(base_path) if '.' not in f]
 pep_path_list = [base_path+each+'/peptide.tsv' for each in folders]
