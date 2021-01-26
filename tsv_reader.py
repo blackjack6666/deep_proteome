@@ -47,6 +47,15 @@ def protein_tsv_reader(protein_tsv_file):
         return [line.split("\t")[3] for line in file_open]
 
 
+def protein_reader(protein_tsv):
+    df = pd.read_csv(protein_tsv, sep="\t")
+    df_indis = df.dropna(subset=['Indistinguishable Proteins'])
+    indis_protein_list = [prot.split('|')[1] for each in df_indis['Indistinguishable Proteins'].tolist() for prot in
+                          each.split(", ")]
+    protein_list = df.dropna(subset=['Protein ID'])['Protein ID'].tolist()
+
+    return set(indis_protein_list + protein_list)
+
 def protein_tsv_reader_no_contam(protein_tsv_file):
     with open(protein_tsv_file, 'r') as file_open:
         next(file_open)
@@ -241,13 +250,37 @@ if __name__=="__main__":
     from pandas import ExcelWriter
     import matplotlib.pyplot as plt
     import math
-    path = 'C:/uic/lab/data/naba/search_result/*/peptide.tsv'
-    file_list = glob(path)
-    print (file_list)
-    # for f in file_list:
-    #     print (f.split('\\')[-2], sum([v for v in psm_reader(f)[0].values()]))
-    protein_info_dict = protein_info_from_combined('D:/data/Naba_deep_matrisome/11_11_combined_search/combined_protein.tsv')
-    info_dict = combined_proteintsv_map('D:/data/Naba_deep_matrisome/11_11_combined_search/combined_protein.tsv')
+    # path = 'C:/uic/lab/data/naba/search_result/*/peptide.tsv'
+    # file_list = glob(path)
+    # print (file_list)
+    # # for f in file_list:
+    # #     print (f.split('\\')[-2], sum([v for v in psm_reader(f)[0].values()]))
+    # protein_info_dict = protein_info_from_combined('D:/data/Naba_deep_matrisome/11_11_combined_search/combined_protein.tsv')
+    # info_dict = combined_proteintsv_map('D:/data/Naba_deep_matrisome/11_11_combined_search/combined_protein.tsv')
+    fasta_path = 'D:/data/pats/human_fasta/uniprot-proteome_UP000005640_sp_tr_isoforms.fasta'
+    fasta_info_dict = protein_info_from_fasta(fasta_path)
+
+    base_path = 'D:/data/pats/results/'
+    psm_tsv = ['hek_trypsin_4hour_sp_isoforms/psm.tsv',
+               'hek_trypsin_4hour_sp_only/psm.tsv',
+               'hek_trypsin_4hour_sp_tr/psm.tsv',
+               'hek_trypsin_4hour_sp_tr_isoforms/psm.tsv']
+
+    venn_dict = {}
+    for each in psm_tsv:
+        file = '_'.join(each.split('/')[0].split('_')[3:])
+        psm_path = base_path+each
+        protein_path = base_path+each.replace('psm','protein')
+        protein_set = protein_reader(protein_path)
+        gene_set = set([fasta_info_dict[prot][0] for prot in protein_set])
+
+        psm_dict = psm_reader(psm_path)[0]
+        peptide_list = [k for k in psm_dict]
+
+        psm_list = [pep+'_'+str(i) for pep in psm_dict for i in range(psm_dict[pep])]
+        print (file,len(psm_list))
+        venn_dict[file] = psm_list
+    venn_diagram_gen2(venn_dict)
     # venn_dict = {'163_3_dec': [k for k in info_dict['163_3_dec']],'163_3_extr': [k for k in info_dict['163_3_extr']]}
     # venn_dict = {each_file.split('\\')[-2]:peptide_counting(each_file)
     #              for each_file in file_list[:2]}
@@ -277,23 +310,3 @@ if __name__=="__main__":
     # df = df.drop('Unnamed: 0', axis=1)
 
 
-    # tryp_2h_protein = df[df['file name']=='Tryp_37C_240min']['protein id'].tolist()
-    # tryp_72h_protein = df[df['file name']=='Tryp_37C_4320min']['protein id'].tolist()
-
-    # df_72 = df[df['file name']=='Tryp_37C_4320min']
-    # file_path = 'D:/data/Naba_deep_matrisome/matrisome coverage.xlsx'
-    # df_ecm = pd.read_excel(file_path)
-    # df_ecm = df_ecm.drop_duplicates()
-    # ecm_prot_list = df_ecm['protein_id'].tolist()
-    #
-    # unique = [i for i in tryp_72h_protein if i not in tryp_2h_protein]
-    # print (unique)
-    # unique_overlap_ecm = [i for i in unique if i in ecm_prot_list]
-    # print (unique_overlap_ecm,len(unique_overlap_ecm))
-    # unique_spec_dict = {}
-    #
-    # for each in unique:
-    #    unique_spec_dict[each] = df_72.loc[df_72['protein id']==each, 'spectra count'].values[0]
-    # for each in unique_spec_dict:
-    #     if unique_spec_dict[each] >10:
-    #         print (each,unique_spec_dict[each])

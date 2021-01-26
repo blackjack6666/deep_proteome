@@ -34,8 +34,16 @@ def fasta_reverse_generator(fasta_file_in, fasta_file_out):
 
 
 if __name__=='__main__':
-    fasta_file_in = 'D:/data/pats/fasta_files/uniprot-proteome_UP000002311_yeast.fasta'
-    proteome_dict = fasta_reader(fasta_file_in)
+    from glob import glob
+    base_path = 'D:/data/pats/human_fasta/'
+    fasta_files = glob(base_path+'*.fasta')
+    print (fasta_files)
 
-
-    fasta_reverse_generator(fasta_file_in,'D:/data/pats/fasta_files/pats_yeast_01082021_reverse.fasta')
+    for each in fasta_files:
+        print (each)
+        fasta_reverse_generator(each,each.split('.')[0]+'_rev'+'.fasta')
+    # fasta_file_in = 'D:/data/pats/fasta_files/uniprot-proteome_UP000000589_mouse_sp_no_isoform.fasta'
+    # proteome_dict = fasta_reader(fasta_file_in)
+    #
+    #
+    # fasta_reverse_generator(fasta_file_in,'D:/data/pats/fasta_files/uniprot-proteome_UP000000589_mouse_sp_no_isoform_rev.fasta')
