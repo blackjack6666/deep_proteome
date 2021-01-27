@@ -1,79 +1,32 @@
-# from tsv_reader import psm_reader,venn_diagram_gen, peptide_counting, venn_diagram_gen2
-#
-# trypsin_37C_15min = 'D:/data/deep_proteome/20200806_tryp_RT_25min/psm.tsv'
-# trypsin_37C_2h = 'D:/data/deep_proteome/20200806_tryp_RT_40min/psm.tsv'
-# trypsin_37C_19h = 'D:/data/deep_proteome/20200806_tryp_37C_19H/psm.tsv'
-# trypsin_RT_19h = 'D:/data/deep_proteome/20200806_tryp_RT_19H/psm.tsv'
-#
-# trypsin_37C_15min_peptsv = 'D:/data/deep_proteome/20200806_tryp_RT_25min/peptide.tsv'
-# trypsin_37C_2h_peptsv = 'D:/data/deep_proteome/20200806_tryp_RT_40min/peptide.tsv'
-# trypsin_37C_19h_peptsv = 'D:/data/deep_proteome/20200806_tryp_RT_19H/peptide.tsv'
-#
-# trypsin_37C_15min_psm_dict = psm_reader(trypsin_37C_15min)[0]
-# trypsin_37C_2h_psm_dict = psm_reader(trypsin_37C_2h)[0]
-# trypsin_37C_19h_psm_dict = psm_reader(trypsin_37C_19h)[0]
-#
-# trypsin_37C_15min_peplist = peptide_counting(trypsin_37C_15min_peptsv)
-# trypsin_37C_2h_peplist = peptide_counting(trypsin_37C_2h_peptsv)
-# trypsin_37C_19h_peplist = peptide_counting(trypsin_37C_19h_peptsv)
-#
-# trypsin_37C_15min_psm_list = [pep+'_'+str(i) for pep in trypsin_37C_15min_psm_dict for i in range(trypsin_37C_15min_psm_dict[pep])]
-# trypsin_37C_2h_psm_list = [pep+'_'+str(i) for pep in trypsin_37C_2h_psm_dict for i in range(trypsin_37C_2h_psm_dict[pep])]
-# trypsin_37C_19h_psm_list = [pep+'_'+str(i) for pep in trypsin_37C_19h_psm_dict for i in range(trypsin_37C_19h_psm_dict[pep])]
-#
-# venn_dict = {'tryp_RT_25min':trypsin_37C_15min_peplist,
-#              'tryp_RT_40min': trypsin_37C_2h_peplist,
-#              'tryp_RT_19h':trypsin_37C_19h_peplist}
-#
-# venn_diagram_gen(venn_dict, title='pep comparison')
+import pandas as pd
 
-# from data_preprocess2 import *
-# import pickle as ppp
-# from tsv_reader import peptide_counting,psm_reader
-# import numpy as np
-#
-# fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000000589_mouse.fasta'
-# proteome_dict = fasta_reader2(fasta_path)
-# protein_list = ['P62918']
-# protein_miss_clea_loc_dict = cleavage_site_identify(protein_list, proteome_dict, 'trypsin')
-#
-# # therotical
-# polymers_dict = polymer_miss_cleav_charc(protein_miss_clea_loc_dict, proteome_dict)
-# polymers_list = [polymers_dict[each][each_i] for each in polymers_dict for each_i in polymers_dict[each]]
-#
-# matrix = []
-# for each_polymer in polymers_list:
-#     one_d_arry = []
-#     for each_aa in each_polymer:
-#         one_d_arry.append(each_aa)
-#     matrix.append(one_d_arry)
-# matrix = np.array(matrix)
-# print (matrix.shape)
-# ppp.dump(matrix, open('P62918_matrix_2d_array.p', 'wb'))
+# get time-series accumulated covearge for ECM proteins
+df = pd.read_csv('D:/uic/lab/data/naba/dash_info_new_1_20.csv')
+
+df = df.drop(columns=['Unnamed: 0', 'Unnamed: 0.1'])
+print (df.head())
+protein_id_set = df['protein_id'].unique()
+print (protein_id_set)
+file_set = df['file_name'].unique()
+print (file_set)
 
 
-# peptide_tsv_path = "D:/data/Naba_deep_matrisome/10_30/search_result/18_2_dec/peptide.tsv"
-# psm_tsv_path = "D:/data/Naba_deep_matrisome/10_30/search_result/18_2_dec/psm.tsv"
-# pep_list = peptide_counting(peptide_tsv_path)
-# id_pep_dict,protein_list = protein_id_peplist_dict_getter(proteome_dict, pep_list)
-# psm_dict = psm_reader(psm_tsv_path)[0]
-# protein_polymer_sc_dict = map_to_cleavage(id_pep_dict,protein_miss_clea_loc_dict,polymers_dict,proteome_dict,psm_dict)
-# cleavage_site_label_dict, protein_poly_dict, uncertain_polymer_no = cleavage_site_label(protein_polymer_sc_dict, protein_polymer_convert(polymers_dict))
-# print (cleavage_site_label_dict)
-# ppp.dump(cleavage_site_label_dict, open('P62918_polymer_dict.p', 'wb'))
 
-import re
-with open('D:/data/pats/new 3.txt','r') as f:
-    for line in f:
-        # match = re.findall('Xenopus\w?\_[a-zA-Z]+',line)
-        # # print (match)
-        # for each in match:
-        #     print (each.split('_')[1])
+df_18_2_accumulated = pd.DataFrame()
+index_18_2 = ['18_2B05','18_2B1','18_2B2','18_2B4','18_2B18','18_2B20']
+for prot in protein_id_set[:2]:
 
+    for idx, val in enumerate(index_18_2):
+        index_list = index_18_2[:idx+1]
+        print (index_list)
+        coverage = 0
+        for each_file in index_list:
+            try:
 
-        if 'adlt' in line or 'dult' in line:
-            print ('adult')
-        elif 'Larva' in line or 'larval' in line:
-            print ('larval')
-        elif 'upa' in line:
-            print ('pupal')
+                coverage+=df[(df['protein_id']==prot)&(df['file_name']==each_file)]['coverage'].values[0]
+                print (coverage)
+            except IndexError:
+                continue
+        df_18_2_accumulated.loc[val,prot] = coverage
+
+print (df_18_2_accumulated)

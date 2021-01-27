@@ -8,6 +8,7 @@ import os
 from protein_coverage import fasta_reader
 import matplotlib.pyplot as plt
 import statistics
+import pickle as p
 
 
 def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ecm_info_dict):
@@ -17,6 +18,7 @@ def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ec
     pos_id_dict = read_position_ID_into_dict(id_list, seq_list, seq_line)
 
     info_list = []
+    file_id_peptide_dict = {}
     for pep_tsv, psm_tsv in zip(pep_path_list, psm_path_list):
         file_name = pep_tsv.split('/')[-2]
         print(file_name)
@@ -25,41 +27,44 @@ def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ec
         aho_result = aho_corasick.automaton_matching(automaton, seq_line)
         coverage_dict = identified_proteome_cov(aho_result, protein_dict)[1]
         id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
-        psm_dict = psm_reader(psm_tsv)[0]
-        prot_spec_dict = {}
-        for id in id_pep_dict:
-            spec = 0
-            for pep in id_pep_dict[id]:
-                spec += psm_dict[pep]
-            prot_spec_dict[id] = spec
-        protein_id_ls = [k for k in id_pep_dict if k in ecm_prot_list]
-
-        file_list = [[prot,
-                      len(protein_dict[prot]),
-                      coverage_dict[prot],
-                      ecm_info_dict[prot][0],
-                      prot_spec_dict[prot],
-                      ecm_info_dict[prot][2],
-                      file_name,
-                      file_name_number_dict[file_name]] for prot in protein_id_ls]
-        info_list += file_list
-
-    info_df = pd.DataFrame(info_list,
-                           columns=['protein_id', 'length', 'coverage', 'gene', 'spec_count', 'ecm_class', 'file_name',
-                                    'file_number'])
-    info_df.to_csv('D:/data/Naba_deep_matrisome/01102021/dash_info_new.csv')
+        id_pep_dict = {k:id_pep_dict[k] for k in id_pep_dict if k in ecm_prot_list}
+        file_id_peptide_dict[file_name] = id_pep_dict
+    p.dump(file_id_peptide_dict,open('18_2_id_pep_dict.p','wb'))
+    #     psm_dict = psm_reader(psm_tsv)[0]
+    #     prot_spec_dict = {}
+    #     for id in id_pep_dict:
+    #         spec = 0
+    #         for pep in id_pep_dict[id]:
+    #             spec += psm_dict[pep]
+    #         prot_spec_dict[id] = spec
+    #     protein_id_ls = [k for k in id_pep_dict if k in ecm_prot_list]
+    #
+    #     file_list = [[prot,
+    #                   len(protein_dict[prot]),
+    #                   coverage_dict[prot],
+    #                   ecm_info_dict[prot][0],
+    #                   prot_spec_dict[prot],
+    #                   ecm_info_dict[prot][2],
+    #                   file_name,
+    #                   file_name_number_dict[file_name]] for prot in protein_id_ls]
+    #     info_list += file_list
+    #
+    # info_df = pd.DataFrame(info_list,
+    #                        columns=['protein_id', 'length', 'coverage', 'gene', 'spec_count', 'ecm_class', 'file_name',
+    #                                 'file_number'])
+    # info_df.to_csv('D:/data/Naba_deep_matrisome/01102021/dash_info_new.csv')
 
 
 if __name__=='__main__':
     import plotly.express as px
     import random
     import numpy as np
-    # file_path = 'D:/data/Naba_deep_matrisome/matrisome coverage.xlsx'
-    # df = pd.read_excel(file_path)
-    # df = df.drop_duplicates()
-    # ecm_prot_list = df['protein_id'].tolist()
-    # df = df.set_index('protein_id')
-    # ecm_info_dict = {each:(df.loc[each,'gene_id'], df.loc[each, 'loc'], df.loc[each,'category']) for each in ecm_prot_list}
+    file_path = 'D:/data/Naba_deep_matrisome/matrisome coverage.xlsx'
+    df = pd.read_excel(file_path)
+    df = df.drop_duplicates()
+    ecm_prot_list = df['protein_id'].tolist()
+    df = df.set_index('protein_id')
+    ecm_info_dict = {each:(df.loc[each,'gene_id'], df.loc[each, 'loc'], df.loc[each,'category']) for each in ecm_prot_list}
     #
     base_path = 'D:/data/Naba_deep_matrisome/01102021/'
     folders = [f for f in os.listdir(base_path) if '.' not in f]
@@ -73,8 +78,9 @@ if __name__=='__main__':
     protein_dict = fasta_reader(fasta_path)
 
     #
-    # dash_dataframe(pep_path_list,psm_path_list,protein_dict,ecm_prot_list,ecm_info_dict)
+    dash_dataframe(pep_path_list[8:],psm_path_list[8:],protein_dict,ecm_prot_list,ecm_info_dict)
 
+    """
     from tsv_reader import venn_diagram_gen
     file_path = 'D:/data/Naba_deep_matrisome/matrisome coverage.xlsx'
 
@@ -141,4 +147,4 @@ if __name__=='__main__':
     # venn_dict = {'163_3_time_lapsed_digestion': protein_1805_1820_list,'163_3_20hour_digestion': protein_18_2A_list}
     # venn_diagram_gen(venn_dict)
     # print ([ecm_info_dict[prot] for prot in protein_1805_1820_list if prot not in protein_18_2A_list])
-
+    """
