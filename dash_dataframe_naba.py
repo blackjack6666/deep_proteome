@@ -29,7 +29,7 @@ def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ec
         id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
         id_pep_dict = {k:id_pep_dict[k] for k in id_pep_dict if k in ecm_prot_list}
         file_id_peptide_dict[file_name] = id_pep_dict
-    p.dump(file_id_peptide_dict,open('18_2_id_pep_dict.p','wb'))
+    p.dump(file_id_peptide_dict,open('163_3_id_pep_dict.p','wb'))
     #     psm_dict = psm_reader(psm_tsv)[0]
     #     prot_spec_dict = {}
     #     for id in id_pep_dict:
@@ -78,7 +78,7 @@ if __name__=='__main__':
     protein_dict = fasta_reader(fasta_path)
 
     #
-    dash_dataframe(pep_path_list[8:],psm_path_list[8:],protein_dict,ecm_prot_list,ecm_info_dict)
+    dash_dataframe(pep_path_list[1:7],psm_path_list[1:7],protein_dict,ecm_prot_list,ecm_info_dict)
 
     """
     from tsv_reader import venn_diagram_gen
