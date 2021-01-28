@@ -261,26 +261,32 @@ if __name__=="__main__":
     fasta_info_dict = protein_info_from_fasta(fasta_path)
 
     base_path = 'D:/data/pats/results/'
-    psm_tsv = ['hek_trypsin_4hour_sp_isoforms/psm.tsv',
-               'hek_trypsin_4hour_sp_only/psm.tsv',
-               'hek_trypsin_4hour_sp_tr/psm.tsv',
-               'hek_trypsin_4hour_sp_tr_isoforms/psm.tsv']
+    psm_tsv = ['hek_zz_sp_only/psm.tsv',
+               'hek_zz_sp_isoforms_cory_db/psm.tsv']
+
+    peptide_tsv = ['hek_trypsin_4hour_sp_isoforms/peptide.tsv',
+               'hek_trypsin_4hour_sp_only/peptide.tsv',
+               'hek_trypsin_4hour_sp_tr/peptide.tsv',
+               'hek_trypsin_4hour_sp_tr_isoforms/peptide.tsv']
+
 
     venn_dict = {}
     for each in psm_tsv:
-        file = '_'.join(each.split('/')[0].split('_')[3:])
-        psm_path = base_path+each
-        protein_path = base_path+each.replace('psm','protein')
+        file = '_'.join(each.split('/')[0].split('_')[2:])
+        psm_path = base_path + each
+        protein_path = base_path + each.replace('psm', 'protein')
+        peptide_tsv_path = base_path + each.replace('psm', 'peptide')
         protein_set = protein_reader(protein_path)
         gene_set = set([fasta_info_dict[prot][0] for prot in protein_set])
 
         psm_dict = psm_reader(psm_path)[0]
-        peptide_list = [k for k in psm_dict]
 
-        psm_list = [pep+'_'+str(i) for pep in psm_dict for i in range(psm_dict[pep])]
-        print (file,len(psm_list))
-        venn_dict[file] = psm_list
-    venn_diagram_gen2(venn_dict)
+        peptide_list = peptide_counting(peptide_tsv_path)
+        print(peptide_list)
+        psm_list = [pep + '_' + str(i) for pep in psm_dict for i in range(psm_dict[pep])]
+        print(file, len(psm_list))
+        venn_dict[file] = peptide_list
+    venn_diagram_gen(venn_dict)
     # venn_dict = {'163_3_dec': [k for k in info_dict['163_3_dec']],'163_3_extr': [k for k in info_dict['163_3_extr']]}
     # venn_dict = {each_file.split('\\')[-2]:peptide_counting(each_file)
     #              for each_file in file_list[:2]}
