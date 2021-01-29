@@ -1,7 +1,7 @@
 import pandas as pd
 from multiprocessing_naive_algorithym import extract_UNID_and_seq,creat_total_seq_line,creat_ID_pep_dict,\
     read_position_ID_into_dict
-from tsv_reader import psm_reader,peptide_counting
+from tsv_reader import psm_reader,peptide_counting, protein_tsv_reader
 from calculations_and_plot import identified_proteome_cov
 import aho_corasick
 import os
@@ -21,38 +21,39 @@ def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ec
     file_id_peptide_dict = {}
     for pep_tsv, psm_tsv in zip(pep_path_list, psm_path_list):
         file_name = pep_tsv.split('/')[-2]
+        protein_list=protein_tsv_reader(pep_tsv.replace("peptide","protein"))
         print(file_name)
         pep_list = peptide_counting(pep_tsv)
         automaton = aho_corasick.automaton_trie(pep_list)
         aho_result = aho_corasick.automaton_matching(automaton, seq_line)
         coverage_dict = identified_proteome_cov(aho_result, protein_dict)[1]
         id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
-        id_pep_dict = {k:id_pep_dict[k] for k in id_pep_dict if k in ecm_prot_list}
-        file_id_peptide_dict[file_name] = id_pep_dict
-    p.dump(file_id_peptide_dict,open('163_3_id_pep_dict.p','wb'))
-    #     psm_dict = psm_reader(psm_tsv)[0]
-    #     prot_spec_dict = {}
-    #     for id in id_pep_dict:
-    #         spec = 0
-    #         for pep in id_pep_dict[id]:
-    #             spec += psm_dict[pep]
-    #         prot_spec_dict[id] = spec
-    #     protein_id_ls = [k for k in id_pep_dict if k in ecm_prot_list]
-    #
-    #     file_list = [[prot,
-    #                   len(protein_dict[prot]),
-    #                   coverage_dict[prot],
-    #                   ecm_info_dict[prot][0],
-    #                   prot_spec_dict[prot],
-    #                   ecm_info_dict[prot][2],
-    #                   file_name,
-    #                   file_name_number_dict[file_name]] for prot in protein_id_ls]
-    #     info_list += file_list
-    #
-    # info_df = pd.DataFrame(info_list,
-    #                        columns=['protein_id', 'length', 'coverage', 'gene', 'spec_count', 'ecm_class', 'file_name',
-    #                                 'file_number'])
-    # info_df.to_csv('D:/data/Naba_deep_matrisome/01102021/dash_info_new.csv')
+        # id_pep_dict = {k:id_pep_dict[k] for k in id_pep_dict if k in ecm_prot_list}
+        # file_id_peptide_dict[file_name] = id_pep_dict
+    # p.dump(file_id_peptide_dict,open('all_file_id_pep_dict.p','wb'))
+        psm_dict = psm_reader(psm_tsv)[0]
+        prot_spec_dict = {}
+        for id in id_pep_dict:
+            spec = 0
+            for pep in id_pep_dict[id]:
+                spec += psm_dict[pep]
+            prot_spec_dict[id] = spec
+        # protein_id_ls = [k for k in id_pep_dict if k in ecm_prot_list]
+        protein_id_ls = [k for k in id_pep_dict]
+        file_list = [[prot,
+                      len(protein_dict[prot]),
+                      coverage_dict[prot],
+                      ecm_info_dict[prot][0],
+                      prot_spec_dict[prot],
+                      ecm_info_dict[prot][2],
+                      file_name,
+                      file_name_number_dict[file_name]] for prot in protein_id_ls]
+
+
+    info_df = pd.DataFrame(info_list,
+                           columns=['protein_id', 'length', 'coverage', 'gene_name', 'spec_count', 'ecm_class','file_name',
+                                    'file_number'])
+    info_df.to_csv('D:/data/Naba_deep_matrisome/01102021/all_protein_summary.csv')
 
 
 if __name__=='__main__':
@@ -78,7 +79,9 @@ if __name__=='__main__':
     protein_dict = fasta_reader(fasta_path)
 
     #
-    dash_dataframe(pep_path_list[1:7],psm_path_list[1:7],protein_dict,ecm_prot_list,ecm_info_dict)
+    dash_dataframe(pep_path_list,psm_path_list,protein_dict,ecm_prot_list,ecm_info_dict)
+
+    # calculate coverage ratio for each protein between time-series and non-time series
 
     """
     from tsv_reader import venn_diagram_gen
