@@ -261,8 +261,9 @@ if __name__=="__main__":
     fasta_info_dict = protein_info_from_fasta(fasta_path)
 
     base_path = 'D:/data/pats/results/'
-    psm_tsv = ['hek_zz_sp_only/psm.tsv',
-               'hek_zz_sp_isoforms_cory_db/psm.tsv']
+    psm_tsv = ['hek_zz_sp_isoforms/psm.tsv',
+               'hek_zz_sp_isoforms_default_close/psm.tsv',
+               'hek_zz_sp_isoform_cory_search/human_reviewed_and_isoforms_psm.tsv']
 
     peptide_tsv = ['hek_trypsin_4hour_sp_isoforms/peptide.tsv',
                'hek_trypsin_4hour_sp_only/peptide.tsv',
@@ -276,8 +277,8 @@ if __name__=="__main__":
         psm_path = base_path + each
         protein_path = base_path + each.replace('psm', 'protein')
         peptide_tsv_path = base_path + each.replace('psm', 'peptide')
-        protein_set = protein_reader(protein_path)
-        gene_set = set([fasta_info_dict[prot][0] for prot in protein_set])
+        # protein_set = protein_reader(protein_path)
+        # gene_set = set([fasta_info_dict[prot][0] for prot in protein_set])
 
         psm_dict = psm_reader(psm_path)[0]
 
