@@ -81,7 +81,7 @@ def whole_proteome_cov(aho_result, seq_line):
     """
 
     total_seq_len = len(seq_line)
-    zero_line = zero_line_for_seq(seq_line)
+    zero_line = np.zeros(len(seq_line))
     for pos in aho_result:
         zero_line[pos[0]:pos[1] + 1] += 1
     non_zero_len = np.count_nonzero(zero_line)
