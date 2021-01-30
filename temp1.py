@@ -77,7 +77,7 @@ for prot in protein_id_set:
 
 print (df_18_2_accumulated)
 
-"""
+
 # line plot
 average_182A_coverage = df[df['sample_name']=='18_2A']['coverage'].mean()
 
@@ -107,7 +107,7 @@ ax.tick_params(axis='both', which='major', labelsize=15)
 plt.axhline(y=average_182A_coverage,xmin=0.04, xmax=0.96,linestyle='--',color='k',linewidth=3)
 plt.tight_layout()
 plt.show()
-"""
+
 
 
 # box-plot plotting
