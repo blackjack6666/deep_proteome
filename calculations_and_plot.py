@@ -70,28 +70,22 @@ def identified_proteome_cov(aho_result, protein_dict):
     return np.mean([v for v in iden_prot_cov_dict.values()]), iden_prot_cov_dict, prot_cov_dict
 
 
-def whole_proteome_cov(aho_result,protein_dict):
+def whole_proteome_cov(aho_result, seq_line):
     """
     -----
     get proteome coverage from aho-corasick result
     -----
     :param aho_result:
-    :param protein_dict: proteome dictionary, uniprot ID entry as key, sequence as value
+    :param seq_line: long sequence line, no separator "|"
     :return:
     """
-    ID_list, seq_list = multiprocessing_naive_algorithym.extract_UNID_and_seq(protein_dict)
 
-    total_seq_len = len(''.join(seq_list))
-    #print ('total seq len:', total_seq_len)
-
-    seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list)
-    #print ('seq len with separator: ', len(seq_line))
-
-    zero_line = multiprocessing_naive_algorithym.zero_line_for_seq(seq_line)
-
+    total_seq_len = len(seq_line)
+    zero_line = zero_line_for_seq(seq_line)
     for pos in aho_result:
-        zero_line[pos[0]:pos[1]+1] += 1
+        zero_line[pos[0]:pos[1] + 1] += 1
     non_zero_len = np.count_nonzero(zero_line)
+    print (non_zero_len)
 
     return float(non_zero_len)/total_seq_len*100
 

@@ -19,8 +19,8 @@ def read_seq_length_into_nparray(seq_list):
         seq_length_array = np.append(seq_length_array, len(each_seq))
     return seq_length_array
 
-def creat_total_seq_line(seq_list):
-    seq_line = '|'.join(seq_list)
+def creat_total_seq_line(seq_list, sep=None):
+    seq_line = '|'.join(seq_list) if sep == '|' else ''.join(seq_list)
     return seq_line
 
 def zero_line_for_seq(seq_line):
