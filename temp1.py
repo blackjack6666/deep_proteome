@@ -77,7 +77,6 @@ for prot in protein_id_set:
 
 print (df_18_2_accumulated)
 
-
 # line plot
 average_182A_coverage = df[df['sample_name']=='18_2A']['coverage'].mean()
 
@@ -95,19 +94,43 @@ lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in colors[:
 lines.append(Line2D([0], [0], color='black', linewidth=3, linestyle='--'))
 
 # plotting
-ax = df_18_2_accumulated.plot.line(color=color_map, figsize=(10,15))
-ax.get_legend().remove()
-ax.legend(lines, labels, framealpha=0.5,loc='upper right',fontsize=15)
-ax.set_xticks(np.arange(len(df_18_2_accumulated.index)))
-ax.set_xticklabels(['0.5h','1h','2h','4h','18h', '20h'], fontsize=15)
-ax.set_title('time-series accumulated ECM protein coverage in 18_2B', fontsize=22)
-ax.set_xlabel('time point', fontsize=20)
-ax.set_ylabel('%coverage',fontsize=20)
-ax.tick_params(axis='both', which='major', labelsize=15)
-plt.axhline(y=average_182A_coverage,xmin=0.04, xmax=0.96,linestyle='--',color='k',linewidth=3)
-plt.tight_layout()
-plt.show()
 
+# ax = df_18_2_accumulated.plot.line(color=color_map, figsize=(10,15))  # dataframe plot
+
+
+fig,ax = plt.subplots(1,1, figsize=(10,15))
+
+# plot each line at a time
+# x = range(len(df_18_2_accumulated.index))
+# for column in df_18_2_accumulated.columns:
+#     y = df_18_2_accumulated[column]
+#     if y[-1]-y[0] == 0: # if line is flat, make it transparent
+#         ax.plot(x,y, color=color_map[column], linestyle='-',alpha=0.1)
+#     else:
+#         ax.plot(x,y, color=color_map[column], linestyle='-')
+
+# ax.get_legend().remove()
+# ax.legend(lines, labels, framealpha=0.5,loc='upper right',fontsize=15)
+# ax.set_xticks(np.arange(len(df_18_2_accumulated.index)))
+# ax.set_xticklabels(['0.5h','1h','2h','4h','18h', '20h'], fontsize=15)
+# ax.set_title('time-series accumulated ECM protein coverage in 163_3B', fontsize=22)
+# ax.set_xlabel('time point', fontsize=20)
+# ax.set_ylabel('%coverage',fontsize=20)
+# ax.tick_params(axis='both', which='major', labelsize=15)
+# plt.axhline(y=average_182A_coverage,xmin=0.04, xmax=0.96,linestyle='--',color='k',linewidth=3)
+# plt.tight_layout()
+# plt.show()
 
 
 # box-plot plotting
+coverage_18_2A = df[df['sample_name']=='18_2A']['coverage'].tolist()
+coverage_18_2B_20 = [each for each in df_18_2_accumulated.iloc[-1,:].tolist() if each!=0]
+ax.boxplot([coverage_18_2A,coverage_18_2B_20], labels=['20 hour', 'time-series accumulated 20 hour'],showfliers=False)
+# plot points onto boxplot
+for i,cov_list in zip(range(1,3),[coverage_18_2A,coverage_18_2B_20]):
+    x = np.random.normal(i, 0.04, size=len(cov_list))  # jitter x-axis
+    ax.plot(x,cov_list,'r.',markersize=10 ,alpha=0.2)
+ax.set_title('ECM protein coverage distribution of 18_2 in two digestions', fontsize=22)
+ax.tick_params(axis='both', which='major', labelsize=15)
+ax.set_ylabel('%coverage',fontsize=20)
+plt.show()
