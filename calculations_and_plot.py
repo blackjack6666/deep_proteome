@@ -52,7 +52,7 @@ def identified_proteome_cov(aho_result, protein_dict):
     prot_cov_dict = {}
     ID_list, seq_list = multiprocessing_naive_algorithym.extract_UNID_and_seq(protein_dict)
 
-    seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list)
+    seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list,sep='|')
     separtor_pos_array = multiprocessing_naive_algorithym.separator_pos(seq_line)
 
     zero_line = multiprocessing_naive_algorithym.zero_line_for_seq(seq_line)
