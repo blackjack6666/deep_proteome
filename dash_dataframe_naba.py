@@ -14,7 +14,7 @@ import pickle as p
 def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ecm_info_dict):
     file_name_number_dict = {pep_tsv.split('/')[-2]: i for pep_tsv, i in zip(pep_path_list, range(len(pep_path_list)))}
     id_list, seq_list = extract_UNID_and_seq(protein_dict)
-    seq_line = creat_total_seq_line(seq_list)
+    seq_line = creat_total_seq_line(seq_list,sep='|')
     pos_id_dict = read_position_ID_into_dict(id_list, seq_list, seq_line)
 
     info_list = []
@@ -48,7 +48,7 @@ def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ec
                       ecm_info_dict[prot][2],
                       file_name,
                       file_name_number_dict[file_name]] for prot in protein_id_ls]
-
+        info_list+=file_list
 
     info_df = pd.DataFrame(info_list,
                            columns=['protein_id', 'length', 'coverage', 'gene_name', 'spec_count', 'ecm_class','file_name',
