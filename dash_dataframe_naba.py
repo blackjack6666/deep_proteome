@@ -9,6 +9,8 @@ from protein_coverage import fasta_reader
 import matplotlib.pyplot as plt
 import statistics
 import pickle as p
+import seaborn as sns
+from math import log10,log2
 
 
 def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ecm_info_dict):
@@ -71,19 +73,19 @@ if __name__=='__main__':
     folders = [f for f in os.listdir(base_path) if '.' not in f]
     psm_path_list = [base_path + each + '/psm.tsv' for each in folders]
     pep_path_list = [base_path + each + '/peptide.tsv' for each in folders]
-    peptide_163_05_20 = list(set([pep for pep_file in pep_path_list[8:] for pep in peptide_counting(pep_file)]))
-    peptide_163_3A = peptide_counting(pep_path_list[7])
+    peptide_163_05_20 = list(set([pep for pep_file in pep_path_list[1:7] for pep in peptide_counting(pep_file)]))
+    peptide_163_3A = peptide_counting(pep_path_list[0])
     print (pep_path_list[1:7])
 
     fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
     protein_dict = fasta_reader(fasta_path)
 
     #
-    dash_dataframe(pep_path_list,psm_path_list,protein_dict,ecm_prot_list,ecm_info_dict)
+    # dash_dataframe(pep_path_list,psm_path_list,protein_dict,ecm_prot_list,ecm_info_dict)
 
     # calculate coverage ratio for each protein between time-series and non-time series
 
-    """
+
     from tsv_reader import venn_diagram_gen
     file_path = 'D:/data/Naba_deep_matrisome/matrisome coverage.xlsx'
 
@@ -97,7 +99,7 @@ if __name__=='__main__':
     ecm_info_dict = {each: (df.loc[each, 'gene_id'], df.loc[each, 'loc'], df.loc[each, 'category']) for each in
                      ecm_prot_list}
     id_list, seq_list = extract_UNID_and_seq(new_protein_dict)
-    seq_line = creat_total_seq_line(seq_list)
+    seq_line = creat_total_seq_line(seq_list,sep='|')
     automaton = aho_corasick.automaton_trie(peptide_163_05_20)
     aho_result = aho_corasick.automaton_matching(automaton,seq_line)
     coverage_dict = identified_proteome_cov(aho_result, new_protein_dict)[1]
@@ -105,7 +107,6 @@ if __name__=='__main__':
     automaton2 = aho_corasick.automaton_trie(peptide_163_3A)
     aho_result2 = aho_corasick.automaton_matching(automaton2,seq_line)
     coverage_dict2 = identified_proteome_cov(aho_result2,new_protein_dict)[1]
-    overlapped_ecm_dict = {each for each in coverage_dict if each in coverage_dict2}
 
     new_cov_dict = {}
     for prot in coverage_dict:
@@ -123,16 +124,23 @@ if __name__=='__main__':
     color_map = {each: c for each, c in zip(ecm_class, color)}
     dash_info_dict = {row['protein_id']:(row['length'],row['gene'],row['uniprot_num'],row['ecm_class']) for index, row in df_dash.iterrows()}
 
-    info_list = [[each, new_cov_dict[each],dash_info_dict[each][0],dash_info_dict[each][1],dash_info_dict[each][2],dash_info_dict[each][3]]
+    info_list = [[each, new_cov_dict[each],log10(dash_info_dict[each][0]),dash_info_dict[each][1],dash_info_dict[each][2],dash_info_dict[each][3]]
                  for each in new_cov_dict if new_cov_dict[each] != 100]
 
 
-    cov_ratio_df = pd.DataFrame(info_list, columns=['protein_id','coverage_ratio', 'length', 'gene','uniprot_num','ecm_class'])
+    cov_ratio_df = pd.DataFrame(info_list, columns=['protein_id','coverage_ratio', 'log10length', 'gene','uniprot_num','ecm_class'])
     print (cov_ratio_df.shape)
-    fig = px.scatter(cov_ratio_df, x="uniprot_num", y="length",
-                     size="coverage_ratio", color='ecm_class', hover_name="gene",
-                     log_x=False, size_max=55, color_discrete_map=color_map)
-    fig.show()
+    # sizes_dict = {cov:int(cov*20) for cov in cov_ratio_df['coverage_ratio']}
+    ax = sns.scatterplot(data=cov_ratio_df,x="uniprot_num",y="log10length",size="coverage_ratio",sizes=(20,200),hue='ecm_class',palette='deep',alpha=0.5)
+    ax.set_xlabel('Uniprot num', fontsize=15)
+    ax.set_ylabel('log10(length)',fontsize=15)
+    ax.legend(framealpha=0.5)
+    plt.show()
+
+    # fig = px.scatter(cov_ratio_df, x="uniprot_num", y="length",
+    #                  size="coverage_ratio", color='ecm_class', hover_name="gene",
+    #                  log_x=False, size_max=55, color_discrete_map=color_map)
+    # fig.show()
 
     # coverage_array = [v for v in coverage_dict.values()]
     # print (statistics.mean(coverage_array))
@@ -150,4 +158,3 @@ if __name__=='__main__':
     # venn_dict = {'163_3_time_lapsed_digestion': protein_1805_1820_list,'163_3_20hour_digestion': protein_18_2A_list}
     # venn_diagram_gen(venn_dict)
     # print ([ecm_info_dict[prot] for prot in protein_1805_1820_list if prot not in protein_18_2A_list])
-    """
