@@ -92,15 +92,19 @@ def venn_diagram_gen(dictionary, title=''): # parameter could be a dictionary of
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
 
     if len(dictionary) == 2:  # two samples for venn diagram
-        venn2(value_list_of_sets, set_labels=sample_name_list)
+        out = venn2(value_list_of_sets, set_labels=sample_name_list)
 
     elif len(dictionary) == 3:  # 3 samples for venn diagram
-        venn3(value_list_of_sets, set_labels=sample_name_list)
+        out = venn3(value_list_of_sets, set_labels=sample_name_list)
 
     else:
         print ('Error: only 2 or 3 comparison for venn diagram are accepted in this script.')
 
-    plt.title(title)
+
+    for t in out.set_labels: t.set_fontsize(22)
+    for t in out.subset_labels: t.set_fontsize(20)
+
+    fig.suptitle(title, fontsize=22)
     plt.show()
 
 
@@ -261,9 +265,8 @@ if __name__=="__main__":
     fasta_info_dict = protein_info_from_fasta(fasta_path)
 
     base_path = 'D:/data/pats/results/'
-    psm_tsv = ['hek_zz_sp_isoforms/psm.tsv',
-               'hek_zz_sp_isoforms_default_close/psm.tsv',
-               'hek_zz_sp_isoform_cory_search/human_reviewed_and_isoforms_psm.tsv']
+    psm_tsv = ['hek_zz_sp_isoform_default_closed_param/psm.tsv',
+               'hek_zz_sp_isoform_no_razor/psm.tsv']
 
     peptide_tsv = ['hek_trypsin_4hour_sp_isoforms/peptide.tsv',
                'hek_trypsin_4hour_sp_only/peptide.tsv',
@@ -273,21 +276,24 @@ if __name__=="__main__":
 
     venn_dict = {}
     for each in psm_tsv:
-        file = '_'.join(each.split('/')[0].split('_')[2:])
+        file = '_'.join(each.split('/')[0].split('_')[4:])
         psm_path = base_path + each
         protein_path = base_path + each.replace('psm', 'protein')
         peptide_tsv_path = base_path + each.replace('psm', 'peptide')
-        # protein_set = protein_reader(protein_path)
-        # gene_set = set([fasta_info_dict[prot][0] for prot in protein_set])
-
+        protein_set = protein_tsv_reader(protein_path)
+        print ('protein', len(protein_set))
+        gene_set = set([fasta_info_dict[prot][0] for prot in protein_set])
+        print ('gene', len(gene_set))
         psm_dict = psm_reader(psm_path)[0]
 
         peptide_list = peptide_counting(peptide_tsv_path)
-        print(peptide_list)
+        print(len(peptide_list))
         psm_list = [pep + '_' + str(i) for pep in psm_dict for i in range(psm_dict[pep])]
         print(file, len(psm_list))
         venn_dict[file] = peptide_list
-    venn_diagram_gen(venn_dict)
+    # venn_diagram_gen(venn_dict,title='gene ids')
+    peptide_lists = [v for v in venn_dict.values()]
+    print ([pep for pep in peptide_lists[0] if pep in peptide_lists[1]])
     # venn_dict = {'163_3_dec': [k for k in info_dict['163_3_dec']],'163_3_extr': [k for k in info_dict['163_3_extr']]}
     # venn_dict = {each_file.split('\\')[-2]:peptide_counting(each_file)
     #              for each_file in file_list[:2]}
