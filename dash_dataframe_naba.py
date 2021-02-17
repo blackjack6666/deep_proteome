@@ -30,32 +30,32 @@ def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ec
         aho_result = aho_corasick.automaton_matching(automaton, seq_line)
         coverage_dict = identified_proteome_cov(aho_result, protein_dict)[1]
         id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
-        # id_pep_dict = {k:id_pep_dict[k] for k in id_pep_dict if k in ecm_prot_list}
-        # file_id_peptide_dict[file_name] = id_pep_dict
-    # p.dump(file_id_peptide_dict,open('all_file_id_pep_dict.p','wb'))
-        psm_dict = psm_reader(psm_tsv)[0]
-        prot_spec_dict = {}
-        for id in id_pep_dict:
-            spec = 0
-            for pep in id_pep_dict[id]:
-                spec += psm_dict[pep]
-            prot_spec_dict[id] = spec
-        # protein_id_ls = [k for k in id_pep_dict if k in ecm_prot_list]
-        protein_id_ls = [k for k in id_pep_dict]
-        file_list = [[prot,
-                      len(protein_dict[prot]),
-                      coverage_dict[prot],
-                      ecm_info_dict[prot][0],
-                      prot_spec_dict[prot],
-                      ecm_info_dict[prot][2],
-                      file_name,
-                      file_name_number_dict[file_name]] for prot in protein_id_ls]
-        info_list+=file_list
-
-    info_df = pd.DataFrame(info_list,
-                           columns=['protein_id', 'length', 'coverage', 'gene_name', 'spec_count', 'ecm_class','file_name',
-                                    'file_number'])
-    info_df.to_csv('D:/data/Naba_deep_matrisome/01102021/all_protein_summary.csv')
+        id_pep_dict = {k:id_pep_dict[k] for k in id_pep_dict if k in ecm_prot_list}
+        file_id_peptide_dict[file_name] = id_pep_dict
+    p.dump(file_id_peptide_dict,open('163_3_id_pepdict_0215.p','wb'))
+    #     psm_dict = psm_reader(psm_tsv)[0]
+    #     prot_spec_dict = {}
+    #     for id in id_pep_dict:
+    #         spec = 0
+    #         for pep in id_pep_dict[id]:
+    #             spec += psm_dict[pep]
+    #         prot_spec_dict[id] = spec
+    #     protein_id_ls = [k for k in id_pep_dict if k in ecm_prot_list]
+    #     # protein_id_ls = [k for k in id_pep_dict]
+    #     file_list = [[prot,
+    #                   len(protein_dict[prot]),
+    #                   coverage_dict[prot],
+    #                   ecm_info_dict[prot][0],
+    #                   prot_spec_dict[prot],
+    #                   ecm_info_dict[prot][2],
+    #                   file_name,
+    #                   file_name_number_dict[file_name]] for prot in protein_id_ls]
+    #     info_list+=file_list
+    #
+    # info_df = pd.DataFrame(info_list,
+    #                        columns=['protein_id', 'length', 'coverage', 'gene_name', 'spec_count', 'ecm_class','file_name',
+    #                                 'file_number'])
+    # info_df.to_csv('D:/data/Naba_deep_matrisome/02152021_1/dash_info.csv')
 
 
 if __name__=='__main__':
@@ -69,19 +69,19 @@ if __name__=='__main__':
     df = df.set_index('protein_id')
     ecm_info_dict = {each:(df.loc[each,'gene_id'], df.loc[each, 'loc'], df.loc[each,'category']) for each in ecm_prot_list}
     #
-    base_path = 'D:/data/Naba_deep_matrisome/01102021/'
+    base_path = 'D:/data/Naba_deep_matrisome/02152021_1/'
     folders = [f for f in os.listdir(base_path) if '.' not in f]
     psm_path_list = [base_path + each + '/psm.tsv' for each in folders]
     pep_path_list = [base_path + each + '/peptide.tsv' for each in folders]
-    peptide_163_05_20 = list(set([pep for pep_file in pep_path_list[1:7] for pep in peptide_counting(pep_file)]))
-    peptide_163_3A = peptide_counting(pep_path_list[0])
+    peptide_163_05_20 = list(set([pep for pep_file in pep_path_list[8:] for pep in peptide_counting(pep_file)]))
+    peptide_163_3A = peptide_counting(pep_path_list[7])
     print (pep_path_list[1:7])
 
     fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
     protein_dict = fasta_reader(fasta_path)
 
     #
-    # dash_dataframe(pep_path_list,psm_path_list,protein_dict,ecm_prot_list,ecm_info_dict)
+    dash_dataframe(pep_path_list[:7],psm_path_list[:7],protein_dict,ecm_prot_list,ecm_info_dict)
 
     # calculate coverage ratio for each protein between time-series and non-time series
 
@@ -115,27 +115,29 @@ if __name__=='__main__':
     print (np.mean([new_cov_dict[each] for each in new_cov_dict if new_cov_dict[each]!=100]))
 
     print (new_cov_dict)
-    df_dash = pd.read_csv('D:/data/Naba_deep_matrisome/01102021/dash_info_new_1_20.csv')
+    df_dash = pd.read_csv('D:/data/Naba_deep_matrisome/02152021_1/dash_info.csv')
     ecm_class = df_dash.ecm_class.unique()
     length_of_color_scheme = len(ecm_class)
     color = ["#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)])
              for i in range(length_of_color_scheme)]
 
     color_map = {each: c for each, c in zip(ecm_class, color)}
-    dash_info_dict = {row['protein_id']:(row['length'],row['gene'],row['uniprot_num'],row['ecm_class']) for index, row in df_dash.iterrows()}
+    dash_info_dict = {row['protein_id']:(row['length'],row['gene_name'],row['uniprot_num'],row['ecm_class']) for index, row in df_dash.iterrows()}
 
     info_list = [[each, new_cov_dict[each],log10(dash_info_dict[each][0]),dash_info_dict[each][1],dash_info_dict[each][2],dash_info_dict[each][3]]
                  for each in new_cov_dict if new_cov_dict[each] != 100]
 
 
     cov_ratio_df = pd.DataFrame(info_list, columns=['protein_id','coverage_ratio', 'log10length', 'gene','uniprot_num','ecm_class'])
+    pd.set_option('display.max_columns', None)
+    print (cov_ratio_df[cov_ratio_df['coverage_ratio']==1])
     print (cov_ratio_df.shape)
     # sizes_dict = {cov:int(cov*20) for cov in cov_ratio_df['coverage_ratio']}
     ax = sns.scatterplot(data=cov_ratio_df,x="uniprot_num",y="log10length",size="coverage_ratio",sizes=(20,200),hue='ecm_class',palette='deep',alpha=0.5)
     ax.set_xlabel('Uniprot num', fontsize=15)
     ax.set_ylabel('log10(length)',fontsize=15)
     ax.legend(framealpha=0.5)
-    plt.show()
+    # plt.show()
 
     # fig = px.scatter(cov_ratio_df, x="uniprot_num", y="length",
     #                  size="coverage_ratio", color='ecm_class', hover_name="gene",
@@ -143,18 +145,22 @@ if __name__=='__main__':
     # fig.show()
 
     # coverage_array = [v for v in coverage_dict.values()]
+    # coverage_array2 = [v for v in coverage_dict2.values()]
     # print (statistics.mean(coverage_array))
-    # plt.hist(coverage_array,bins=15, color='black')
+    # plt.hist(coverage_array,bins=15, color='black',alpha=0.5,rwidth=1)
+    # plt.hist(coverage_array2,bins=15,color='grey',alpha=0.2,rwidth=1.5)
     # plt.xlim(0,100)
     # plt.xlabel('sequence coverage%')
     # plt.ylabel('frequency')
-    # plt.title('ECM sequence coverage distribution in time lapsed 18_2B digestion')
+    # # plt.title('ECM sequence coverage distribution in time lapsed and standard digestion in 18_2 sample')
     # plt.show()
-    #
-    # df = pd.read_csv('D:/data/Naba_deep_matrisome/01102021/dash_info_new.csv')
-    # protein_18_2A_list = df[df['file_number']==0]['protein_id'].tolist()
-    # protein_1805_1820_list = list(set([prot for i in range(1,7) for prot in df[df['file_number']==i]['protein_id'].tolist()]))
-    #
-    # venn_dict = {'163_3_time_lapsed_digestion': protein_1805_1820_list,'163_3_20hour_digestion': protein_18_2A_list}
-    # venn_diagram_gen(venn_dict)
+
+
+
+    df = pd.read_csv('D:/data/Naba_deep_matrisome/02152021_1/dash_info.csv')
+    protein_18_2A_list = df[df['file_number']==7]['protein_id'].tolist()
+    protein_1805_1820_list = list(set([prot for i in range(8,14) for prot in df[df['file_number']==i]['protein_id'].tolist()]))
+
+    venn_dict = {'18_2_time_lapsed_digestion': protein_1805_1820_list,'18_2_20hour_digestion': protein_18_2A_list}
+    venn_diagram_gen(venn_dict)
     # print ([ecm_info_dict[prot] for prot in protein_1805_1820_list if prot not in protein_18_2A_list])

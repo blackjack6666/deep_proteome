@@ -24,24 +24,24 @@ with ExcelWriter('D:/data/Naba_deep_matrisome/01102021/all_protein_spec_1_29.xls
             df.to_excel(writer,'%s' % each)
 """
 
-p_path = '18_2_id_pep_dict.p'
+p_path = '163_3_id_pepdict_0215.p'
 file_id_pep_dict = p.load(open(p_path,'rb'))
 
 fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
 protein_dict = fasta_reader(fasta_path)
 
 # get time-series accumulated covearge for ECM proteins
-df = pd.read_csv('D:/data/Naba_deep_matrisome/01102021/dash_info_new_1_20.csv')
+df = pd.read_csv('D:/data/Naba_deep_matrisome/02152021_1/dash_info.csv')
 
 df = df.drop(columns=['Unnamed: 0', 'Unnamed: 0.1'])
-df = df[(df['sample_name']=='18_2B05')|(df['sample_name']=='18_2B1')|(df['sample_name']=='18_2B2')|
-(df['sample_name']=='18_2B4')|(df['sample_name']=='18_2B18')|(df['sample_name']=='18_2B20')|(df['sample_name']=='18_2A')]
+df = df[(df['file_name']=='163_3B05')|(df['file_name']=='163_3B1')|(df['file_name']=='163_3B2')|
+(df['file_name']=='163_3B4')|(df['file_name']=='163_3B18')|(df['file_name']=='163_3B20')|(df['file_name']=='163_3A')]
 
 print (df.shape)
 
 protein_id_set = df['protein_id'].unique()
 # print (protein_id_set)
-file_set = df['sample_name'].unique()
+file_set = df['file_name'].unique()
 print (df['ecm_class'].unique())
 
 
@@ -49,7 +49,7 @@ print (len(protein_id_set))
 
 # print ([prot for prot in protein_id_set if prot not in id_pep_dict_1805])
 df_18_2_accumulated = pd.DataFrame()
-index_18_2 = ['18_2B05','18_2B1','18_2B2','18_2B4','18_2B18','18_2B20']
+index_18_2 = ['163_3B05','163_3B1','163_3B2','163_3B4','163_3B18','163_3B20']
 for prot in protein_id_set:
     protein_seq = protein_dict[prot]
 
@@ -78,7 +78,7 @@ for prot in protein_id_set:
 print (df_18_2_accumulated)
 
 # line plot
-average_182A_coverage = df[df['sample_name']=='18_2A']['coverage'].mean()
+average_182A_coverage = df[df['file_name']=='163_3A']['coverage'].mean()
 
 # line plot color map
 ecm_class_color_dict = {"Collagens": '#F23F51', 'ECM-affiliated Proteins':'#23AECA',
@@ -89,7 +89,7 @@ color_map = {prot:ecm_class_color_dict[ecm_class] for prot,ecm_class in zip(df['
 colors = [v for v in ecm_class_color_dict.values()]
 colors.append('black') # average flat line
 labels = [k for k in ecm_class_color_dict.keys()]
-labels.append('Average ECM protein coverage in 18_2A')
+labels.append('Average ECM protein coverage in 163_3A')
 lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in colors[:-1]]
 lines.append(Line2D([0], [0], color='black', linewidth=3, linestyle='--'))
 
@@ -113,7 +113,7 @@ fig,ax = plt.subplots(1,1, figsize=(10,15))
 # ax.legend(lines, labels, framealpha=0.5,loc='upper right',fontsize=15)
 # ax.set_xticks(np.arange(len(df_18_2_accumulated.index)))
 # ax.set_xticklabels(['0.5h','1h','2h','4h','18h', '20h'], fontsize=15)
-# ax.set_title('time-series accumulated ECM protein coverage in 163_3B', fontsize=22)
+# ax.set_title('time-series accumulated ECM protein coverage in 18_2', fontsize=22)
 # ax.set_xlabel('time point', fontsize=20)
 # ax.set_ylabel('%coverage',fontsize=20)
 # ax.tick_params(axis='both', which='major', labelsize=15)
@@ -123,14 +123,14 @@ fig,ax = plt.subplots(1,1, figsize=(10,15))
 
 
 # box-plot plotting
-coverage_18_2A = df[df['sample_name']=='18_2A']['coverage'].tolist()
+coverage_18_2A = df[df['file_name']=='163_3A']['coverage'].tolist()
 coverage_18_2B_20 = [each for each in df_18_2_accumulated.iloc[-1,:].tolist() if each!=0]
 ax.boxplot([coverage_18_2A,coverage_18_2B_20], labels=['20 hour', 'time-series accumulated 20 hour'],showfliers=False)
 # plot points onto boxplot
 for i,cov_list in zip(range(1,3),[coverage_18_2A,coverage_18_2B_20]):
     x = np.random.normal(i, 0.04, size=len(cov_list))  # jitter x-axis
     ax.plot(x,cov_list,'r.',markersize=10 ,alpha=0.2)
-ax.set_title('ECM protein coverage distribution of 18_2 in two digestions', fontsize=22)
+ax.set_title('ECM protein coverage distribution of 163_3 in two digestions', fontsize=22)
 ax.tick_params(axis='both', which='major', labelsize=15)
 ax.set_ylabel('%coverage',fontsize=20)
 plt.show()

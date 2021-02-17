@@ -276,25 +276,25 @@ if __name__=="__main__":
                'hek_trypsin_4hour_sp_tr_isoforms/peptide.tsv']
 
 
-    venn_dict = {}
-    for each in psm_tsv:
-        file = '_'.join(each.split('/')[0].split('_')[2:])
-        psm_path = base_path + each
-        protein_path = base_path + each.replace('psm', 'protein')
-        peptide_tsv_path = base_path + each.replace('psm', 'peptide')
-        protein_set = protein_reader(protein_path)
-        print ('protein', len(protein_set))
-        gene_set = set([fasta_info_dict[prot][0] for prot in protein_set])
-        print ('gene', len(gene_set))
-        psm_dict = psm_reader(psm_path)[0]
-
-        peptide_list = peptide_counting(peptide_tsv_path)
-        print(len(peptide_list))
-        psm_list = [pep + '_' + str(i) for pep in psm_dict for i in range(psm_dict[pep])]
-        print(file, len(psm_list))
-        venn_dict[file] = gene_set
-    venn_diagram_gen2(venn_dict,title='gene ids')
-    gene_list = [v for v in venn_dict.values()]
+    # venn_dict = {}
+    #     # for each in psm_tsv:
+    #     #     file = '_'.join(each.split('/')[0].split('_')[2:])
+    #     #     psm_path = base_path + each
+    #     #     protein_path = base_path + each.replace('psm', 'protein')
+    #     #     peptide_tsv_path = base_path + each.replace('psm', 'peptide')
+    #     #     protein_set = protein_reader(protein_path)
+    #     #     print ('protein', len(protein_set))
+    #     #     gene_set = set([fasta_info_dict[prot][0] for prot in protein_set])
+    #     #     print ('gene', len(gene_set))
+    #     #     psm_dict = psm_reader(psm_path)[0]
+    #     #
+    #     #     peptide_list = peptide_counting(peptide_tsv_path)
+    #     #     print(len(peptide_list))
+    #     #     psm_list = [pep + '_' + str(i) for pep in psm_dict for i in range(psm_dict[pep])]
+    #     #     print(file, len(psm_list))
+    #     #     venn_dict[file] = gene_set
+    #     # venn_diagram_gen2(venn_dict,title='gene ids')
+    #     # gene_list = [v for v in venn_dict.values()]
     # print ([gene for gene in gene_list[2] if gene not in gene_list[-1] and gene not in gene_list[1]])
     # venn_dict = {'163_3_dec': [k for k in info_dict['163_3_dec']],'163_3_extr': [k for k in info_dict['163_3_extr']]}
     # venn_dict = {each_file.split('\\')[-2]:peptide_counting(each_file)
@@ -317,11 +317,11 @@ if __name__=="__main__":
     #     miss_cleav_dict = miss_cleavage_identify(pep_list,regex_pattern=r'(?:F|W|Y)\w+')
     #     print (float(np.count_nonzero([each for each in miss_cleav_dict.values()]))/len(pep_list))
 
-    # df = pd.read_csv('D:/data/Naba_deep_matrisome/01102021/dash_info_new.csv')
-    # uniprot_num_list = [convert_uniprot_tonum(uni_id) for uni_id in df['protein_id']]
-    # df['uniprot_num'] = uniprot_num_list
-    # df['log_protein_len'] = [math.log2(each) for each in df['length']]
-    # df.to_csv('D:/data/Naba_deep_matrisome/01102021/dash_info_new_1_20.csv')
-    # df = df.drop('Unnamed: 0', axis=1)
+    df = pd.read_csv('D:/data/Naba_deep_matrisome/02152021_1/dash_info.csv')
+    uniprot_num_list = [convert_uniprot_tonum(uni_id) for uni_id in df['protein_id']]
+    df['uniprot_num'] = uniprot_num_list
+    df['log_protein_len'] = [math.log2(each) for each in df['length']]
+    df.to_csv('D:/data/Naba_deep_matrisome/02152021_1/dash_info.csv')
+    df = df.drop('Unnamed: 0', axis=1)
 
 
