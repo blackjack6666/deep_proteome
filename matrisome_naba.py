@@ -9,11 +9,11 @@ import multiprocessing_naive_algorithym
 
 #custom_db build
 
-# file_path = 'C:/uic/lab/data/naba/matrisome coverage.xlsx'
-#
-# df = pd.read_excel(file_path)
-# df = df.drop_duplicates()
-# print(df.shape)
+file_path = 'D:/data/Naba_deep_matrisome/matrisome coverage.xlsx'
+
+df = pd.read_excel(file_path)
+df = df.drop_duplicates()
+print(df.head())
 #
 # ecm_protein_id_set = set(df['protein_id'].to_list())
 # print (len(ecm_protein_id_set))
@@ -145,7 +145,7 @@ protein_list_182A = list(set([prot for prot in combined_protein_dict['18_2A']]))
 ecm_182A = [each for each in protein_list_182A if each in ecm_prot_list]
 print ([prot for prot in ecm_182A if prot not in ecm_1805_1820])
 print (len(protein_list_1805_1820),len(protein_list_182A))
-venn_dict = {'18_2_time_lapsed_digestion': ecm_1805_1820,'18_2_20hour_digestion': ecm_182A}
+# venn_dict = {'18_2_time_lapsed_digestion': ecm_1805_1820,'18_2_20hour_digestion': ecm_182A}
 # venn_diagram_gen(venn_dict,title='ECM proteins identified between time-lapsed digestion and normal digestion in 18_2')
 # plot_prot_combined_tsv(combined_prot)
 # print (len(combined_protein_dict['18_2B20']))

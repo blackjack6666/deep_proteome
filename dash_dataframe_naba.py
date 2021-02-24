@@ -1,6 +1,6 @@
 import pandas as pd
 from multiprocessing_naive_algorithym import extract_UNID_and_seq,creat_total_seq_line,creat_ID_pep_dict,\
-    read_position_ID_into_dict
+    read_position_ID_into_dict, creat_pep_ID_dict
 from tsv_reader import psm_reader,peptide_counting, protein_tsv_reader
 from calculations_and_plot import identified_proteome_cov
 import aho_corasick
@@ -29,10 +29,12 @@ def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ec
         automaton = aho_corasick.automaton_trie(pep_list)
         aho_result = aho_corasick.automaton_matching(automaton, seq_line)
         coverage_dict = identified_proteome_cov(aho_result, protein_dict)[1]
-        id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
-        id_pep_dict = {k:id_pep_dict[k] for k in id_pep_dict if k in ecm_prot_list}
-        file_id_peptide_dict[file_name] = id_pep_dict
-    p.dump(file_id_peptide_dict,open('163_3_id_pepdict_0215.p','wb'))
+        # id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
+        # id_pep_dict = {k:id_pep_dict[k] for k in id_pep_dict if k in ecm_prot_list}
+        pep_id_dict = creat_pep_ID_dict(aho_result,pos_id_dict)
+        pep_id_dict = {k:pep_id_dict[k] for k in pep_id_dict if pep_id_dict[k] in ecm_prot_list}
+        file_id_peptide_dict[file_name] = pep_id_dict
+    p.dump(file_id_peptide_dict,open('163_3_pep_iddict_0215.p','wb'))
     #     psm_dict = psm_reader(psm_tsv)[0]
     #     prot_spec_dict = {}
     #     for id in id_pep_dict:
