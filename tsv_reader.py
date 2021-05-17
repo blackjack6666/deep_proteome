@@ -1,5 +1,5 @@
 from collections import defaultdict
-
+import re
 
 def peptide_info_reader(psm_path:str):
     """
@@ -38,6 +38,24 @@ def peptide_charger_reader(pep_tsv):
             charge = [line_split[2]] if ', ' not in line_split[2] else line_split[2].split(', ')
             peptide_charge_dict[peptide_seq] = charge
         return peptide_charge_dict
+
+
+def peptide_phospho_reader(peptide_tsv_file, mod=0.9840): # 79.9663 is the delta mass of phosphorylation on STY
+    pep_phos_dict = defaultdict()
+    mod_str = "%.4f" % mod # keep last 4 digits
+    with open(peptide_tsv_file) as file_open:
+        for i in range(1):
+            next(file_open)
+        for line in file_open:
+            pep_seq = line.split('\t')[0]
+
+            pattern = re.compile('\d+\w{1}\('+mod_str+'\)')
+            regex = re.findall(pattern, line)
+            #print (regex)
+            for ele in regex:
+                if ele != '':
+                    pep_phos_dict[pep_seq]=regex
+    return pep_phos_dict
 
 
 def protein_tsv_reader(protein_tsv_file):
@@ -216,7 +234,7 @@ def protein_info_from_fasta(fasta_path):
     info_dict = {}
     with open(fasta_path,'r') as f:
         for line in f:
-            if line.startswith('>'):
+             if line.startswith('>'):
                 protein_id = line.split('|')[1]
                 cls = line.split('|')[0].split('>')[1]
                 # print (protein_id)

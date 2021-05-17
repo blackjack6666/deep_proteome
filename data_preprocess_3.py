@@ -5,7 +5,7 @@ mapping identified peptides to cleaved and missed cleaved sites without using cl
 from collections import defaultdict
 
 
-def protein_id_peplist_dict_getter(proteome_dict,peptide_list):
+def protein_id_peplist_dict_getter(proteome_dict,peptide_list,sep='|'):
     """
     get a dictionary with protein id as key, a set of identified peps as value.
     :param proteome_dict:
@@ -16,7 +16,7 @@ def protein_id_peplist_dict_getter(proteome_dict,peptide_list):
     import aho_corasick
 
     ID_list, seq_list = multiprocessing_naive_algorithym.extract_UNID_and_seq(proteome_dict)
-    seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list)
+    seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list,sep=sep)
     automaton = aho_corasick.automaton_trie(peptide_list)
     aho_result = aho_corasick.automaton_matching(automaton,seq_line)
     pos_id_dict = multiprocessing_naive_algorithym.read_position_ID_into_dict(ID_list,seq_list,seq_line)
@@ -122,10 +122,10 @@ if __name__=='__main__':
     from protein_coverage import fasta_reader2
 
     # protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/protein.tsv"
-    peptide_tsv_path = "D:/data/non_specific_search/peptide.tsv"
+    peptide_tsv_path = "D:/data/deep_proteome/non_specfic_search/ct_4h/peptide.tsv"
     # psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/psm.tsv"
 
-    fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000000558_ecoli.fasta'
+    fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
     proteome_dict = fasta_reader2(fasta_path)
     # protein_seq = proteome_dict['P22234']
 
@@ -137,4 +137,4 @@ if __name__=='__main__':
     print('number of proteins with polymers reported: %i' % len(protein_poly_dict))
     print(Counter([v for v in polymer_label_dict.values()]), len(polymer_label_dict))
     print('uncertain ploymer number: %i' % uncertain_polymer_no)
-    ppp.dump(polymer_label_dict, open('D:/data/non_specific_search/ecoli_non_specific_search_poly_dict.p', 'wb'))
+    ppp.dump(polymer_label_dict, open('D:/data/deep_proteome/non_specfic_search/ct_4h_polymer.p', 'wb'))

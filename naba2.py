@@ -1,0 +1,118 @@
+import pandas as pd
+from tsv_reader import venn_diagram_gen
+import numpy as np
+import pickle as p
+from scipy.stats import ttest_ind
+from collections import defaultdict
+import matplotlib.pyplot as plt
+import pickle as p
+from matplotlib.lines import Line2D
+from scipy.stats import ttest_rel
+
+df = pd.read_csv('D:/data/Naba_deep_matrisome/02152021_1/dash_info.csv')
+protein_18_2A_list = df[df['file_number']==7]['protein_id'].tolist()
+protein_1805_1820_list = list(set([prot for i in range(8,14) for prot in df[df['file_number']==i]['protein_id'].tolist()]))
+
+protein_163_3A_list = df[df['file_number']==0]['protein_id'].tolist()
+protein_16305_20_list = list(set([prot for i in range(1,7) for prot in df[df['file_number']==i]['protein_id'].tolist()]))
+# print ([ecm_info_dict[prot] for prot in protein_1805_1820_list if prot not in protein_18_2A_list])
+
+# venn_dict = {"163_3A_time_series_digestion": protein_16305_20_list,'18_2A_time_series_digestion':protein_1805_1820_list}
+# venn_diagram_gen(venn_dict)
+
+
+protein_list = [prot for prot in protein_16305_20_list if prot not in protein_1805_1820_list]
+for each in protein_list:
+    print (each)
+
+
+ECM_categories = ['Collagens','ECM Glycoproteins','ECM Regulators','Proteoglycans','ECM-affiliated Proteins','Secreted Factors']
+
+for each_cat in ECM_categories:
+    cov_csv_182 = 'D:/data/Naba_deep_matrisome/02152021_1/'+'18_2_'+each_cat+'_cov.csv'
+    cov_csv_163 = 'D:/data/Naba_deep_matrisome/02152021_1/'+'163_3_'+each_cat+'_cov.csv'
+    cov_df_182,cov_df_163 = pd.read_csv(cov_csv_182),pd.read_csv(cov_csv_163)
+    t, p_val = ttest_ind(cov_df_163.iloc[-1,1:],cov_df_182.iloc[-1,1:], equal_var=False)
+    print (each_cat, t, p_val)
+
+    # cov_csv = 'D:/data/Naba_deep_matrisome/02152021_1/'+'18_2_'+each_cat+'_cov.csv'
+    # cov_df = pd.read_csv(cov_csv)
+    # print (cov_df.shape[1], np.mean(cov_df.iloc[-1,1:]))
+
+# p_path = '163_3_id_pepdict_0215.p'
+# file_id_pep_dict = p.load(open(p_path,'rb'))
+# print (file_id_pep_dict['163_3B2']['P07356'])
+#
+# p_path_2 = '18_2_id_pepdict_0215.p'
+# file_id_pep_dict2 = p.load(open(p_path_2,'rb'))
+# print (file_id_pep_dict2['18_2B05']['P07356'])
+
+ecm_protein_color_dict = p.load(open('D:/data/Naba_deep_matrisome/02152021_1/ecm_protein_color_map_dict.p','rb'))
+ecm_class_color_dict = {"Collagens": '#F23F51', 'ECM-affiliated Proteins':'#23AECA',
+                        'ECM Regulators':"#23CA66","Secreted Factors":"#E3EB09",
+                        "ECM Glycoproteins":"#EBA709", "Proteoglycans":"#EB09DC"}
+color_ecm_class_dict = {ecm_class_color_dict[cat]:cat for cat in ecm_class_color_dict}
+
+accu_cov_csv_163 = 'D:/data/Naba_deep_matrisome/02152021_1/163_3_accumulated_cov.csv'
+accu_cov_csv_182 = 'D:/data/Naba_deep_matrisome/02152021_1/18_2_accumulated_cov.csv'
+df_accu_cov_163,df_accu_cov_182 = pd.read_csv(accu_cov_csv_163), pd.read_csv(accu_cov_csv_182)
+overlapp_protein_list = np.intersect1d(df_accu_cov_163.columns.values[1:],df_accu_cov_182.columns.values[1:])
+# df_overlap_protein_cov = pd.DataFrame(columns=overlapp_protein_list,index=['163_X','163_Y','182_X','182_Y','color', 'ECM catgory'])
+# df_overlap_protein_cov.iloc[0,:] = np.random.normal(1, 0.04, size=len(overlapp_protein_list))
+# df_overlap_protein_cov.iloc[1,:] = [df_accu_cov_163[prot].values[-1] for prot in overlapp_protein_list]
+# df_overlap_protein_cov.iloc[2,:] = np.random.normal(2, 0.04, size=len(overlapp_protein_list))
+# df_overlap_protein_cov.iloc[3,:] = [df_accu_cov_182[prot].values[-1] for prot in overlapp_protein_list]
+# df_overlap_protein_cov.iloc[4,:] = [ecm_protein_color_dict[prot] for prot in overlapp_protein_list]
+# df_overlap_protein_cov.iloc[5,:] = [color_ecm_class_dict[color] for color in [ecm_protein_color_dict[prot] for prot in overlapp_protein_list]]
+
+df_overlap_protein_cov = p.load(open('D:/data/Naba_deep_matrisome/02152021_1/df_overlap_protein_cov.p','rb'))
+# df_overlap_protein_cov.to_csv('D:/data/Naba_deep_matrisome/02152021_1/df_overlap_protein_cov.csv',index=False)
+
+# df_overlap_protein_cov = pd.read_csv('D:/data/Naba_deep_matrisome/02152021_1/df_overlap_protein_cov.csv')
+
+df_transpose = df_overlap_protein_cov.transpose()
+df_transpose.columns = ['163_X','163_Y','182_X','182_Y','color', 'ECM catgory']
+
+fig,ax = plt.subplots(1,1, figsize=(10,15))
+
+x_163 = df_transpose.iloc[:,0]
+y_163 = df_transpose.iloc[:,1]
+x_182 = df_transpose.iloc[:,2]
+y_182 = df_transpose.iloc[:,3]
+color_list = df_transpose.iloc[:,4]
+
+
+sub_df = df_transpose[df_transpose['ECM catgory']=='ECM Glycoproteins']
+print (sub_df.shape)
+sub_x_163 = sub_df.iloc[:,0]
+sub_y_163 = sub_df.iloc[:,1]
+sub_x_182 = sub_df.iloc[:,2]
+sub_y_182 = sub_df.iloc[:,3]
+
+t, p = ttest_rel(y_163, y_182)
+print (t,p)
+paired_t, paired_p = ttest_rel(sub_y_163,sub_y_182)
+print (paired_t,paired_p)
+colors = [v for v in ecm_class_color_dict.values()]
+labels = [k for k in ecm_class_color_dict.keys()]
+lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='--') for c in colors]
+
+# colors, labels, lines= ['#EBA709'], ['ECM Glycoproteins'], [Line2D([0], [0], color='#EBA709', linewidth=3, linestyle='--')]
+
+ax.legend(lines, labels, framealpha=0.5,loc='upper right',fontsize=15)
+
+ax.boxplot([y_163,y_182], labels=['SNED1 OE', 'SNED1 KO'],showfliers=False)
+# plot points onto boxplot
+for x,cov_list in zip([x_163,x_182],[y_163,y_182]):
+    ax.plot(x,cov_list,'ko',markersize=10,alpha=0.5)
+
+# connect dots with different color
+for x1,y1,x2,y2,color in zip(x_163,y_163,x_182,y_182,color_list):
+    ax.plot([x1,x2],[y1,y2],color=color, linestyle='--', alpha=0.8)
+
+# for x1,y1,x2,y2 in zip(sub_x_163,sub_y_163,sub_x_182,sub_y_182):
+#     ax.plot([x1, x2], [y1, y2], color=ecm_class_color_dict['ECM Glycoproteins'], linestyle='--', alpha=1)
+ax.set_title('ECM protein coverage in +/- SNED1 time-series digestion', fontsize=22)
+ax.tick_params(axis='both', which='major', labelsize=15)
+ax.set_ylabel('%coverage',fontsize=20)
+plt.show()

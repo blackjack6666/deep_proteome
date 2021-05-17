@@ -11,6 +11,7 @@ from sklearn.metrics import classification_report, precision_score, recall_score
 import time
 from scipy.sparse import csr_matrix
 from parameters import custom_ohe
+from sklearn.utils import class_weight
 
 def sequential_nn():
     model = keras.Sequential()
@@ -42,17 +43,26 @@ def cnn():
 def lstm():
     model = models.Sequential()
     # model.add(layers.Embedding(30, 64, input_length=682))  # 21 integers encode, output 64 dimension, input 31 dimension
-    model.add(layers.LSTM(64, input_shape=(1,682),return_sequences=True))
+    model.add(layers.LSTM(64, input_shape=(31,22), return_sequences=True))
+    model.add(layers.LSTM(64, input_shape=(31,64), return_sequences=True))
     # model.add(layers.TimeDistributed(layers.Dense(2, activation='softmax')))
     # model.add(layers.Dense(64, activation='relu'))
-    model.add(layers.Dense(2, activation='softmax'))
+    model.add(layers.Flatten(input_shape=(31,64)))
+    model.add(layers.Dense(2, activation='softmax'))  # number of units in output layer is number of classes
     return model
+
 
 def bi_lsmtm():
     model = models.Sequential()
-    model.add(layers.Bidirectional(layers.LSTM(64, return_sequences=True), input_shape=(1,682)))
+    model.add(layers.Bidirectional(layers.LSTM(64, return_sequences=True), input_shape=(31,22)))
+    model.add(layers.Dropout(rate=0.1))
+    # model.add(layers.Bidirectional(layers.LSTM(32, return_sequences=True), input_shape=(31,128)))
+    # model.add(layers.LSTM(64, input_shape=(31,64), return_sequences=True))
+    # model.add(layers.Bidirectional(layers.LSTM(16, return_sequences=True), input_shape=(31,64)))
     # model.add(layers.TimeDistributed(layers.Dense(2, activation='sigmoid')))
-    model.add(layers.Dense(2, activation='softmax'))
+    model.add(layers.Flatten(input_shape=(31, 128)))
+    model.add(layers.Dropout(rate=0.5))
+    model.add(layers.Dense(2, activation='softmax')) # number of units in output layer is number of classes
     return model
 
 def compile_model(un_compiled_model):
@@ -74,8 +84,8 @@ def compile_model(un_compiled_model):
 #     return auc
 # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-t_37C_240min_dict = ppp.load(open('D:/data/non_specific_search/ecoli_non_specific_search_poly_dict.p','rb'))
-test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
+t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/tryps_4h_polymer.p','rb'))
+test_dataset_dict = ppp.load(open('D:/data/non_specific_search/ecoli_non_specific_search_poly_dict.p','rb'))
 predict_matrix_array = ppp.load(open('P62908_matrix_2d_array.p', 'rb'))
 
 # print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
@@ -110,10 +120,10 @@ X_train, X_test, target_train, target_test = train_test_data_split(matrix,target
 # X_train, X_test = X_train.values.reshape(X_train.shape[0],15,43,1), X_test.values.reshape(X_test.shape[0],15,43,1)
 
 #convert in to 3d array for lstm
-X_train, X_test, test_maxtrix,predict_matrix = X_train.reshape(X_train.shape[0],1,X_train.shape[1]), \
-                                X_test.reshape(X_test.shape[0],1,X_test.shape[1]), \
-                                test_maxtrix.reshape(test_maxtrix.shape[0],1,test_maxtrix.shape[1]), \
-                                predict_matrix.reshape(predict_matrix.shape[0],1,predict_matrix.shape[1])
+X_train, X_test, test_maxtrix,predict_matrix = X_train.reshape(X_train.shape[0],31,22), \
+                                X_test.reshape(X_test.shape[0],31,22), \
+                                test_maxtrix.reshape(test_maxtrix.shape[0],31,22), \
+                                predict_matrix.reshape(predict_matrix.shape[0],31,22)
 
 
 print (X_train.shape)
@@ -131,7 +141,12 @@ y_train = target_train[:-300]
 # class_weight_dict = dict(enumerate(class_weight))
 
 
-model = compile_model(lstm())
+model = compile_model(bi_lsmtm())
+class_weights = class_weight.compute_class_weight('balanced',
+                                                 np.unique(y_train),
+                                                 y_train)
+class_weight_dict = dict(enumerate(class_weights))
+print (class_weight_dict)
 
 print("Fit model on training data")
 start = time.time()
@@ -139,14 +154,15 @@ history = model.fit(
     X_train,
     y_train,
     batch_size=64,
-    epochs=10,
+    epochs=5,
     # We pass some validation for
     # monitoring validation loss and metrics
     # at the end of each epoch
     # an error is calculated at the end of each batch, the error is used to improve the model, eg. move down the
     # error gradient
     validation_split=0.2,
-    shuffle=True
+    shuffle=True,
+    class_weight = class_weight_dict
 )
 print ("model trained time: ", time.time()-start)
 print("Evaluate on test data")
@@ -187,27 +203,28 @@ plt.show()
 # yhat_probs = model.predict(X_test, verbose=0)
 # print (yhat_probs)
 # predict crisp classes for test set
-yhat_classes = np.argmax(model.predict(X_test), axis=-1)
+yhat_classes = np.argmax(model.predict(test_maxtrix), axis=-1)
 # print (model.predict(test_maxtrix))
 print (yhat_classes.shape)
 # print (model.predict(X_test))
-yhat_score = model.predict(X_test)[:,:,-1]  # probability of class 1 for each instance
+# print (model.predict(test_maxtrix))
+yhat_score = model.predict(test_maxtrix)[:,-1]  # probability of class 1 for each instance
 
 print (yhat_score)
-fpr_keras, tpr_keras, thresholds_keras = roc_curve(target_test, yhat_score)
+fpr_keras, tpr_keras, thresholds_keras = roc_curve(test_target, yhat_score)
 auc_keras = auc(fpr_keras, tpr_keras)
 print ('AUC: %f' % auc_keras)
 # precision tp / (tp + fp)
-precision = precision_score(target_test, yhat_classes)
+precision = precision_score(test_target, yhat_classes)
 print('Precision: %f' % precision)
 # recall: tp / (tp + fn)
-recall = recall_score(target_test, yhat_classes)
+recall = recall_score(test_target, yhat_classes)
 print('Recall: %f' % recall)
 # f1: 2 tp / (2 tp + fp + fn)
-f1 = f1_score(target_test, yhat_classes)
+f1 = f1_score(test_target, yhat_classes)
 print('F1 score: %f' % f1)
 
-classify_report = classification_report(target_test,yhat_classes)
+classify_report = classification_report(test_target,yhat_classes)
 print (classify_report)
 
 plt.plot(fpr_keras, tpr_keras, color='darkorange',
