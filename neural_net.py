@@ -1,3 +1,7 @@
+"""
+tensorflow keras implementation
+"""
+
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers, models,backend
@@ -54,7 +58,9 @@ def lstm():
 
 def bi_lsmtm():
     model = models.Sequential()
+    model.add(layers.Reshape((31,22),input_shape=(682,))) # reshape 2D input (sample size, 682) into 3D (sample size, 31, 22)
     model.add(layers.Bidirectional(layers.LSTM(64, return_sequences=True), input_shape=(31,22)))
+
     model.add(layers.Dropout(rate=0.1))
     # model.add(layers.Bidirectional(layers.LSTM(32, return_sequences=True), input_shape=(31,128)))
     # model.add(layers.LSTM(64, input_shape=(31,64), return_sequences=True))
@@ -62,16 +68,16 @@ def bi_lsmtm():
     # model.add(layers.TimeDistributed(layers.Dense(2, activation='sigmoid')))
     model.add(layers.Flatten(input_shape=(31, 128)))
     model.add(layers.Dropout(rate=0.5))
-    model.add(layers.Dense(2, activation='softmax')) # number of units in output layer is number of classes
+    model.add(layers.Dense(1, activation='sigmoid')) # number of units in output layer is number of classes
     return model
 
 def compile_model(un_compiled_model):
     un_compiled_model.compile(
         optimizer=keras.optimizers.Adam(lr=0.0001),  # Optimizer
         # Loss function to minimize
-        loss=keras.losses.sparse_categorical_crossentropy,
+        loss=keras.losses.binary_crossentropy,
         # List of metrics to monitor
-        metrics=[keras.metrics.SparseCategoricalAccuracy()],
+        metrics=['accuracy']
     )
     complied_model = un_compiled_model
     print (complied_model.summary())
@@ -84,7 +90,7 @@ def compile_model(un_compiled_model):
 #     return auc
 # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/tryps_4h_polymer.p','rb'))
+t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/tryps_4h_polymer_05192021.p','rb'))
 test_dataset_dict = ppp.load(open('D:/data/non_specific_search/ecoli_non_specific_search_poly_dict.p','rb'))
 predict_matrix_array = ppp.load(open('P62908_matrix_2d_array.p', 'rb'))
 
@@ -120,10 +126,10 @@ X_train, X_test, target_train, target_test = train_test_data_split(matrix,target
 # X_train, X_test = X_train.values.reshape(X_train.shape[0],15,43,1), X_test.values.reshape(X_test.shape[0],15,43,1)
 
 #convert in to 3d array for lstm
-X_train, X_test, test_maxtrix,predict_matrix = X_train.reshape(X_train.shape[0],31,22), \
-                                X_test.reshape(X_test.shape[0],31,22), \
-                                test_maxtrix.reshape(test_maxtrix.shape[0],31,22), \
-                                predict_matrix.reshape(predict_matrix.shape[0],31,22)
+# X_train, X_test, test_maxtrix,predict_matrix = X_train.reshape(X_train.shape[0],31,22), \
+#                                 X_test.reshape(X_test.shape[0],31,22), \
+#                                 test_maxtrix.reshape(test_maxtrix.shape[0],31,22), \
+#                                 predict_matrix.reshape(predict_matrix.shape[0],31,22)
 
 
 print (X_train.shape)
@@ -132,13 +138,6 @@ y_val = target_train[-300:]
 
 X_train = X_train[:-300]
 y_train = target_train[:-300]
-
-# class weights consideration
-# from sklearn.utils import class_weight
-# class_weights = class_weight.compute_class_weight('balanced',
-#                                                  np.unique(y_train),
-#                                                  y_train)
-# class_weight_dict = dict(enumerate(class_weight))
 
 
 model = compile_model(bi_lsmtm())
@@ -164,6 +163,10 @@ history = model.fit(
     shuffle=True,
     class_weight = class_weight_dict
 )
+save_path = 'D:/data/deep_proteome/bi_directional_lstm_trypsin4h_05192021'
+print ('saving model...to %s' % save_path)
+model.save(save_path)
+
 print ("model trained time: ", time.time()-start)
 print("Evaluate on test data")
 results = model.evaluate(test_maxtrix, test_target, batch_size=64)

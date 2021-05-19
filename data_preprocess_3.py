@@ -116,13 +116,13 @@ def label_cleavage(protein_polymer_sc_dict):
 
 
 if __name__=='__main__':
-    from tsv_reader import peptide_counting, psm_reader, protein_tsv_reader_no_contam
+    from tsv_reader import peptide_counting, psm_reader, protein_tsv_reader_no_contam, id_pep_from_peptsv
     import pickle as ppp
     from collections import Counter
     from protein_coverage import fasta_reader2
 
     # protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/protein.tsv"
-    peptide_tsv_path = "D:/data/deep_proteome/non_specfic_search/ct_4h/peptide.tsv"
+    peptide_tsv_path = "D:/data/deep_proteome/non_specfic_search/tryps_4h/peptide.tsv"
     # psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/psm.tsv"
 
     fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
@@ -131,10 +131,11 @@ if __name__=='__main__':
 
     # print (protein_seq[410])
     pep_list = peptide_counting(peptide_tsv_path)
-    id_pep_dict,protein_list = protein_id_peplist_dict_getter(proteome_dict, pep_list)
+    # id_pep_dict,protein_list = protein_id_peplist_dict_getter(proteome_dict, pep_list)
+    id_pep_dict = id_pep_from_peptsv(peptide_tsv_path)
     protein_polymer_sc_dict = cleavage_map(id_pep_dict,proteome_dict)
     polymer_label_dict, protein_poly_dict, uncertain_polymer_no = label_cleavage(protein_polymer_sc_dict)
     print('number of proteins with polymers reported: %i' % len(protein_poly_dict))
     print(Counter([v for v in polymer_label_dict.values()]), len(polymer_label_dict))
     print('uncertain ploymer number: %i' % uncertain_polymer_no)
-    ppp.dump(polymer_label_dict, open('D:/data/deep_proteome/non_specfic_search/ct_4h_polymer.p', 'wb'))
+    ppp.dump(polymer_label_dict, open('D:/data/deep_proteome/non_specfic_search/tryps_4h_polymer_05192021.p', 'wb'))

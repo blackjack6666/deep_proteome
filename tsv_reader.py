@@ -40,6 +40,28 @@ def peptide_charger_reader(pep_tsv):
         return peptide_charge_dict
 
 
+def id_pep_from_peptsv(pep_tsv):
+    import pandas as pd
+    import numpy as np
+    id_pep_dict = defaultdict(set)
+    df = pd.read_csv(pep_tsv, sep='\t')
+    for tp in df.itertuples():
+        pep_seq = tp[1]
+        prot_list = [tp[9].split('|')[1]]
+        mapped_proteins = tp[-1]
+
+        # print (mapped_proteins)
+        if type(mapped_proteins)==str:
+            if ',' in mapped_proteins:
+                for each in mapped_proteins.split(', '):
+                    prot_list.append(each.split('|')[1])
+            else:
+                prot_list.append(mapped_proteins.split('|')[1])
+        # print (prot_list)
+        for prot in prot_list:
+            id_pep_dict[prot].add(pep_seq)
+    return id_pep_dict
+
 def peptide_phospho_reader(peptide_tsv_file, mod=0.9840): # 79.9663 is the delta mass of phosphorylation on STY
     pep_phos_dict = defaultdict()
     mod_str = "%.4f" % mod # keep last 4 digits
