@@ -122,7 +122,7 @@ if __name__=='__main__':
     from protein_coverage import fasta_reader2
 
     # protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/protein.tsv"
-    peptide_tsv_path = "D:/data/deep_proteome/non_specfic_search/tryps_4h/peptide.tsv"
+    peptide_tsv_path = "D:/data/deep_proteome/non_specfic_search/ct_4h/peptide.tsv"
     # psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/psm.tsv"
 
     fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
@@ -138,4 +138,4 @@ if __name__=='__main__':
     print('number of proteins with polymers reported: %i' % len(protein_poly_dict))
     print(Counter([v for v in polymer_label_dict.values()]), len(polymer_label_dict))
     print('uncertain ploymer number: %i' % uncertain_polymer_no)
-    ppp.dump(polymer_label_dict, open('D:/data/deep_proteome/non_specfic_search/tryps_4h_polymer_05192021.p', 'wb'))
+    ppp.dump(polymer_label_dict, open('D:/data/deep_proteome/non_specfic_search/ct_4h_polymer_05202021.p', 'wb'))

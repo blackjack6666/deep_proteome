@@ -84,14 +84,19 @@ def compile_model(un_compiled_model):
     return complied_model
 
 
+def predict(qc):
+    global model
+    qc = model.predict(qc)
+    return np.array([[1-each, each] for each in qc.reshape(qc.shape[0])])
+
 # def auc(y_true, y_pred):
 #     auc = tf.metrics.auc(y_true, y_pred)[1]
 #     backend.get_session().run(tf.local_variables_initializer())
 #     return auc
 # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/tryps_4h_polymer_05192021.p','rb'))
-test_dataset_dict = ppp.load(open('D:/data/non_specific_search/ecoli_non_specific_search_poly_dict.p','rb'))
+t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/ct_4h_polymer_05202021.p','rb'))
+test_dataset_dict = ppp.load(open('D:/data/non_specific_search_ecoli/ecoli_non_specific_search_poly_dict.p','rb'))
 predict_matrix_array = ppp.load(open('P62908_matrix_2d_array.p', 'rb'))
 
 # print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
@@ -153,7 +158,7 @@ history = model.fit(
     X_train,
     y_train,
     batch_size=64,
-    epochs=5,
+    epochs=50,
     # We pass some validation for
     # monitoring validation loss and metrics
     # at the end of each epoch
@@ -163,15 +168,16 @@ history = model.fit(
     shuffle=True,
     class_weight = class_weight_dict
 )
-save_path = 'D:/data/deep_proteome/bi_directional_lstm_trypsin4h_05192021'
+
+save_path = 'D:/data/deep_proteome/bi_directional_lstm_ct_05202021_50epoch'
 print ('saving model...to %s' % save_path)
 model.save(save_path)
 
 print ("model trained time: ", time.time()-start)
 print("Evaluate on test data")
-results = model.evaluate(test_maxtrix, test_target, batch_size=64)
+results = model.evaluate(X_test, target_test, batch_size=64)
 print("test loss, test acc:", results)
-print (np.argmax(model.predict(predict_matrix), axis=-1))
+# print (np.argmax(model.predict(predict_matrix), axis=-1))
 
 # print (history.history)
 # plt.plot(history.history['val_loss'], label='val_loss')
@@ -188,15 +194,15 @@ plt.title('Loss')
 plt.plot(history.history['loss'], label='train')
 plt.plot(history.history['val_loss'], label='validation')
 plt.legend(loc='upper right')
-plt.xlim(0,20)
+plt.xlim(0,50)
 plt.ylim(0,1)
 # plot accuracy during training
 plt.subplot(212)
 plt.title('Accuracy')
-plt.plot(history.history['sparse_categorical_accuracy'], label='train')
-plt.plot(history.history['val_sparse_categorical_accuracy'], label='validation')
+plt.plot(history.history['accuracy'], label='train')
+plt.plot(history.history['val_accuracy'], label='validation')
 plt.legend(loc='lower right')
-plt.xlim(0,20)
+plt.xlim(0,50)
 plt.ylim(0,1)
 plt.xlabel('Epoch')
 plt.show()
@@ -205,29 +211,32 @@ plt.show()
 # predict probabilities for test set
 # yhat_probs = model.predict(X_test, verbose=0)
 # print (yhat_probs)
+
 # predict crisp classes for test set
-yhat_classes = np.argmax(model.predict(test_maxtrix), axis=-1)
-# print (model.predict(test_maxtrix))
+# yhat_classes = np.argmax(model.predict(test_maxtrix), axis=-1)  # use when model produce a 2D output (softmax, units=2,probability distribution)
+yhat_classes = np.argmax(predict(X_test), axis=-1)  # use when model produce 1D output (sigmoid, units=1, probability for class 1)
+
 print (yhat_classes.shape)
 # print (model.predict(X_test))
 # print (model.predict(test_maxtrix))
-yhat_score = model.predict(test_maxtrix)[:,-1]  # probability of class 1 for each instance
+yhat_score = model.predict(X_test)[:,-1]  # probability of class 1 for each instance
+
 
 print (yhat_score)
-fpr_keras, tpr_keras, thresholds_keras = roc_curve(test_target, yhat_score)
+fpr_keras, tpr_keras, thresholds_keras = roc_curve(target_test, yhat_score)
 auc_keras = auc(fpr_keras, tpr_keras)
 print ('AUC: %f' % auc_keras)
 # precision tp / (tp + fp)
-precision = precision_score(test_target, yhat_classes)
+precision = precision_score(target_test, yhat_classes)
 print('Precision: %f' % precision)
 # recall: tp / (tp + fn)
-recall = recall_score(test_target, yhat_classes)
+recall = recall_score(target_test, yhat_classes)
 print('Recall: %f' % recall)
 # f1: 2 tp / (2 tp + fp + fn)
-f1 = f1_score(test_target, yhat_classes)
+f1 = f1_score(target_test, yhat_classes)
 print('F1 score: %f' % f1)
 
-classify_report = classification_report(test_target,yhat_classes)
+classify_report = classification_report(target_test,yhat_classes)
 print (classify_report)
 
 plt.plot(fpr_keras, tpr_keras, color='darkorange',
