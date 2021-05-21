@@ -182,6 +182,7 @@ def roc_curve(trained_clf,X_test,y_test):
     pos_probs = yhat[:, 1]
     fpr, tpr, _ = roc_curve(y_test,pos_probs)
     roc_auc = auc(fpr,tpr)
+    print ('AUC: %f' % roc_auc)
     lw = 2
     plt.plot(fpr, tpr, color='darkorange',
              lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
