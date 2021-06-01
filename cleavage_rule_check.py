@@ -35,22 +35,26 @@ for prot in id_peptide_dict:
             start_match, end_match = [m.end() for m in re.finditer(rule,start_31mer)], [m.end() for m in re.finditer(rule,end_31_mer)]
             if 16 in start_match and 16 in end_match:  # start and end position of a peptide matches with cleavage rule
                 matched_peptide+=1
-                matched_peptide_score_dict[pep] = psm_score_dict[pep]
+                matched_peptide_score_dict[pep] = pep_average_score_dict[pep]
             elif (16 not in start_match) and (16 not in end_match):
             #
                 print (prot,pep, start_31mer, start_match,end_31_mer, end_match)
                 no_matched_peptide+=1
-                no_matched_peptide_score_dict[pep] = psm_score_dict[pep]
+                no_matched_peptide_score_dict[pep] = pep_average_score_dict[pep]
 
 
-matched_hyper_values = [v for score_list in matched_peptide_score_dict.values() for v in score_list]
-no_matched_hyper_values = [v for score_list in no_matched_peptide_score_dict.values() for v in score_list]
+matched_hyper_values = [v for v in matched_peptide_score_dict.values()]
+no_matched_hyper_values = [v for v in no_matched_peptide_score_dict.values()]
 
 print (np.mean(matched_hyper_values), np.mean(no_matched_hyper_values))
 
-plt.hist(matched_hyper_values, bins=50, alpha=0.5, label='regex-matched psm, average score=20.6',log=True)
-plt.hist(no_matched_hyper_values,bins=50, alpha=0.5, color='pink', label='regex-filtered psm, average score=16.2',log=True)
-plt.xlabel('Hyperscore')
-plt.ylabel('Frequency')
-plt.legend()
-plt.show()
+# plt.hist(matched_hyper_values, bins=50, alpha=0.5, label='regex-matched psm, average score=20.6',log=True)
+# plt.hist(no_matched_hyper_values,bins=50, alpha=0.5, color='pink', label='regex-filtered psm, average score=16.2',log=True)
+# plt.xlabel('Hyperscore')
+# plt.ylabel('Frequency')
+# plt.legend()
+# plt.show()
+
+
+from scipy import stats
+print (stats.ttest_ind(matched_hyper_values, no_matched_hyper_values))
