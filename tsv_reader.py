@@ -287,6 +287,16 @@ def convert_uniprot_tonum(uniprot_id):
 
     return sum([ord(i) for i in uniprot_id])-320+ord(uniprot_id[-1])/10+ord(uniprot_id[-2])/100
 
+
+def pep_xml_info(pepxml_file):
+    with open(pepxml_file,'r') as f_read:
+        f_read = f_read.read()
+        f_split = f_read.split('<spectrum_query start_scan=')
+        head, tail = f_split[0], f_read.split('</spectrum_query>')[-1]
+        info_list = [each.split('</spectrum_query>')[0] for each in f_split[1:]]
+
+    return head,tail,info_list
+
 if __name__=="__main__":
     from glob import glob
     import numpy as np
@@ -301,20 +311,23 @@ if __name__=="__main__":
     # #     print (f.split('\\')[-2], sum([v for v in psm_reader(f)[0].values()]))
     # protein_info_dict = protein_info_from_combined('D:/data/Naba_deep_matrisome/11_11_combined_search/combined_protein.tsv')
     # info_dict = combined_proteintsv_map('D:/data/Naba_deep_matrisome/11_11_combined_search/combined_protein.tsv')
-    fasta_path = 'D:/data/pats/human_fasta/uniprot-proteome_UP000005640_sp_tr_isoforms.fasta'
-    fasta_info_dict = protein_info_from_fasta(fasta_path)
+    # fasta_path = 'D:/data/pats/human_fasta/uniprot-proteome_UP000005640_sp_tr_isoforms.fasta'
+    # fasta_info_dict = protein_info_from_fasta(fasta_path)
+    #
+    # base_path = 'D:/data/pats/results/'
+    # psm_tsv = ['trypsin_4h_sp_only_default_close/psm.tsv',
+    #            'trypsin_4h_sp_isoform_default_close/psm.tsv',
+    #            'trypsin_4h_sp_tr_default_close/psm.tsv',
+    #            'trypsin_4h_sp_tr_isoform_default_close/psm.tsv']
+    #
+    # peptide_tsv = ['hek_trypsin_4hour_sp_isoforms/peptide.tsv',
+    #            'hek_trypsin_4hour_sp_only/peptide.tsv',
+    #            'hek_trypsin_4hour_sp_tr/peptide.tsv',
+    #            'hek_trypsin_4hour_sp_tr_isoforms/peptide.tsv']
 
-    base_path = 'D:/data/pats/results/'
-    psm_tsv = ['trypsin_4h_sp_only_default_close/psm.tsv',
-               'trypsin_4h_sp_isoform_default_close/psm.tsv',
-               'trypsin_4h_sp_tr_default_close/psm.tsv',
-               'trypsin_4h_sp_tr_isoform_default_close/psm.tsv']
-
-    peptide_tsv = ['hek_trypsin_4hour_sp_isoforms/peptide.tsv',
-               'hek_trypsin_4hour_sp_only/peptide.tsv',
-               'hek_trypsin_4hour_sp_tr/peptide.tsv',
-               'hek_trypsin_4hour_sp_tr_isoforms/peptide.tsv']
-
+    pepxml = 'D:/data/deep_proteome/non_specfic_search/ct_4h/CT_37C_4h.pepXML'
+    info_list = pep_xml_info(pepxml)[-1][-1]
+    print (info_list)
 
     # venn_dict = {}
     #     # for each in psm_tsv:
@@ -357,11 +370,11 @@ if __name__=="__main__":
     #     miss_cleav_dict = miss_cleavage_identify(pep_list,regex_pattern=r'(?:F|W|Y)\w+')
     #     print (float(np.count_nonzero([each for each in miss_cleav_dict.values()]))/len(pep_list))
 
-    df = pd.read_csv('D:/data/Naba_deep_matrisome/02152021_1/dash_info.csv')
-    uniprot_num_list = [convert_uniprot_tonum(uni_id) for uni_id in df['protein_id']]
-    df['uniprot_num'] = uniprot_num_list
-    df['log_protein_len'] = [math.log2(each) for each in df['length']]
-    df.to_csv('D:/data/Naba_deep_matrisome/02152021_1/dash_info.csv')
-    df = df.drop('Unnamed: 0', axis=1)
+    # df = pd.read_csv('D:/data/Naba_deep_matrisome/02152021_1/dash_info.csv')
+    # uniprot_num_list = [convert_uniprot_tonum(uni_id) for uni_id in df['protein_id']]
+    # df['uniprot_num'] = uniprot_num_list
+    # df['log_protein_len'] = [math.log2(each) for each in df['length']]
+    # df.to_csv('D:/data/Naba_deep_matrisome/02152021_1/dash_info.csv')
+    # df = df.drop('Unnamed: 0', axis=1)
 
 

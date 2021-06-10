@@ -29,11 +29,12 @@ def combined_coverage(pep_path_list,protein_dict,ecm_protein_list):
 def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ecm_info_dict, output_path):
     file_name_number_dict = {pep_tsv.split('/')[-2]: i for pep_tsv, i in zip(pep_path_list, range(len(pep_path_list)))}
     id_list, seq_list = extract_UNID_and_seq(protein_dict)
-    seq_line = creat_total_seq_line(seq_list,sep='|')
+    seq_line = creat_total_seq_line(seq_list,sep="|")
     pos_id_dict = read_position_ID_into_dict(id_list, seq_list, seq_line)
 
     info_list = []
     file_id_peptide_dict = {}
+    file_protein_cov_dict = {}
     file_protein_pep_spec_dict = {}
     for pep_tsv, psm_tsv in zip(pep_path_list, psm_path_list):
         file_name = pep_tsv.split('/')[-2]
@@ -42,22 +43,23 @@ def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ec
         pep_list = peptide_counting(pep_tsv)
         automaton = aho_corasick.automaton_trie(pep_list)
         aho_result = aho_corasick.automaton_matching(automaton, seq_line)
-        coverage_dict = identified_proteome_cov(aho_result, protein_dict)[1]
+        coverage_dict = identified_proteome_cov(aho_result, protein_dict)[-1]
+        file_protein_cov_dict[file_name] = coverage_dict
         id_pep_dict = creat_ID_pep_dict(aho_result, pos_id_dict)
-        id_pep_dict = {k:id_pep_dict[k] for k in id_pep_dict if k in ecm_prot_list}
+        # id_pep_dict = {k:id_pep_dict[k] for k in id_pep_dict if k in ecm_prot_list}
         # pep_id_dict = creat_pep_ID_dict(aho_result,pos_id_dict)
         # pep_id_dict = {k:pep_id_dict[k] for k in pep_id_dict if pep_id_dict[k] in ecm_prot_list}
-        # file_id_peptide_dict[file_name] = pep_id_dict
+        file_id_peptide_dict[file_name] = id_pep_dict
         # p.dump(id_pep_dict,open(pep_tsv.replace('peptide.tsv','id_peptide_dict.p'),'wb'))
         psm_dict = psm_reader(psm_tsv)[0]
         protein_pep_spec_count = {prot_id:{pep:psm_dict[pep] for pep in id_pep_dict[prot_id]} for prot_id in id_pep_dict}
         file_protein_pep_spec_dict[file_name] = protein_pep_spec_count
-    #     prot_spec_dict = {}
-    #     for id in id_pep_dict:
-    #         spec = 0
-    #         for pep in id_pep_dict[id]:
-    #             spec += psm_dict[pep]
-    #         prot_spec_dict[id] = spec
+        prot_spec_dict = {}
+        # for id in id_pep_dict:
+        #     spec = 0
+        #     for pep in id_pep_dict[id]:
+        #         spec += psm_dict[pep]
+        #     prot_spec_dict[id] = spec
     #     protein_id_ls = [k for k in id_pep_dict if k in ecm_prot_list]
     #     # protein_id_ls = [k for k in id_pep_dict]
     #     file_list = [[prot,
@@ -74,7 +76,7 @@ def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ec
     #                        columns=['protein_id', 'length', 'coverage', 'gene_name', 'spec_count', 'ecm_class','file_name',
     #                                 'file_number'])
     # info_df.to_csv(output_path,index=False)
-    return file_protein_pep_spec_dict
+    return file_protein_cov_dict, file_id_peptide_dict
 
 if __name__=='__main__':
     import plotly.express as px

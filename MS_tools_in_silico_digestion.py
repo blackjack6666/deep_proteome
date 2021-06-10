@@ -23,18 +23,20 @@ def create_fasta_dict(file_name):   #generates a dictonary from a fasta file
     return dict_fasta
 
 
-def peptide_generator(input, enzyme):
-    from MS_tools_parameters import missed       #parameter files contain all the changable user variables and are imported here
-    from MS_tools_parameters import expasy_rules # regex rules are imported for digestion
+def peptide_generator(input):
+    from MS_tools_parameters import missed  # parameter files contain all the changable user variables and are imported here
+    from MS_tools_parameters import expasy_rules  # regex rules are imported for digestion
     from MS_tools_parameters import min_len  # min length of peptides desired
     from MS_tools_parameters import max_len  # MAX length of peptides desired
     from MS_tools_parameters import specificity
-
+    from MS_tools_parameters import custom_rules
+    # print ('Specificity: %i' % specificity)
     protein_ID = input[0]  # take the protein ID from the pool - input is a tuple in the form (protein_ID,Sequence)
     seq = input[1] # take the sequence from the pool
 
+    enzyme = 'custom_trypsin_ecoli'
 
-    list_cuts = [m.end() for m in re.finditer(expasy_rules[enzyme], seq)] # Create a list of cuts in the protein - does not include the start and end
+    list_cuts = [m.end() for m in re.finditer(custom_rules[enzyme], seq)] # Create a list of cuts in the protein - does not include the start and end
     list_cuts.insert(0, 0)
     list_cuts.append(len(seq))  # add start and end to the cuts list
     if specificity == 1: # if semi is selected in parameters.py
@@ -63,7 +65,7 @@ def peptide_generator(input, enzyme):
     elif specificity == 2: # if full is selected in parameters.py
 
 
-        peptides = [seq[list_cuts[i]:list_cuts[i+j]] for j in range(1,missed+2) for i in range(0, len(list_cuts)-j) if min_len <= (list_cuts[i+1] - list_cuts[i]) <= max_len ]
+        peptides = [seq[list_cuts[i]:list_cuts[i+j]] for j in range(1,missed+2) for i in range(0, len(list_cuts)-j) if min_len <= (list_cuts[i+j] - list_cuts[i]) <= max_len ]
         #Creates list of coorinates similar to above, but without the iteration with k
         peptide_set = list((set(peptides)))
         dict_peptide = {protein_ID : peptide_set}
@@ -87,24 +89,32 @@ def peptide_generator(input, enzyme):
 
 if __name__ == '__main__':
     import MS_tools_parameters
-    start_time = time.clock()
-
-    print("loading: " + MS_tools_parameters.fasta_filename)
-    dict_fasta = create_fasta_dict(MS_tools_parameters.fasta_filename) # Creates the dictonary of proteins [protein_ID : sequence]
+    from protein_coverage import fasta_reader2, fasta_reader
+    import pickle as ppp
+    start_time = time.time()
+    fasta_file = 'D:/data/proteome_fasta/uniprot-proteome_UP000000558_ecoli_rev.fasta'
+    # print("loading: " + MS_tools_parameters.fasta_filename)
+    # dict_fasta = create_fasta_dict(MS_tools_parameters.fasta_filename) # Creates the dictonary of proteins [protein_ID : sequence]
+    dict_fasta = fasta_reader(fasta_file)
     print ("done")
-    print (time.clock() - start_time)
+    print (time.time() - start_time)
     print ("calculating peptides")
     work = [(i, dict_fasta[i]) for i in dict_fasta] # from the dictonary, create a list of tuples of all proteins to be operated on format (protein_ID,sequence)
+
     n = len(work) / 500  # create a chunksize number for a desired number of chunks - can be changed 500-1000 seems fast
-
-    p = multiprocessing.Pool(multiprocessing.cpu_count()-1) #Create the pool and set the size of the pool to the number of CPUs - 1
-
-    list_final_peptides = p.map(peptide_generator, work, chunksize=n) # maps the workchunks to the pool returning the results as a list of dictonaries (for now)
-
+    print (n)
+    with multiprocessing.Pool(multiprocessing.cpu_count()-2) as pool:
+        result = pool.map(peptide_generator,work, chunksize=300)
+        pool.close()
+        pool.join()
      # output is a list of dictionaries
-    dict_peptides = {k: v for d in list_final_peptides for k,v in d.items()} #convert to one dictionary
+    dict_peptides = {k: v for d in result for k,v in d.items()} #convert to one dictionary
+    peptide_set = {pep for v in dict_peptides.values() for pep in v}
+    print (len(peptide_set))
+    ppp.dump(dict_peptides, open('D:/data/deep_proteome/non_specfic_search/trypsin_ecoli_insilico_digest.p','wb'),protocol=-1)
 
 
+    """
     list_with_mass = [(mass_calc(j),j,i) for i in dict_peptides for j in dict_peptides[i]]
     print ("done")
     print (time.clock() - start_time)
@@ -138,3 +148,4 @@ if __name__ == '__main__':
     write_file.close()
     print ("done")
     print (time.clock() - start_time)
+    """

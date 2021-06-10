@@ -1,4 +1,4 @@
-missed = 1 # number of missed cleavages
+missed = 2 # number of missed cleavages
 min_len = 7 # min peptide length
 max_len = 50 # max. peptide length
 enzyme = "trypsin" # pick from expasy rules below
@@ -56,3 +56,10 @@ expasy_rules = {
     }
 
 cut_re_expasy=expasy_rules[enzyme]
+
+custom_rules = {'custom_trypsin_ecoli':r'(?<!D)(?<!D[A-Z]|E[A-Z])[RK](?!P|E|D)(?![A-Z]P|[A-Z]E)',
+                'custom_trypsin_human_4h':r'(?<!D)[RK](?!PE|PP|EE|EP|DE|DP)',
+                'custom_trypsin_human4h_1':r'((?<!D)(?<!P[A-Z])[RK](?!P|E|D)(?![A-Z]P|[A-Z]E|[A-Z][D])(?![A-Z]{2}E))',
+                'custom_trypsin_human4h_2':r'((?<!D)(?<!P[A-Z])[RK](?!P|E|D)(?![A-Z]P|[A-Z]E))',
+                'custom_trypsin_human4h_3': r'(?<!D)(?<!P[A-Z])[RK](?!P|E|D)',
+                'custom_trypsin':r'([KR](?=[^P]))'}

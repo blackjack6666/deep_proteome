@@ -49,6 +49,7 @@ def fasta_reader2(fasta_file_path):
             protein_seq_dict[split_line[0].split('|')[1]] = ''.join(split_line[1:])
     return protein_seq_dict
 
+
 def read_description_into_dict(fasta_file):
     ID_description_dict = {}
     with open(fasta_file, 'r') as file_open:
