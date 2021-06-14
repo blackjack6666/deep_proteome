@@ -57,6 +57,26 @@ def creat_pep_ID_dict(aho_result, pos_ID_dict):
     return pep_ID_dict
 
 
+def create_unique_id_peptide_dict(pep_id_dict):
+    """
+    get a dictionary with unique peptides for each protein
+    :param pep_id_dict:
+    :return:
+    """
+    unique_id_peptide_dict = defaultdict(set)
+    unique_id_peptide_count_dict = defaultdict(int)
+    unique_pep_id_dict = {pep:prot for pep in pep_id_dict for prot in pep_id_dict[pep]
+                          if len(pep_id_dict[pep])==1}
+    for pep in unique_pep_id_dict:
+        unique_id_peptide_dict[unique_pep_id_dict[pep]].add(pep)
+
+    for id in unique_id_peptide_dict:
+        unique_id_peptide_count_dict[id]=len(unique_id_peptide_dict[id])
+
+    return unique_id_peptide_dict, unique_id_peptide_count_dict
+
+
+
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):

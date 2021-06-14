@@ -1,5 +1,6 @@
 from collections import defaultdict
 import re
+import pandas as pd
 
 def peptide_info_reader(psm_path:str):
     """
@@ -41,7 +42,7 @@ def peptide_charger_reader(pep_tsv):
 
 
 def id_pep_from_peptsv(pep_tsv):
-    import pandas as pd
+
     import numpy as np
     id_pep_dict = defaultdict(set)
     df = pd.read_csv(pep_tsv, sep='\t')

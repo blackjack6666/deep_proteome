@@ -7,9 +7,11 @@ aa_mass_table = {'A': 71.037114, 'R': 156.101111, 'N': 114.042927, 'D': 115.0269
                  'H': 137.058912, 'I': 113.084064, 'L': 113.084064, 'K': 128.094963,
                  'M': 131.040485, 'F': 147.068414, 'P': 97.052764, 'S': 87.032028,
                  'T': 101.047679, 'U': 150.95363, 'W': 186.079313, 'Y': 163.06332,
-                 'V': 99.068414, 'B': 114.53494, 'Z': 128.55059
+                 'V': 99.068414, 'B': 114.53494, 'Z': 128.55059, 'X':110,
                 }
 
+
+h_oh_mass_dict = {'H':1.00784, 'OH':19.008}
 
 aa_interger_dict = {
     'A':0,
@@ -131,6 +133,17 @@ def matrix_addup(one_hot_matrix,hydropho_matrix):
     :return: a combined numpy 2d arrays, shape[0] would be same, shape[1] would be added up
     """
     return np.concatenate((one_hot_matrix,hydropho_matrix),axis=1)
+
+
+def protein_mass_calculator(protein_list,protein_seq_dict):
+    mass_dict = {}
+    for prot in protein_list:
+
+        mass = h_oh_mass_dict['H']+h_oh_mass_dict['OH']
+        for aa in protein_seq_dict[prot]:
+            mass+=aa_mass_table[aa]
+        mass_dict[prot] = mass/1000
+    return mass_dict
 
 if __name__ == '__main__':
     t_37C_240min_dict = ppp.load(open('tryp_24h_label_dict_11_8.p','rb'))

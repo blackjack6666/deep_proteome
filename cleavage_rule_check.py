@@ -11,7 +11,7 @@ import multiprocessing
 fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640_reverse_beta.fasta'
 protein_dict = fasta_reader(fasta_path)
 # pep_tsv = 'D:/data/deep_proteome/non_specfic_search/ct_4h/peptide.tsv'
-psm_tsv = 'D:/data/deep_proteome/20200915_tryp_37C_240min/psm.tsv'
+psm_tsv = 'D:/data/deep_proteome/non_specfic_search/tryps_4h/psm.tsv'
 #
 
 # id_peptide_dict = id_pep_from_peptsv(pep_tsv)
@@ -67,14 +67,22 @@ import pickle as ppp
 pepxml = 'D:/data/Mankin/api_05_search_data/XS_Shura_Ribo_Api_0_5.pepXML'
 head, tail, info_list = pep_xml_info(pepxml)
 print (len(info_list))
-custom_tryptic_peptide_dict_ecoli = ppp.load(open('D:/data/deep_proteome/non_specfic_search/trypsin_custom1_insilico_digest.p','rb'))
+custom_tryptic_peptide_dict_ecoli = ppp.load(open('D:/data/deep_proteome/non_specfic_search/custom_trypsin_human4h_1.p','rb'))
 custom_pep_set = {pep for v in custom_tryptic_peptide_dict_ecoli.values() for pep in v}
 print (len(custom_pep_set))
 count = 0
 
 fit_regex_score_list = [score for each in psm_score_dict for score in psm_score_dict[each] if each in custom_pep_set]
 no_fit_regex_score_list = [score for each in psm_score_dict for score in psm_score_dict[each] if each not in custom_pep_set]
+print (len(fit_regex_score_list),len(no_fit_regex_score_list))
 print (np.mean(fit_regex_score_list), np.mean(no_fit_regex_score_list))
+plt.hist(fit_regex_score_list, bins=100, alpha=0.5, label='regex-matched psm, average score=20.6')
+plt.hist(no_fit_regex_score_list,bins=100, alpha=0.5, color='pink', label='regex-filtered psm, average score=16.2')
+plt.xlabel('Hyperscore')
+plt.ylabel('Frequency')
+plt.legend()
+# plt.boxplot([fit_regex_score_list,no_fit_regex_score_list],labels=['fit_regex', 'no_fit'])
+plt.show()
 """
 # write pepXML files
 pepxml_fitrule = 'D:/data/Mankin/api_05_search_data_regexfit/XS_Shura_Ribo_Api_0_5_fit.pepXML'

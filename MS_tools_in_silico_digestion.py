@@ -34,7 +34,7 @@ def peptide_generator(input):
     protein_ID = input[0]  # take the protein ID from the pool - input is a tuple in the form (protein_ID,Sequence)
     seq = input[1] # take the sequence from the pool
 
-    enzyme = 'custom_trypsin_ecoli'
+    enzyme = 'custom_trypsin_human4h_1'
 
     list_cuts = [m.end() for m in re.finditer(custom_rules[enzyme], seq)] # Create a list of cuts in the protein - does not include the start and end
     list_cuts.insert(0, 0)
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     from protein_coverage import fasta_reader2, fasta_reader
     import pickle as ppp
     start_time = time.time()
-    fasta_file = 'D:/data/proteome_fasta/uniprot-proteome_UP000000558_ecoli_rev.fasta'
+    fasta_file = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640_reverse_beta.fasta'
     # print("loading: " + MS_tools_parameters.fasta_filename)
     # dict_fasta = create_fasta_dict(MS_tools_parameters.fasta_filename) # Creates the dictonary of proteins [protein_ID : sequence]
     dict_fasta = fasta_reader(fasta_file)
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     dict_peptides = {k: v for d in result for k,v in d.items()} #convert to one dictionary
     peptide_set = {pep for v in dict_peptides.values() for pep in v}
     print (len(peptide_set))
-    ppp.dump(dict_peptides, open('D:/data/deep_proteome/non_specfic_search/trypsin_ecoli_insilico_digest.p','wb'),protocol=-1)
+    ppp.dump(dict_peptides, open('D:/data/deep_proteome/non_specfic_search/custom_trypsin_human4h_1.p','wb'),protocol=-1)
 
 
     """

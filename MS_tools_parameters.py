@@ -62,4 +62,5 @@ custom_rules = {'custom_trypsin_ecoli':r'(?<!D)(?<!D[A-Z]|E[A-Z])[RK](?!P|E|D)(?
                 'custom_trypsin_human4h_1':r'((?<!D)(?<!P[A-Z])[RK](?!P|E|D)(?![A-Z]P|[A-Z]E|[A-Z][D])(?![A-Z]{2}E))',
                 'custom_trypsin_human4h_2':r'((?<!D)(?<!P[A-Z])[RK](?!P|E|D)(?![A-Z]P|[A-Z]E))',
                 'custom_trypsin_human4h_3': r'(?<!D)(?<!P[A-Z])[RK](?!P|E|D)',
+                'custom_trypsin_human4h_4':r'(?<!D)[RK](?!P|E|D)(?![A-Z]P|[A-Z]E|[A-Z]D)(?![A-Z]{5}R)',
                 'custom_trypsin':r'([KR](?=[^P]))'}
