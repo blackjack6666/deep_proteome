@@ -6,12 +6,17 @@ import os
 from protein_coverage import fasta_reader
 from parameters import protein_mass_calculator
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from scipy.stats import ttest_rel,ttest_1samp
+import seaborn as sns
+from statannot import add_stat_annotation
 
 
 fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
 protein_dict = fasta_reader(fasta_path)
 
-# combine B and C sample and output a single spreadsheet
+### combine B and C sample and output a single spreadsheet
 
 """
 protein_info_dict = protein_info_from_fasta(fasta_path)
@@ -78,7 +83,7 @@ df_info.to_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_14_summary
 
 """
 
-# get time-series aggregated data
+### get time-series aggregated data
 """
 df = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_14_summary_B_C_Xinhao.xlsx',index_col=0)  # manually delete
 samples = ['KO_B','SNED_B','KO_C', 'SNED_C']
@@ -136,7 +141,7 @@ df_aggregated.to_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_15_s
 
 """
 
-# get ECM category info with gene
+### get ECM category info with gene
 
 df_ecm = pd.read_excel('D:/data/Naba_deep_matrisome/matrisome coverage_norepeat.xlsx')
 ecm_gene_category_dict = {gene:category for gene,category in zip(df_ecm['gene_id'], df_ecm['category'])}
@@ -145,7 +150,7 @@ df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_
 df_summary_slice = df_summary[df_summary['gene'].isin(ecm_gene_category_dict)]
 """
 
-# average coverage value from biological replicates data
+### average coverage value from biological replicates data
 """
 df_summary_slice=pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_15_ecm_aggregated_B_C.xlsx', index_col=0)
 samples, replicates, times = ['KO','SNED'], ['B', 'C'], ['0o5','2','4','18']
@@ -162,18 +167,35 @@ for prot in df_summary_slice.index:
 
 df_aggre_coverage.to_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_15_ecm_aggregated_B_C_average.xlsx')
 """
-
-# plotting aggregated coverage
-
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-from scipy.stats import ttest_rel
-
 df_ecm_aggre = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_15_ecm_aggregated_B_C_average.xlsx',index_col=0)
 df_ecm_aggre = df_ecm_aggre.copy()
+category_list = df_ecm_aggre['category']
+df_cov_derivative_delta = pd.DataFrame()
+### calculate first derivatives
+
+for each in df_ecm_aggre.itertuples():
+    prot = each[0]
+    category = each[2]
+    df_cov_derivative_delta.at[prot,'category'] = category
+    for i,j, time_diff, time_interv in zip(range(3,6),range(7,10),[90,120,840],["0.5-2h","2-4h","4-18h"]):
+        first_deriv_diffence =(each[j+1]-each[j])/time_diff - (each[i+1]-each[i])/time_diff
+
+        df_cov_derivative_delta.at[prot,time_interv]=first_deriv_diffence
+
+df_cov_derivative_delta_sub = df_cov_derivative_delta[df_cov_derivative_delta['category']=='ECM Regulators']
+
+print (ttest_1samp(df_cov_derivative_delta_sub['2-4h'],popmean=0))
+# sns.violinplot(data=df_cov_derivative_delta, x='category',y='0.5-2h')
+# plt.title('Delta of coverage first derivative between GFP-SNED1 and GFP')
+# plt.xticks(rotation=30)
+# plt.show()
+
+
+### plotting aggregated coverage
+
 
 # line plot color map
-
+"""
 ecm_class_color_dict = {"Collagens": '#F23F51', 'ECM-affiliated Proteins':'#23AECA',
                         'ECM Regulators':"#23CA66","Secreted Factors":"#E3EB09",
                         "ECM Glycoproteins":"#EBA709", "Proteoglycans":"#EB09DC"}
@@ -188,52 +210,74 @@ lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in colors[:
 
 fig,ax = plt.subplots(1,1, figsize=(10,15))
 
-"""
-# line plot of time_series coverage
+
+### line plot of time_series coverage/first derivates
 #plot each line at a time
-x = range(4)
-for each in df_ecm_aggre.itertuples():
+x = range(3)
+for each in df_cov_derivative_delta.itertuples():
     # print (each)
     column = each[0]
-    y = each[-4:]
-    if y[-1]-y[0] == 0: # if line is flat, make it transparent
-        ax.plot(x,y, color=color_map[column], linestyle='-',alpha=0.1)
-    else:
-        ax.plot(x,y, color=color_map[column], linestyle='-')
+    y = each[-3:]
+    # if y[-1]-y[0] == 0: # if line is flat, make it transparent
+    #     ax.plot(x,y, color=color_map[column], linestyle='-',alpha=0.1)
+    # else:
+    #     ax.plot(x,y, color=color_map[column], linestyle='-')
+    ax.plot(x,y, color=color_map[column], linestyle='-')
 
 # ax.get_legend().remove()
 ax.legend(lines, labels, framealpha=0.5,loc='upper right',fontsize=15)
 ax.set_xticks(x)
-ax.set_xticklabels(['0.05h','2h','4h','18h'], fontsize=15)
-ax.set_title('time-series aggregated ECM protein coverage in GFP-SNED1', fontsize=22)
-ax.set_xlabel('time point', fontsize=20)
-ax.set_ylabel('%coverage',fontsize=20)
+ax.set_xticklabels(['0.5-2h','2-4h','4-18h'], fontsize=15)
+ax.set_title('Digestion first derivative/speed in GFP-SNED1', fontsize=22)
+ax.set_xlabel('time interval', fontsize=20)
+ax.set_ylabel('coverage_change/min',fontsize=20)
 ax.tick_params(axis='both', which='major', labelsize=15)
 # plt.axhline(y=average_182A_coverage,xmin=0.04, xmax=0.96,linestyle='--',color='k',linewidth=3)
 plt.tight_layout()
+# plt.show()
+"""
+
+### violin plot
+"""
+df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_14_summary_B_C_Xinhao.xlsx',index_col=0)
+
+normal18_cov = [np.mean([df_summary.at[prot,'SNED_B_18_coverage'], df_summary.at[prot,'SNED_C_18_coverage']]) for prot in df_ecm_aggre.index]
+aggre_18_cov = df_ecm_aggre['SNED_18_ave_aggre_cov'].tolist()
+aggre_ko18_cov = df_ecm_aggre['KO_18_ave_aggre_cov'].tolist()
+print (np.mean(aggre_ko18_cov), np.mean(aggre_18_cov))
+print (ttest_rel(aggre_ko18_cov,aggre_18_cov,alternative='greater'))
+category_list = df_ecm_aggre['category'].tolist()
+
+
+df_violin = pd.DataFrame(dict(category=category_list, cov=aggre_ko18_cov,sample=['GFP 18h agg']*len(category_list))).append(pd.DataFrame(dict(category=category_list, cov=aggre_18_cov,sample=['GFP-SNED1 18h agg']*len(category_list))))
+fig,ax = plt.subplots(1,1, figsize=(8,5))
+ax = sns.violinplot(data=df_violin, x='category', y='cov', hue='sample', palette='muted', split=False)
+add_stat_annotation(ax,data=df_violin,x='category',y='cov',hue='sample',
+                    box_pairs=[(("ECM Glycoproteins","GFP 18h agg"),("ECM Glycoproteins","GFP-SNED1 18h agg")),
+                               (("ECM-affiliated Proteins","GFP 18h agg"),("ECM-affiliated Proteins","GFP-SNED1 18h agg")),
+                               (("Collagens", "GFP 18h agg"),("Collagens","GFP-SNED1 18h agg")),
+                               (("Proteoglycans", "GFP 18h agg"),("Proteoglycans","GFP-SNED1 18h agg")),
+                               (("ECM Regulators", "GFP 18h agg"),("ECM Regulators","GFP-SNED1 18h agg")),
+                               (("Secreted Factors", "GFP 18h agg"),("Secreted Factors", "GFP-SNED1 18h agg"))],test='t-test_paired',text_format='star',loc='outside',verbose=2, comparisons_correction=None)
+plt.xticks(rotation=30)
 plt.show()
 """
 
-df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_14_summary_B_C_Xinhao.xlsx',index_col=0)
-normal18_cov = [np.mean([df_summary.at[prot,'SNED_B_18_coverage'], df_summary.at[prot,'SNED_C_18_coverage']]) for prot in df_ecm_aggre.index]
-aggre_18_cov = df_ecm_aggre['SNED_18_ave_aggre_cov'].tolist()
-print (ttest_rel(normal18_cov,aggre_18_cov))
-for prot, normal, agg in zip(df_ecm_aggre.index,normal18_cov,aggre_18_cov):
-    if agg-normal >0:
-        print (prot)
+### boxplot and dots connecting
 
+"""
 ax.legend(lines, labels, framealpha=0.5,loc='upper right',fontsize=15)
 
-x_normal = np.random.normal(1, 0.04, size=len(normal18_cov))
+x_normal = np.random.normal(1, 0.04, size=len(aggre_ko18_cov))
 x_aggre = np.random.normal(2, 0.04, size=len(aggre_18_cov))
 color_list = [color_map[prot] for prot in df_ecm_aggre.index]
-ax.boxplot([normal18_cov,aggre_18_cov], labels=['GFP-SNED 18h', 'GFP-SNED aggregated 18h'],showfliers=False)
+ax.boxplot([aggre_ko18_cov,aggre_18_cov], labels=['GFP aggregated 18h', 'GFP-SNED aggregated 18h'],showfliers=False)
 # plot points onto boxplot
-for x,cov_list in zip([x_normal,x_aggre],[normal18_cov,aggre_18_cov]):
+for x,cov_list in zip([x_normal,x_aggre],[aggre_ko18_cov,aggre_18_cov]):
     ax.plot(x,cov_list,'ko',markersize=10,alpha=0.5)
 
 #connect dots with different color
-for x1,y1,x2,y2,color in zip(x_normal,normal18_cov,x_aggre,aggre_18_cov,color_list):
+for x1,y1,x2,y2,color in zip(x_normal,aggre_ko18_cov,x_aggre,aggre_18_cov,color_list):
     ax.plot([x1,x2],[y1,y2],color=color, linestyle='--', alpha=0.8)
 
 # for x1,y1,x2,y2 in zip(sub_x_163,sub_y_163,sub_x_182,sub_y_182):
@@ -241,4 +285,5 @@ for x1,y1,x2,y2,color in zip(x_normal,normal18_cov,x_aggre,aggre_18_cov,color_li
 # ax.set_title('Coverage comparison between 18h and aggregated 18h in GFP', fontsize=22)
 ax.tick_params(axis='both', which='major', labelsize=15)
 ax.set_ylabel('%coverage',fontsize=20)
-plt.show()
+# plt.show()
+"""
