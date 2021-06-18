@@ -145,7 +145,8 @@ df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_
 df_summary_slice = df_summary[df_summary['gene'].isin(ecm_gene_category_dict)]
 """
 
-# average coverage value from
+# average coverage value from biological replicates data
+"""
 df_summary_slice=pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_15_ecm_aggregated_B_C.xlsx', index_col=0)
 samples, replicates, times = ['KO','SNED'], ['B', 'C'], ['0o5','2','4','18']
 
@@ -160,3 +161,84 @@ for prot in df_summary_slice.index:
             df_aggre_coverage.at[prot,sample+'_'+time+'_ave_aggre_cov']=aver_cov
 
 df_aggre_coverage.to_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_15_ecm_aggregated_B_C_average.xlsx')
+"""
+
+# plotting aggregated coverage
+
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from scipy.stats import ttest_rel
+
+df_ecm_aggre = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_15_ecm_aggregated_B_C_average.xlsx',index_col=0)
+df_ecm_aggre = df_ecm_aggre.copy()
+
+# line plot color map
+
+ecm_class_color_dict = {"Collagens": '#F23F51', 'ECM-affiliated Proteins':'#23AECA',
+                        'ECM Regulators':"#23CA66","Secreted Factors":"#E3EB09",
+                        "ECM Glycoproteins":"#EBA709", "Proteoglycans":"#EB09DC"}
+color_map = {prot:ecm_class_color_dict[ecm_class] for prot,ecm_class in zip(df_ecm_aggre.index,df_ecm_aggre['category'])}
+
+colors = [v for v in ecm_class_color_dict.values()]
+colors.append('black') # average flat line
+labels = [k for k in ecm_class_color_dict.keys()]
+labels.append('Average ECM protein coverage in standard digestion')
+lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in colors[:-1]]
+# lines.append(Line2D([0], [0], color='black', linewidth=3, linestyle='--'))
+
+fig,ax = plt.subplots(1,1, figsize=(10,15))
+
+"""
+# line plot of time_series coverage
+#plot each line at a time
+x = range(4)
+for each in df_ecm_aggre.itertuples():
+    # print (each)
+    column = each[0]
+    y = each[-4:]
+    if y[-1]-y[0] == 0: # if line is flat, make it transparent
+        ax.plot(x,y, color=color_map[column], linestyle='-',alpha=0.1)
+    else:
+        ax.plot(x,y, color=color_map[column], linestyle='-')
+
+# ax.get_legend().remove()
+ax.legend(lines, labels, framealpha=0.5,loc='upper right',fontsize=15)
+ax.set_xticks(x)
+ax.set_xticklabels(['0.05h','2h','4h','18h'], fontsize=15)
+ax.set_title('time-series aggregated ECM protein coverage in GFP-SNED1', fontsize=22)
+ax.set_xlabel('time point', fontsize=20)
+ax.set_ylabel('%coverage',fontsize=20)
+ax.tick_params(axis='both', which='major', labelsize=15)
+# plt.axhline(y=average_182A_coverage,xmin=0.04, xmax=0.96,linestyle='--',color='k',linewidth=3)
+plt.tight_layout()
+plt.show()
+"""
+
+df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_14_summary_B_C_Xinhao.xlsx',index_col=0)
+normal18_cov = [np.mean([df_summary.at[prot,'SNED_B_18_coverage'], df_summary.at[prot,'SNED_C_18_coverage']]) for prot in df_ecm_aggre.index]
+aggre_18_cov = df_ecm_aggre['SNED_18_ave_aggre_cov'].tolist()
+print (ttest_rel(normal18_cov,aggre_18_cov))
+for prot, normal, agg in zip(df_ecm_aggre.index,normal18_cov,aggre_18_cov):
+    if agg-normal >0:
+        print (prot)
+
+ax.legend(lines, labels, framealpha=0.5,loc='upper right',fontsize=15)
+
+x_normal = np.random.normal(1, 0.04, size=len(normal18_cov))
+x_aggre = np.random.normal(2, 0.04, size=len(aggre_18_cov))
+color_list = [color_map[prot] for prot in df_ecm_aggre.index]
+ax.boxplot([normal18_cov,aggre_18_cov], labels=['GFP-SNED 18h', 'GFP-SNED aggregated 18h'],showfliers=False)
+# plot points onto boxplot
+for x,cov_list in zip([x_normal,x_aggre],[normal18_cov,aggre_18_cov]):
+    ax.plot(x,cov_list,'ko',markersize=10,alpha=0.5)
+
+#connect dots with different color
+for x1,y1,x2,y2,color in zip(x_normal,normal18_cov,x_aggre,aggre_18_cov,color_list):
+    ax.plot([x1,x2],[y1,y2],color=color, linestyle='--', alpha=0.8)
+
+# for x1,y1,x2,y2 in zip(sub_x_163,sub_y_163,sub_x_182,sub_y_182):
+#     ax.plot([x1, x2], [y1, y2], color=ecm_class_color_dict['ECM Glycoproteins'], linestyle='--', alpha=1)
+# ax.set_title('Coverage comparison between 18h and aggregated 18h in GFP', fontsize=22)
+ax.tick_params(axis='both', which='major', labelsize=15)
+ax.set_ylabel('%coverage',fontsize=20)
+plt.show()
