@@ -81,6 +81,30 @@ def peptide_phospho_reader(peptide_tsv_file, mod=0.9840): # 79.9663 is the delta
     return pep_phos_dict
 
 
+def psm_ptm_reader(psm_tsv_file_list,gene_set,mod=0.9840):
+    total_psm = 0
+    ptm_psm_dict = defaultdict(list)
+    mod_str = "%.4f" % mod  # keep last 4 digits
+    for psm_tsv_file in psm_tsv_file_list:
+        print (psm_tsv_file)
+        with open(psm_tsv_file,'r') as file_open:
+            next(file_open)
+            for line in file_open:
+                line_split = line.split('\t')
+                psm = line_split[2]
+                gene = line_split[29]
+                total_psm+=1
+                if gene in gene_set:
+                    pattern = re.compile('\w{1}\(' + mod_str + '\)')
+                    regex = re.findall(pattern, line)
+                    if regex:
+                        for ele in regex:
+                            ptm_psm_dict[ele].append(psm)
+
+
+    return ptm_psm_dict,total_psm
+
+
 def protein_tsv_reader(protein_tsv_file):
 
     with open(protein_tsv_file, 'r') as file_open:
@@ -297,6 +321,15 @@ def pep_xml_info(pepxml_file):
         info_list = [each.split('</spectrum_query>')[0] for each in f_split[1:]]
 
     return head,tail,info_list
+
+def pepxml_peptide_getter(pepxml):
+    psm_hit_list = []
+    with open(pepxml,'r') as f_open:
+        file_split = f_open.read().split('peptide="')
+        for each in file_split[1:]:
+            peptide = each.split('"')[0]
+            psm_hit_list.append(peptide)
+    return psm_hit_list
 
 if __name__=="__main__":
     from glob import glob

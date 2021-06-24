@@ -171,8 +171,9 @@ df_ecm_aggre = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/
 df_ecm_aggre = df_ecm_aggre.copy()
 category_list = df_ecm_aggre['category']
 df_cov_derivative_delta = pd.DataFrame()
-### calculate first derivatives
 
+### calculate first derivatives
+"""
 for each in df_ecm_aggre.itertuples():
     prot = each[0]
     category = each[2]
@@ -182,14 +183,15 @@ for each in df_ecm_aggre.itertuples():
 
         df_cov_derivative_delta.at[prot,time_interv]=first_deriv_diffence
 
-df_cov_derivative_delta_sub = df_cov_derivative_delta[df_cov_derivative_delta['category']=='ECM Regulators']
+df_cov_derivative_delta_sub = df_cov_derivative_delta[df_cov_derivative_delta['category']=='Secreted Factors']
 
-print (ttest_1samp(df_cov_derivative_delta_sub['2-4h'],popmean=0))
+print (ttest_1samp(df_cov_derivative_delta_sub['0.5-2h'],popmean=0))
+print (df_cov_derivative_delta_sub.loc[df_cov_derivative_delta_sub['0.5-2h']<0])
 # sns.violinplot(data=df_cov_derivative_delta, x='category',y='0.5-2h')
 # plt.title('Delta of coverage first derivative between GFP-SNED1 and GFP')
 # plt.xticks(rotation=30)
 # plt.show()
-
+"""
 
 ### plotting aggregated coverage
 
@@ -287,3 +289,14 @@ ax.tick_params(axis='both', which='major', labelsize=15)
 ax.set_ylabel('%coverage',fontsize=20)
 # plt.show()
 """
+
+# ptm analysis
+
+from tsv_reader import psm_ptm_reader
+base_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
+folders = [base_path+each+folder for each in ['KOC/'] for folder in os.listdir(base_path+each) if '.' not in folder]
+print (folders)
+psm_path_list = [each+'/psm.tsv' for each in folders if 'Re4' not in each]
+
+ptm_psm_dict,total_psm = psm_ptm_reader(psm_path_list,gene_set=ecm_gene_category_dict,mod=0.9840)
+print ({each:len(ptm_psm_dict[each]) for each in ptm_psm_dict},total_psm)
