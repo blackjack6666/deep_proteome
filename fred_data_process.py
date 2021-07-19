@@ -11,6 +11,7 @@ from matplotlib.lines import Line2D
 from scipy.stats import ttest_rel,ttest_1samp
 import seaborn as sns
 from statannot import add_stat_annotation
+import pickle as ppp
 
 
 fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
@@ -292,11 +293,78 @@ ax.set_ylabel('%coverage',fontsize=20)
 
 # ptm analysis
 
-from tsv_reader import psm_ptm_reader
-base_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
-folders = [base_path+each+folder for each in ['KOC/'] for folder in os.listdir(base_path+each) if '.' not in folder]
-print (folders)
-psm_path_list = [each+'/psm.tsv' for each in folders if 'Re4' not in each]
+# from tsv_reader import psm_ptm_reader
+# base_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
+# folders = [base_path+each+folder for each in ['KOC/'] for folder in os.listdir(base_path+each) if '.' not in folder]
+# print (folders)
+# psm_path_list = [each+'/psm.tsv' for each in folders if 'Re4' not in each]
+#
+# ptm_psm_dict,total_psm = psm_ptm_reader(psm_path_list,gene_set=ecm_gene_category_dict,mod=0.9840)
+# print ({each:len(ptm_psm_dict[each]) for each in ptm_psm_dict},total_psm)
 
-ptm_psm_dict,total_psm = psm_ptm_reader(psm_path_list,gene_set=ecm_gene_category_dict,mod=0.9840)
-print ({each:len(ptm_psm_dict[each]) for each in ptm_psm_dict},total_psm)
+### compare paraelle and sequential coverage
+"""
+# sequential_cov = 'D:/data/Naba_deep_matrisome/02152021_1/18_2_accumulated_cov.csv'
+# seq_df = pd.read_csv(sequential_cov, index_col=0)
+# 
+# 
+# paraelle_cov = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/6_14_summary_B_C_Xinhao.xlsx'
+# paraelle_df = pd.read_excel(paraelle_cov,index_col=0)
+# paraelle_4h = []
+# total_prot_set = set(seq_df.columns.tolist()+[prot for prot, gene in zip(paraelle_df.index.tolist(),paraelle_df['gene']) if gene in ecm_gene_category_dict])
+# print (len(total_prot_set))
+# 
+# sequential_4h_cov = []
+# paraelle_4h_cov = []
+# 
+# for each in total_prot_set:
+#     if each in seq_df.columns and each in paraelle_df.index:
+#         sequential_4h_cov.append(seq_df.at['18_2B4',each])
+#         paraelle_4h_cov.append(np.mean([paraelle_df.at[each,'KO_B_4_coverage'],paraelle_df.at[each,'KO_C_4_coverage']],dtype=np.float64))
+#     elif each in seq_df.columns and each not in paraelle_df.index:
+#         sequential_4h_cov.append(seq_df.at['18_2B4',each])
+#         paraelle_4h_cov.append(0)
+#     elif each not in seq_df.columns and each in paraelle_df.index:
+#         sequential_4h_cov.append(0)
+#         paraelle_4h_cov.append(np.mean([paraelle_df.at[each,'KO_B_4_coverage'],paraelle_df.at[each,'KO_C_4_coverage']],dtype=np.float64))
+# 
+# plt.boxplot([sequential_4h_cov,paraelle_4h_cov], labels=['sequential_4h_cov', 'paraelle_4h_cov'],showfliers=False)
+# plt.show()
+"""
+
+### coverage line_plot
+from scipy.interpolate import interp1d
+base_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
+folders = [base_path+each+folder for each in ['KOB/','KOC/', 'SNEDB/', 'SNEDC/'] for folder in os.listdir(base_path+each) if '.' not in folder]
+print (folders)
+psm_path_list = [each+'/psm.tsv' for each in folders]
+pep_path_list = [each+'/peptide.tsv' for each in folders]
+
+# file_protein_peptide_spec_dict = dash_dataframe(pep_path_list,psm_path_list,protein_dict,psm_path_list,psm_path_list,psm_path_list)
+file_protein_pep_spec_dict = ppp.load(open('B_C_file_protein_pep_spec_dict.p','rb'))
+
+prot = 'Q60716'
+protein_seq = protein_dict[prot]
+ko_file = 'KO_C_0o5'
+sned_file = 'SNED_C_0o5'
+ko_protein_pep_dict,sned_protein_pep_dict = file_protein_pep_spec_dict[ko_file][prot],file_protein_pep_spec_dict[sned_file][prot]
+
+
+aa_array_ko,aa_array_sned = np.zeros(len(protein_seq)), np.zeros(len(protein_seq))
+for pep in ko_protein_pep_dict:
+    pep_start_index = protein_seq.find(pep)
+    pep_end_index = pep_start_index+len(pep)
+    aa_array_ko[pep_start_index:pep_end_index]+=ko_protein_pep_dict[pep]
+
+for pep in sned_protein_pep_dict:
+    pep_start_index = protein_seq.find(pep)
+    pep_end_index = pep_start_index+len(pep)
+    aa_array_sned[pep_start_index:pep_end_index]+=sned_protein_pep_dict[pep]
+
+x = range(len(protein_seq))
+y = aa_array_ko
+# f_cubic = interp1d(x,y,kind='cubic')
+# x_new = np.linspace(0,len(protein_seq)-1,10000)
+plt.plot(y)
+plt.show()
+

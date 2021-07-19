@@ -59,8 +59,9 @@ def matrix_target(polymer_label_dict):
         matrix.append(one_d)
 
     matrix = np.array(matrix)
-    print (matrix.shape)
+
     matrix, target = matrix[:, :-1], matrix[:, -1].astype(np.int)
+    print(matrix.shape)
     return matrix, target
 
 
@@ -185,7 +186,7 @@ def roc_curve(trained_clf,X_test,y_test):
     print ('AUC: %f' % roc_auc)
     lw = 2
     plt.plot(fpr, tpr, color='darkorange',
-             lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+             lw=lw, label='ROC curve (area = %0.3f)' % roc_auc)
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
@@ -201,22 +202,25 @@ if __name__=='__main__':
     import time
     from parameters import custom_ohe, hydrophobicity_cal,matrix_addup
 
-    t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/ct_4h_polymer.p','rb'))
-
+    t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/tryp_Gluc_ON_15mer.p','rb'))
+    test_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/pombe_gluc_tryps_rep1_31mer.p','rb'))
     # test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
     # predict_matrix = ppp.load(open('P62918_matrix_2d_array.p', 'rb'))
 
     print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
     # print (Counter([v for v in test_dataset_dict.values()]))
     pd.set_option('display.max_columns', 1000)
-    df_dummy = df_dummy_getter(t_37C_240min_dict)
+    # df_dummy = df_dummy_getter(t_37C_240min_dict)
     # print (df_dummy.head())
 
     # training data preparation
     matrix,target = matrix_target(t_37C_240min_dict)
     hydro_matrix = hydrophobicity_cal(matrix)
-    ohe_matrix = custom_ohe(matrix)
+    ohe_matrix = custom_ohe(matrix,polymer_len=15)
     matrix = ohe_matrix
+
+    test_matrix, test_target = matrix_target(test_dict)
+    test_matrix = custom_ohe(test_matrix,polymer_len=15)
     # matrix = matrix_addup(ohe_matrix,hydro_matrix)
 
     # encoder,matrix = ohe(matrix)
@@ -231,15 +235,15 @@ if __name__=='__main__':
 
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
     time_start = time.time()
-    svm_clf = random_forest_classifer(X_train,target_train)
-    ppp.dump(svm_clf, open('D:/data/deep_proteome/non_specfic_search/random_forest_ct_4h.p','wb'))
+    svm_clf = random_forest_classifer(matrix,target)
+    # ppp.dump(svm_clf, open('D:/data/deep_proteome/non_specfic_search/random_forest_ct_4h.p','wb'))
     print('model trained time:',time.time() - time_start)
     # score = cross_validate(svm_clf,matrix,target)
     # print (score)
-    print (plot_confusion_mtx(svm_clf,X_test,target_test))
-    print(classifi_report(svm_clf,X_test, target_test))
-    precision_recall_curv(svm_clf,X_test,target_test)
-    roc_curve(svm_clf,X_test,target_test)
+    print (plot_confusion_mtx(svm_clf, test_matrix, test_target))
+    print(classifi_report(svm_clf, test_matrix, test_target))
+    precision_recall_curv(svm_clf, test_matrix, test_target)
+    roc_curve(svm_clf, test_matrix, test_target)
     # print (svm_clf.predict(predict_matrix))
     print (target_test[0])
 

@@ -25,24 +25,25 @@ def protein_id_peplist_dict_getter(proteome_dict,peptide_list,sep='|'):
     return id_pep_dict, [prot for prot in id_pep_dict]
 
 
-def polymer_gen(protein_seq, aa_loc):
+def polymer_gen(protein_seq, aa_loc,half_polymer_len=7):
     """
     generate 31mer based on peptide location, peptide location is at center of 31 mer
     :param protein_seq:
     :param aa_loc:
+    :param half_polymer_len: half of polymer length, default is 15 then the resulting polymer length is 31 (15+1+15)
     :return:
     """
-    if aa_loc - 15 >= 0 and aa_loc + 15 < len(protein_seq):  # 31mer is within the protein sequence
-        polymer = protein_seq[aa_loc - 15:aa_loc + 16]
+    if aa_loc - half_polymer_len >= 0 and aa_loc + half_polymer_len < len(protein_seq):  # 31mer is within the protein sequence
+        polymer = protein_seq[aa_loc - half_polymer_len:aa_loc + (half_polymer_len+1)]
 
-    elif aa_loc - 15 < 0 and aa_loc + 15 < len(protein_seq):  # adding Zs to make up the N-terminal
-        polymer = 'Z' * (15 - aa_loc) + protein_seq[:aa_loc + 16]
+    elif aa_loc - half_polymer_len < 0 and aa_loc + half_polymer_len < len(protein_seq):  # adding Zs to make up the N-terminal
+        polymer = 'Z' * (half_polymer_len - aa_loc) + protein_seq[:aa_loc + (half_polymer_len+1)]
 
-    elif aa_loc - 15 < 0 and aa_loc + 15 >= len(protein_seq):  # adding Zs to both N and C terminal
-        polymer = 'Z' * (15 - aa_loc) + protein_seq + 'Z' * (16 - (len(protein_seq) - aa_loc))
+    elif aa_loc - half_polymer_len < 0 and aa_loc + half_polymer_len >= len(protein_seq):  # adding Zs to both N and C terminal
+        polymer = 'Z' * (half_polymer_len - aa_loc) + protein_seq + 'Z' * ((half_polymer_len+1) - (len(protein_seq) - aa_loc))
 
-    elif aa_loc - 15 >= 0 and aa_loc + 15 >= len(protein_seq):  # adding Zs to make up C-terminal
-        polymer = protein_seq[aa_loc - 15:] + 'Z' * (16 - (len(protein_seq) - aa_loc))
+    elif aa_loc - half_polymer_len >= 0 and aa_loc + half_polymer_len >= len(protein_seq):  # adding Zs to make up C-terminal
+        polymer = protein_seq[aa_loc - half_polymer_len:] + 'Z' * ((half_polymer_len+1) - (len(protein_seq) - aa_loc))
 
     else:
         print (protein_seq,aa_loc)
@@ -84,6 +85,31 @@ def cleavage_map(id_pep_dict,proteome_dict):
     return protein_polymer_sc_dict
 
 
+def ifeature_peptide_output(protein_polymer_sc_dict,output_file):
+    """
+    get a fasta file from protein_polymer dict for iFeature input
+    :param protein_polymer_sc_dict:
+    :return:
+    """
+    protein_polymer_dict = {prot:set([key for key in protein_polymer_sc_dict[prot][0]]+
+                                     [key for key in protein_polymer_sc_dict[prot][1]]+
+                                     [key for key in protein_polymer_sc_dict[prot][2]])
+                            for prot in protein_polymer_sc_dict}
+    with open(output_file,'w',newline='\n') as f_open:
+        for prot in protein_polymer_dict:
+            for polymer in protein_polymer_dict[prot]:
+                f_open.write('>'+prot+'\n'+polymer+'\n')
+
+    return protein_polymer_dict
+
+
+def ifeature_protein_output(protein_polymer_sc_dict,protein_dict,output_file):
+    with open(output_file,'w',newline='\n') as f_open:
+        for prot in protein_polymer_sc_dict:
+            f_open.write('>'+prot+'\n'+protein_dict[prot]+'\n')
+
+
+
 def label_cleavage(protein_polymer_sc_dict):
     """
     the cleavage site should be labeled as 1 if SCn or SCc was at least 1 and SCm was zero.
@@ -121,21 +147,27 @@ if __name__=='__main__':
     from collections import Counter
     from protein_coverage import fasta_reader2
 
+
     # protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/protein.tsv"
-    peptide_tsv_path = "D:/data/deep_proteome/non_specfic_search/ct_4h/peptide.tsv"
+    peptide_tsv_path = "D:/data/deep_proteome/different_protease/gluc_4h_tryps_ON/peptide.tsv"
+    file_name = peptide_tsv_path.split('/')[-2]
+    print (f'reading...{file_name}')
     # psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/psm.tsv"
 
     fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
     proteome_dict = fasta_reader2(fasta_path)
-    # protein_seq = proteome_dict['P22234']
 
-    # print (protein_seq[410])
+
+
     pep_list = peptide_counting(peptide_tsv_path)
     # id_pep_dict,protein_list = protein_id_peplist_dict_getter(proteome_dict, pep_list)
     id_pep_dict = id_pep_from_peptsv(peptide_tsv_path)
     protein_polymer_sc_dict = cleavage_map(id_pep_dict,proteome_dict)
+    # ifeature_peptide_output(protein_polymer_sc_dict,output_file='i_feature_test.txt')
+    # ifeature_protein_output(protein_polymer_sc_dict,proteome_dict,'i_feature_protein_fasta_tryp_gluc_ON.txt')
+
     polymer_label_dict, protein_poly_dict, uncertain_polymer_no = label_cleavage(protein_polymer_sc_dict)
     print('number of proteins with polymers reported: %i' % len(protein_poly_dict))
     print(Counter([v for v in polymer_label_dict.values()]), len(polymer_label_dict))
     print('uncertain ploymer number: %i' % uncertain_polymer_no)
-    ppp.dump(polymer_label_dict, open('D:/data/deep_proteome/non_specfic_search/ct_4h_polymer_05202021.p', 'wb'))
+    ppp.dump(polymer_label_dict, open('D:/data/deep_proteome/non_specfic_search/gluc_4h_tryps_ON.p', 'wb'))

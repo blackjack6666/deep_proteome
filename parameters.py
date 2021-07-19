@@ -67,7 +67,7 @@ import pickle as ppp
 from stat_models import matrix_target
 
 
-def custom_ohe(matrix):
+def custom_ohe(matrix,polymer_len=31):
     """
     customized one hot encoder
     :param matrix: [[31mer1],[31mer2]...], 2d-array
@@ -77,11 +77,12 @@ def custom_ohe(matrix):
     import numpy as np
     encoding_matrix = []
     for each_mer in matrix:
-        array = np.zeros(31*22)
+        array = np.zeros(polymer_len*22)
         for ind,val in enumerate(each_mer):
             array[ind*22+aa_interger_dict[val]]=1
         encoding_matrix.append(array)
     encoding_matrix = np.array(encoding_matrix)
+    print (f"matrix shape: {encoding_matrix.shape}")
     return encoding_matrix
 
 
