@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, precision_score, recall_score, f1_score, cohen_kappa_score, roc_curve,auc, confusion_matrix
 import time
 from scipy.sparse import csr_matrix
-from parameters import custom_ohe
+from parameters import custom_ohe,custom_ohe_twoaa
 from sklearn.utils import class_weight
 from tcn import TCN
 
@@ -87,9 +87,9 @@ def compile_model(un_compiled_model):
     return complied_model
 
 
-def predict(qc,model):
+def predict(matrix,model):
 
-    qc = model.predict(qc)
+    qc = model.predict(matrix)
     return np.array([[1-each, each] for each in qc.reshape(qc.shape[0])])
 
 # def auc(y_true, y_pred):
@@ -98,10 +98,11 @@ def predict(qc,model):
 #     return auc
 # model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
+
 if __name__ == '__main__':
-    t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/pombe_tryp_gluc_rep1_15mer.p','rb'))
+    t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/thermolysin_PRIDE.p','rb'))
     # t_37C_240min_dict = {each:t_37C_240min_dict[each] for each in [key for key in t_37C_240min_dict][:15000]}
-    test_dataset_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/pombe_tryp_gluc_rep2_15mer.p','rb'))
+    test_dataset_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/pombe_gluc_tryps_rep1_31mer.p','rb'))
     predict_matrix_array = ppp.load(open('P62908_matrix_2d_array.p', 'rb'))
 
     # print (Counter([t_37C_240min_dict[each] for each in t_37C_240min_dict]))
@@ -160,8 +161,8 @@ if __name__ == '__main__':
     print("Fit model on training data")
     start = time.time()
     history = model.fit(
-        matrix,
-        target,
+        X_train,
+        target_train,
         batch_size=64,
         epochs=15,
         # We pass some validation for
@@ -174,13 +175,13 @@ if __name__ == '__main__':
         class_weight = class_weight_dict
     )
 
-    save_path = 'D:/data/deep_proteome/deep_learning_models/tcn_pombe_tryp_gluc_15epoch'
+    save_path = 'D:/data/deep_proteome/deep_learning_models/thermolysine_PRIDE'
     print ('saving model...to %s' % save_path)
     model.save(save_path)
 
     print ("model trained time: ", time.time()-start)
     print("Evaluate on test data")
-    results = model.evaluate(test_maxtrix, test_target, batch_size=64)
+    results = model.evaluate(X_test, target_test, batch_size=64)
     print("test loss, test acc:", results)
     # print (np.argmax(model.predict(predict_matrix), axis=-1))
 
@@ -220,29 +221,29 @@ if __name__ == '__main__':
 
     # predict crisp classes for test set
     # yhat_classes = np.argmax(model.predict(test_maxtrix), axis=-1)  # use when model produce a 2D output (softmax, units=2,probability distribution)
-    yhat_classes = np.argmax(predict(test_maxtrix), axis=-1)  # use when model produce 1D output (sigmoid, units=1, probability for class 1)
+    yhat_classes = np.argmax(predict(X_test,model=model), axis=-1)  # use when model produce 1D output (sigmoid, units=1, probability for class 1)
 
     print (yhat_classes.shape)
     # print (model.predict(X_test))
     # print (model.predict(test_maxtrix))
-    yhat_score = model.predict(test_maxtrix)[:,-1]  # probability of class 1 for each instance
+    yhat_score = model.predict(X_test)[:,-1]  # probability of class 1 for each instance
 
 
     print (yhat_score)
-    fpr_keras, tpr_keras, thresholds_keras = roc_curve(test_target, yhat_score)
+    fpr_keras, tpr_keras, thresholds_keras = roc_curve(target_test, yhat_score)
     auc_keras = auc(fpr_keras, tpr_keras)
     print ('AUC: %f' % auc_keras)
     # precision tp / (tp + fp)
-    precision = precision_score(test_target, yhat_classes)
+    precision = precision_score(target_test, yhat_classes)
     print('Precision: %f' % precision)
     # recall: tp / (tp + fn)
-    recall = recall_score(test_target, yhat_classes)
+    recall = recall_score(target_test, yhat_classes)
     print('Recall: %f' % recall)
     # f1: 2 tp / (2 tp + fp + fn)
-    f1 = f1_score(test_target, yhat_classes)
+    f1 = f1_score(target_test, yhat_classes)
     print('F1 score: %f' % f1)
 
-    classify_report = classification_report(test_target,yhat_classes)
+    classify_report = classification_report(target_test,yhat_classes)
     print (classify_report)
 
     plt.plot(fpr_keras, tpr_keras, color='darkorange',

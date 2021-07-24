@@ -1,3 +1,8 @@
+"""
+include functions to read search results (peptide,protein,psm.tsv) and some plot functions (venn diagram) and text logo
+
+"""
+
 from collections import defaultdict
 import re
 import pandas as pd
@@ -190,6 +195,53 @@ def venn_diagram_gen2(dictionary, title=None): # parameter could be a dictionary
             ax.set_title(title)
     plt.show()
 
+
+def logomaker_from_stop_codon(plot_seq_list):
+    """
+    plot a logo graph
+    :param plot_seq_list: a list of equal_len_sequence
+    :return:
+    """
+    import logomaker as lm
+    from matplotlib import pyplot as plt
+
+    counts_mat = lm.alignment_to_matrix(plot_seq_list)
+    prob_mat = lm.transform_matrix(counts_mat, normalize_values=True)
+    print (prob_mat)
+    # call lm.list_font_names() for font list
+    logo = lm.Logo(prob_mat,
+                   fade_probabilities=True,
+                   alpha=0.9,
+                   font_name='Berlin Sans FB Demi',
+                   color_scheme='skylign_protein',
+                   )
+
+    # styling
+    logo.ax.set_xticks(range(len(plot_seq_list[0])))
+    logo.ax.set_xticklabels(['P'+str(i) for i in range(8,0,-1)]+['P'+str(i)+"'" for i in range(1,8)])
+    logo.ax.axvline(7.5, color='black',linewidth=2,linestyle=':')
+    logo.ax.set_ylabel('probability')
+    # plt.show()
+    return prob_mat
+
+
+def heatmap_gen(matrix):
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    import numpy as np
+    fig, ax = plt.subplots(1,1, figsize =(10,10))
+    g = sns.heatmap(matrix,
+                    ax=ax,
+                    cbar_kws={'label': 'ratio','ticks': range(0,120,20)},vmin=0,vmax=100, cmap="YlGnBu")
+
+
+    ax.set_xticks(np.arange(0.5,15.5,1))
+    ax.set_xticklabels(['P'+str(i) for i in range(8,0,-1)]+['P'+str(i)+"'" for i in range(1,8)], fontsize=15)
+    ax.set_xlabel('Position', fontsize=20)
+    ax.tick_params(axis='both', which='major', labelsize=15)
+    plt.tight_layout()
+    plt.show()
+    return ax
 
 def combined_proteintsv_map(combined_protein_tsv):
     """

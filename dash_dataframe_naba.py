@@ -87,8 +87,8 @@ def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ec
     #                        columns=['protein_id', 'length', 'coverage', 'gene_name', 'spec_count', 'ecm_class','file_name',
     #                                 'file_number'])
     # info_df.to_csv(output_path,index=False)
-    # return file_protein_cov_dict, file_id_peptide_dict,file_unique_id_pep_dict,file_protein_spec_dict,file_unique_id_pep_count_dict,file_id_pep_count_dict
-    return file_protein_pep_spec_dict
+    return file_protein_cov_dict, file_id_peptide_dict,file_unique_id_pep_dict,file_protein_spec_dict,file_unique_id_pep_count_dict,file_id_pep_count_dict
+    # return file_protein_pep_spec_dict
 
 
 if __name__=='__main__':

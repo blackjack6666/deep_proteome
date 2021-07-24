@@ -202,7 +202,7 @@ if __name__=='__main__':
     import time
     from parameters import custom_ohe, hydrophobicity_cal,matrix_addup
 
-    t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/tryp_Gluc_ON_15mer.p','rb'))
+    t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/thermolysin_PRIDE.p','rb'))
     test_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/pombe_gluc_tryps_rep1_31mer.p','rb'))
     # test_dataset_dict = ppp.load(open('mouse_B_FT_31mer_dict.p','rb'))
     # predict_matrix = ppp.load(open('P62918_matrix_2d_array.p', 'rb'))
@@ -235,15 +235,15 @@ if __name__=='__main__':
 
     X_train, X_test, target_train, target_test = train_test_data_split(matrix,target)
     time_start = time.time()
-    svm_clf = random_forest_classifer(matrix,target)
+    svm_clf = random_forest_classifer(X_train,target_train)
     # ppp.dump(svm_clf, open('D:/data/deep_proteome/non_specfic_search/random_forest_ct_4h.p','wb'))
     print('model trained time:',time.time() - time_start)
     # score = cross_validate(svm_clf,matrix,target)
     # print (score)
-    print (plot_confusion_mtx(svm_clf, test_matrix, test_target))
-    print(classifi_report(svm_clf, test_matrix, test_target))
-    precision_recall_curv(svm_clf, test_matrix, test_target)
-    roc_curve(svm_clf, test_matrix, test_target)
+    print (plot_confusion_mtx(svm_clf, X_test, target_test))
+    print(classifi_report(svm_clf, X_test, target_test))
+    precision_recall_curv(svm_clf, X_test, target_test)
+    roc_curve(svm_clf, X_test, target_test)
     # print (svm_clf.predict(predict_matrix))
     print (target_test[0])
 

@@ -21,26 +21,34 @@ protein_dict = fasta_reader(fasta_path)
 
 """
 protein_info_dict = protein_info_from_fasta(fasta_path)
-folder_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
-combined_protein_file_list = [folder_path+each+'/combined_protein.tsv' for each in ['KOB','KOC', 'SNEDB', 'SNEDC']]
-
-total_protein_list = [prot for each in combined_protein_file_list for prot in protein_reader(each)]
-total_protein_set = set(total_protein_list)
+# folder_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
+# combined_protein_file_list = [folder_path+each+'/combined_protein.tsv' for each in ['KOB','KOC', 'SNEDB', 'SNEDC']]
+#
+# total_protein_list = [prot for each in combined_protein_file_list for prot in protein_reader(each)]
+# total_protein_set = set(total_protein_list)
+total_protein_set = protein_reader('D:/data/Naba_deep_matrisome/07232021_secondsearch/combined_protein.tsv')
 
 protein_mass_dict = protein_mass_calculator(total_protein_set,protein_dict)
 
+# base_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
+# folders = [base_path+each+folder for each in ['KOB/','KOC/', 'SNEDB/', 'SNEDC/'] for folder in os.listdir(base_path+each) if '.' not in folder]
+base_path = 'D:/data/Naba_deep_matrisome/07232021_secondsearch/'
+folders = [base_path+folder for folder in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, folder))]
 
-
-base_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
-folders = [base_path+each+folder for each in ['KOB/','KOC/', 'SNEDB/', 'SNEDC/'] for folder in os.listdir(base_path+each) if '.' not in folder]
 print (folders)
 psm_path_list = [each+'/psm.tsv' for each in folders]
 pep_path_list = [each+'/peptide.tsv' for each in folders]
 
-file_list = ['KO_B_0o5', 'KO_B_2','KO_B_4', 'KO_B_18',
-            'SNED_B_0o5', 'SNED_B_2','SNED_B_4', 'SNED_B_18',
-             'KO_C_0o5', 'KO_C_2', 'KO_C_4', 'KO_C_18',
-             'SNED_C_0o5', 'SNED_C_2', 'SNED_C_4', 'SNED_C_18']
+
+# file_list = ['KO_B_0o5', 'KO_B_2','KO_B_4', 'KO_B_18',
+#             'SNED_B_0o5', 'SNED_B_2','SNED_B_4', 'SNED_B_18',
+#              'KO_C_0o5', 'KO_C_2', 'KO_C_4', 'KO_C_18',
+#              'SNED_C_0o5', 'SNED_C_2', 'SNED_C_4', 'SNED_C_18']
+
+file_list = ['GFP_seq_30D','GFP_seq_120D','GFP_seq_240D','GFP_seq_1080D','GFP_120D','GFP_1080D',
+             'SNED1_seq_30D','SNED1_seq_120D','SNED1_seq_240D','SNED1_seq_1080D','SNED1_120D','SNED1_1080D',
+             'GFP_seq_30F','GFP_seq_120F','GFP_seq_240F','GFP_seq_1080F','GFP_120F','GFP_1080F',
+             'SNED1_seq_30F','SNED1_seq_120F','SNED1_seq_240F','SNED1_seq_1080F','SNED1_120F','SNED1_1080F']
 
 file_protein_cov_dict, file_id_pep_dict,file_unique_id_pep_dict, file_prot_spec_dict,file_unique_id_pep_count_dict,file_id_pep_count_dict  = dash_dataframe(pep_path_list,psm_path_list,protein_dict,psm_path_list,psm_path_list,psm_path_list)
 file_protein_info_dict = {file:protein_info_dict for file in file_list}
@@ -70,9 +78,9 @@ for prot in total_protein_set:
                 df_info.at[prot,file+'_'+i]=j[file][prot]
             else:
                 df_info.at[prot,file+'_'+i]=0
-df_info.to_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_14_summary_B_C_Xinhao.xlsx')
+df_info.to_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F.xlsx')
 
-
+"""
 
 # with ExcelWriter('D:/data/Naba_deep_matrisome/05142021_secondsearch/SNEDC/mat_protein_spec_SNEDC.xlsx') as writer:
 #     for file in file_protein_spec_dict:
@@ -82,13 +90,16 @@ df_info.to_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_14_summary
 #             df = pd.DataFrame(info_list, columns=['protein','total_spec_count','coverage', 'gene_name', 'description'])
 #             df.to_excel(writer, '%s' % file)
 
-"""
+
 
 ### get time-series aggregated data
 """
-df = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_14_summary_B_C_Xinhao.xlsx',index_col=0)  # manually delete
-samples = ['KO_B','SNED_B','KO_C', 'SNED_C']
-time_points = ['0o5', '2', '4', '18']
+df = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F.xlsx',index_col=0)  # manually delete
+# samples = ['KO_B','SNED_B','KO_C', 'SNED_C']
+# time_points = ['0o5', '2', '4', '18']
+samples = ['GFP_seq_D', 'SNED1_seq_D', 'GFP_seq_F', 'SNED1_seq_F']
+time_points = ['30','120','240','1080']
+
 df_aggregated = pd.DataFrame()
 
 for each in df.index:
@@ -109,7 +120,7 @@ for each in df.index:
             indx_list = time_points[:ind+1]
             aggreted_peptide_set = set()
             for each_time in indx_list:
-                total_peptides = df.at[each,sample+'_'+each_time+'_total peptides identified']
+                total_peptides = df.at[each,sample[:-1]+each_time+sample[-1]+'_total peptides identified']
                 if total_peptides!=0:
                     if ', ' in total_peptides:
                         for pep in total_peptides.split(', '):
@@ -120,7 +131,7 @@ for each in df.index:
         #     aggregated_unique_pep_count = sum([df.at[each,sample+'_'+time+'_unique peptides count'] for time in indx_list])
             aggre_unique_pepset = set()
             for each_time in indx_list:
-                unique_peptides = df.at[each,sample+'_'+each_time+'_unique peptides identified']
+                unique_peptides = df.at[each,sample[:-1]+each_time+sample[-1]+'_total peptides identified']
                 if unique_peptides!='set()' and unique_peptides!=0:
                     if ', ' in unique_peptides:
                         for pep in unique_peptides.split(', '):
@@ -138,23 +149,23 @@ for each in df.index:
             df_aggregated.at[each, sample+'_'+time+'_aggre_coverage'] = aggregated_cov
             df_aggregated.at[each, sample+'_'+time+'_aggre_unique_pep_count'] = aggregated_unique_pep_count
 
-df_aggregated.to_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_15_summary_aggregated_B_C.xlsx')
-
+df_aggregated.to_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_aggregated_D_F.xlsx')
 """
 
-### get ECM category info with gene
 
+### get ECM category info with gene and filter ECM gene in total genes
 df_ecm = pd.read_excel('D:/data/Naba_deep_matrisome/matrisome coverage_norepeat.xlsx')
 ecm_gene_category_dict = {gene:category for gene,category in zip(df_ecm['gene_id'], df_ecm['category'])}
 """
-df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_15_summary_aggregated_B_C.xlsx',index_col=0)
+df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_aggregated_D_F.xlsx',index_col=0)
 df_summary_slice = df_summary[df_summary['gene'].isin(ecm_gene_category_dict)]
+# df_summary_slice.to_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_ecm_aggregated_D_F.xlsx')
 """
 
 ### average coverage value from biological replicates data
 """
-df_summary_slice=pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_15_ecm_aggregated_B_C.xlsx', index_col=0)
-samples, replicates, times = ['KO','SNED'], ['B', 'C'], ['0o5','2','4','18']
+df_summary_slice=pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_ecm_aggregated_D_F.xlsx', index_col=0)
+samples, times = ['GFP_seq_', 'SNED1_seq_'],['30','120','240','1080']
 
 df_aggre_coverage = pd.DataFrame()
 for prot in df_summary_slice.index:
@@ -163,12 +174,13 @@ for prot in df_summary_slice.index:
     df_aggre_coverage.at[prot, 'category'] = ecm_gene_category_dict[gene]
     for sample in samples:
         for time in times:
-            aver_cov = np.mean([df_summary_slice.at[prot,sample+'_B_'+time+'_aggre_coverage'],df_summary_slice.at[prot,sample+'_C_'+time+'_aggre_coverage']])
-            df_aggre_coverage.at[prot,sample+'_'+time+'_ave_aggre_cov']=aver_cov
+            aver_cov = np.mean([df_summary_slice.at[prot,sample+'D_'+time+'_aggre_coverage'],df_summary_slice.at[prot,sample+'F_'+time+'_aggre_coverage']])
+            df_aggre_coverage.at[prot,sample+time+'_ave_aggre_cov']=aver_cov
 
-df_aggre_coverage.to_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_15_ecm_aggregated_B_C_average.xlsx')
+df_aggre_coverage.to_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_ecm_aggregated_D_F_average.xlsx')
 """
-df_ecm_aggre = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_15_ecm_aggregated_B_C_average.xlsx',index_col=0)
+
+df_ecm_aggre = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_ecm_aggregated_D_F_average.xlsx',index_col=0)
 df_ecm_aggre = df_ecm_aggre.copy()
 category_list = df_ecm_aggre['category']
 df_cov_derivative_delta = pd.DataFrame()
@@ -195,10 +207,10 @@ print (df_cov_derivative_delta_sub.loc[df_cov_derivative_delta_sub['0.5-2h']<0])
 """
 
 ### plotting aggregated coverage
-
+# fig,ax = plt.subplots(1,1, figsize=(10,15))
 
 # line plot color map
-"""
+
 ecm_class_color_dict = {"Collagens": '#F23F51', 'ECM-affiliated Proteins':'#23AECA',
                         'ECM Regulators':"#23CA66","Secreted Factors":"#E3EB09",
                         "ECM Glycoproteins":"#EBA709", "Proteoglycans":"#EB09DC"}
@@ -211,9 +223,9 @@ labels.append('Average ECM protein coverage in standard digestion')
 lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in colors[:-1]]
 # lines.append(Line2D([0], [0], color='black', linewidth=3, linestyle='--'))
 
-fig,ax = plt.subplots(1,1, figsize=(10,15))
 
 
+"""
 ### line plot of time_series coverage/first derivates
 #plot each line at a time
 x = range(3)
@@ -241,30 +253,34 @@ plt.tight_layout()
 """
 
 ### violin plot
-"""
-df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/05142021_secondsearch/6_14_summary_B_C_Xinhao.xlsx',index_col=0)
 
-normal18_cov = [np.mean([df_summary.at[prot,'SNED_B_18_coverage'], df_summary.at[prot,'SNED_C_18_coverage']]) for prot in df_ecm_aggre.index]
-aggre_18_cov = df_ecm_aggre['SNED_18_ave_aggre_cov'].tolist()
-aggre_ko18_cov = df_ecm_aggre['KO_18_ave_aggre_cov'].tolist()
+df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F.xlsx',index_col=0)
+normal18GFP_cov = [np.mean([df_summary.at[prot,'GFP_1080D_coverage'], df_summary.at[prot,'GFP_1080F_coverage']]) for prot in df_ecm_aggre.index]
+normal18SNED_cov = [np.mean([df_summary.at[prot,'SNED1_1080D_coverage'], df_summary.at[prot,'SNED1_1080F_coverage']]) for prot in df_ecm_aggre.index]
+
+aggre_18_cov = df_ecm_aggre['SNED1_seq_1080_ave_aggre_cov'].tolist()
+aggre_ko18_cov = df_ecm_aggre['GFP_seq_1080_ave_aggre_cov'].tolist()
 print (np.mean(aggre_ko18_cov), np.mean(aggre_18_cov))
-print (ttest_rel(aggre_ko18_cov,aggre_18_cov,alternative='greater'))
-category_list = df_ecm_aggre['category'].tolist()
+print (ttest_rel(normal18GFP_cov,normal18SNED_cov,alternative='greater'))
+# category_list = df_ecm_aggre['category'].tolist()
 
 
-df_violin = pd.DataFrame(dict(category=category_list, cov=aggre_ko18_cov,sample=['GFP 18h agg']*len(category_list))).append(pd.DataFrame(dict(category=category_list, cov=aggre_18_cov,sample=['GFP-SNED1 18h agg']*len(category_list))))
+df_violin = pd.DataFrame(dict(category=category_list, cov=normal18GFP_cov,sample=['GFP 18h']*len(category_list))).append(pd.DataFrame(dict(category=category_list, cov=normal18SNED_cov,sample=['GFP-SNED1 18h']*len(category_list))))
 fig,ax = plt.subplots(1,1, figsize=(8,5))
-ax = sns.violinplot(data=df_violin, x='category', y='cov', hue='sample', palette='muted', split=False)
+ax = sns.violinplot(data=df_violin, x='category', y='cov', hue='sample', palette='Set2', split=False)
+ax = sns.swarmplot(data=df_violin, x='category', y='cov', hue='sample',size=4, palette='rocket', dodge=True)
 add_stat_annotation(ax,data=df_violin,x='category',y='cov',hue='sample',
-                    box_pairs=[(("ECM Glycoproteins","GFP 18h agg"),("ECM Glycoproteins","GFP-SNED1 18h agg")),
-                               (("ECM-affiliated Proteins","GFP 18h agg"),("ECM-affiliated Proteins","GFP-SNED1 18h agg")),
-                               (("Collagens", "GFP 18h agg"),("Collagens","GFP-SNED1 18h agg")),
-                               (("Proteoglycans", "GFP 18h agg"),("Proteoglycans","GFP-SNED1 18h agg")),
-                               (("ECM Regulators", "GFP 18h agg"),("ECM Regulators","GFP-SNED1 18h agg")),
-                               (("Secreted Factors", "GFP 18h agg"),("Secreted Factors", "GFP-SNED1 18h agg"))],test='t-test_paired',text_format='star',loc='outside',verbose=2, comparisons_correction=None)
+                    box_pairs=[(("ECM Glycoproteins","GFP 18h"),("ECM Glycoproteins","GFP-SNED1 18h")),
+                               (("ECM-affiliated Proteins","GFP 18h"),("ECM-affiliated Proteins","GFP-SNED1 18h")),
+                               (("Collagens", "GFP 18h"),("Collagens","GFP-SNED1 18h")),
+                               (("Proteoglycans", "GFP 18h"),("Proteoglycans","GFP-SNED1 18h")),
+                               (("ECM Regulators", "GFP 18h"),("ECM Regulators","GFP-SNED1 18h")),
+                               (("Secreted Factors", "GFP 18h"),("Secreted Factors", "GFP-SNED1 18h"))],test='t-test_paired',text_format='star',loc='outside',verbose=2, comparisons_correction=None)
+handles, labels = ax.get_legend_handles_labels()
+ax.legend(handles[:2], labels[:2])
 plt.xticks(rotation=30)
 plt.show()
-"""
+
 
 ### boxplot and dots connecting
 
@@ -274,13 +290,13 @@ ax.legend(lines, labels, framealpha=0.5,loc='upper right',fontsize=15)
 x_normal = np.random.normal(1, 0.04, size=len(aggre_ko18_cov))
 x_aggre = np.random.normal(2, 0.04, size=len(aggre_18_cov))
 color_list = [color_map[prot] for prot in df_ecm_aggre.index]
-ax.boxplot([aggre_ko18_cov,aggre_18_cov], labels=['GFP aggregated 18h', 'GFP-SNED aggregated 18h'],showfliers=False)
+ax.boxplot([normal18GFP_cov,normal18SNED_cov], labels=['GFP 18h', 'GFP-SNED1 18h'],showfliers=False)
 # plot points onto boxplot
-for x,cov_list in zip([x_normal,x_aggre],[aggre_ko18_cov,aggre_18_cov]):
+for x,cov_list in zip([x_normal,x_aggre],[normal18GFP_cov,normal18SNED_cov]):
     ax.plot(x,cov_list,'ko',markersize=10,alpha=0.5)
 
 #connect dots with different color
-for x1,y1,x2,y2,color in zip(x_normal,aggre_ko18_cov,x_aggre,aggre_18_cov,color_list):
+for x1,y1,x2,y2,color in zip(x_normal,normal18GFP_cov,x_aggre,normal18SNED_cov,color_list):
     ax.plot([x1,x2],[y1,y2],color=color, linestyle='--', alpha=0.8)
 
 # for x1,y1,x2,y2 in zip(sub_x_163,sub_y_163,sub_x_182,sub_y_182):
@@ -288,7 +304,7 @@ for x1,y1,x2,y2,color in zip(x_normal,aggre_ko18_cov,x_aggre,aggre_18_cov,color_
 # ax.set_title('Coverage comparison between 18h and aggregated 18h in GFP', fontsize=22)
 ax.tick_params(axis='both', which='major', labelsize=15)
 ax.set_ylabel('%coverage',fontsize=20)
-# plt.show()
+plt.show()
 """
 
 # ptm analysis
@@ -333,6 +349,7 @@ ax.set_ylabel('%coverage',fontsize=20)
 """
 
 ### coverage line_plot
+"""
 from scipy.interpolate import interp1d
 base_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
 folders = [base_path+each+folder for each in ['KOB/','KOC/', 'SNEDB/', 'SNEDC/'] for folder in os.listdir(base_path+each) if '.' not in folder]
@@ -365,6 +382,7 @@ x = range(len(protein_seq))
 y = aa_array_ko
 # f_cubic = interp1d(x,y,kind='cubic')
 # x_new = np.linspace(0,len(protein_seq)-1,10000)
-plt.plot(y)
+plt.plot(y) 
 plt.show()
 
+"""

@@ -1,5 +1,8 @@
 # enzyme specificity
 import numpy as np
+import pickle as ppp
+from stat_models import matrix_target
+
 enzyme_spec = {'trypsin':'KR','chymotrypsin':'FWY'}
 
 aa_mass_table = {'A': 71.037114, 'R': 156.101111, 'N': 114.042927, 'D': 115.026943,
@@ -12,7 +15,7 @@ aa_mass_table = {'A': 71.037114, 'R': 156.101111, 'N': 114.042927, 'D': 115.0269
 
 
 h_oh_mass_dict = {'H':1.00784, 'OH':19.008}
-
+aa_list = ['A','R','N','D','C','Q','E','G','H','I','L','K','M','F','P','S','T','W','Y','V','X','Z']
 aa_interger_dict = {
     'A':0,
     'R':1,
@@ -37,6 +40,14 @@ aa_interger_dict = {
     'X':20,
     'Z':21
 }
+
+two_aa_int_dict = {}
+count = 0
+for ind, aa in enumerate(aa_list):
+    for ind2, aa2 in enumerate(aa_list):
+        two_aa_int_dict[aa+aa2] = count
+        count+=1
+
 # https://www.peptide2.com/N_peptide_hydrophobicity_hydrophilicity.php
 hydrophobicity_score_dict = {
     'A':47,
@@ -63,9 +74,6 @@ hydrophobicity_score_dict = {
     'Z':0
 }
 
-import pickle as ppp
-from stat_models import matrix_target
-
 
 def custom_ohe(matrix,polymer_len=31):
     """
@@ -80,6 +88,26 @@ def custom_ohe(matrix,polymer_len=31):
         array = np.zeros(polymer_len*22)
         for ind,val in enumerate(each_mer):
             array[ind*22+aa_interger_dict[val]]=1
+        encoding_matrix.append(array)
+    encoding_matrix = np.array(encoding_matrix)
+    print (f"matrix shape: {encoding_matrix.shape}")
+    return encoding_matrix
+
+
+def custom_ohe_twoaa(matrix,polymer_len=31):
+    """
+    encode two aa from a polymer into one-hot encoding
+    :param matrix:
+    :param polymer_len:
+    :return:
+    """
+    encoding_matrix = []
+    for each_mer in matrix:
+        each_mer = ''.join(each_mer)
+        # print (each_mer)
+        array = np.zeros((polymer_len-1)*len(two_aa_int_dict),dtype=np.int8)
+        for i in range(len(each_mer)-1):
+            array[two_aa_int_dict[each_mer[i:i+2]]] = 1
         encoding_matrix.append(array)
     encoding_matrix = np.array(encoding_matrix)
     print (f"matrix shape: {encoding_matrix.shape}")
@@ -149,9 +177,10 @@ def protein_mass_calculator(protein_list,protein_seq_dict):
 if __name__ == '__main__':
     t_37C_240min_dict = ppp.load(open('tryp_24h_label_dict_11_8.p','rb'))
     matrix,target = matrix_target(t_37C_240min_dict)
-    one_hot_matrix = custom_ohe(matrix)
-    hydro_matrix = hydrophobicity_cal(matrix)
-    new_matrix = matrix_addup(one_hot_matrix,hydro_matrix)
+    # one_hot_matrix = custom_ohe(matrix)
+    # hydro_matrix = hydrophobicity_cal(matrix)
+    # new_matrix = matrix_addup(one_hot_matrix,hydro_matrix)
+    two_aa_one_hot_encoding = custom_ohe_twoaa(matrix)
 
     # matrix = matrix[0]
     # print (matrix)
