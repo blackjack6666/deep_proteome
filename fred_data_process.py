@@ -187,6 +187,8 @@ df_ecm_aggre = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/
 df_ecm_aggre = df_ecm_aggre.copy()
 category_list = df_ecm_aggre['category']
 df_cov_derivative_delta = pd.DataFrame()
+gfp_1080_agg = df_ecm_aggre.loc[df_ecm_aggre['category']=='ECM-affiliated Proteins']['GFP_seq_1080_ave_aggre_cov'].tolist()
+sned1_1080_agg = df_ecm_aggre.loc[df_ecm_aggre['category']=='ECM-affiliated Proteins']['SNED1_seq_1080_ave_aggre_cov'].tolist()
 
 ### calculate first derivatives
 """
@@ -222,38 +224,62 @@ color_map = {prot:ecm_class_color_dict[ecm_class] for prot,ecm_class in zip(df_e
 colors = [v for v in ecm_class_color_dict.values()]
 colors.append('black') # average flat line
 labels = [k for k in ecm_class_color_dict.keys()]
-labels.append('Average ECM protein coverage in standard digestion')
+labels.append('Average ECM protein coverage in aggre_18h')
 lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in colors[:-1]]
-# lines.append(Line2D([0], [0], color='black', linewidth=3, linestyle='--'))
+lines.append(Line2D([0], [0], color='black', linewidth=3, linestyle='--'))
 
 
 ### line plot of time_series coverage/first derivates
 """
 #plot each line at a time
-x = range(3)
-for each in df_cov_derivative_delta.itertuples():
+fig,ax = plt.subplots(1,1, figsize=(10,15))
+x = range(4)
+for each in df_ecm_aggre.itertuples():
     # print (each)
     column = each[0]
-    y = each[-3:]
-    # if y[-1]-y[0] == 0: # if line is flat, make it transparent
-    #     ax.plot(x,y, color=color_map[column], linestyle='-',alpha=0.1)
-    # else:
-    #     ax.plot(x,y, color=color_map[column], linestyle='-')
-    ax.plot(x,y, color=color_map[column], linestyle='-')
+    y = each[-4:]
+    if y[-1]-y[0] == 0: # if line is flat, make it transparent
+        ax.plot(x,y, color=color_map[column], linestyle='-',alpha=0.1)
+    else:
+        ax.plot(x,y, color=color_map[column], linestyle='-')
+    # ax.plot(x,y, color=color_map[column], linestyle='-') # first derivates
 
 # ax.get_legend().remove()
 ax.legend(lines, labels, framealpha=0.5,loc='upper right',fontsize=15)
 ax.set_xticks(x)
-ax.set_xticklabels(['0.5-2h','2-4h','4-18h'], fontsize=15)
-ax.set_title('Digestion first derivative/speed in GFP-SNED1', fontsize=22)
-ax.set_xlabel('time interval', fontsize=20)
-ax.set_ylabel('coverage_change/min',fontsize=20)
+# ax.set_xticklabels(['0.5-2h','2-4h','4-18h'], fontsize=15) # first derivates
+ax.set_xticklabels(['0.5h','2h','4h','18h'])
+ax.set_title('ECM coverage in sequential GFP-SNED1', fontsize=22)
+ax.set_xlabel('Time', fontsize=20)
+#ax.set_ylabel('coverage_change/min',fontsize=20) # first derivates
+ax.set_ylabel('Coverage%', fontsize=20)
 ax.tick_params(axis='both', which='major', labelsize=15)
-# plt.axhline(y=average_182A_coverage,xmin=0.04, xmax=0.96,linestyle='--',color='k',linewidth=3)
+plt.axhline(y=df_ecm_aggre['SNED1_seq_1080_ave_aggre_cov'].mean(),xmin=0.04, xmax=0.96,linestyle='--',color='k',linewidth=3)
 plt.tight_layout()
-# plt.show()
+plt.show()
 """
 
+### break down ECM into categories and plot line
+from math import log10
+fig,axs = plt.subplots(6,1, figsize=(10,20))
+x = [log10(0.5), log10(2), log10(4), log10(18)]
+for each_cat,ax in zip(ecm_class_color_dict,axs):
+    sub_df = df_ecm_aggre[df_ecm_aggre['category']==each_cat]
+    for each in sub_df.itertuples():
+        y = each[-4:]
+        y_log10 = np.log10(y)
+
+        if y[-1]-y[0] == 0: # if line is flat, make it transparent
+            ax.plot(x,y_log10, color='lightcoral', linestyle='-',alpha=0.1)
+        else:
+            ax.plot(x,y_log10, color='lightcoral', linestyle='-')
+    ax.set_xticks([log10(0.5), log10(2), log10(4), log10(18)])
+    ax.set_xticklabels(['0.5h','2h','4h','18h'], fontsize=10)
+    ax.set_title(each_cat, fontsize=12)
+    ax.set_xlabel('log time point', fontsize=12)
+    ax.set_ylabel('log %coverage',fontsize=12)
+    ax.set(yticklabels=[])
+plt.show()
 
 
 df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F.xlsx',index_col=0)
@@ -268,7 +294,7 @@ aggre_2_cov = df_ecm_aggre['SNED1_seq_120_ave_aggre_cov'].tolist()
 aggre_ko2_cov = df_ecm_aggre['GFP_seq_120_ave_aggre_cov'].tolist()
 
 print (np.mean(aggre_ko18_cov), np.mean(aggre_18_cov))
-print (ttest_rel(normal18GFP_cov,normal18SNED_cov,alternative='greater'))
+print (ttest_rel(gfp_1080_agg,sned1_1080_agg,alternative='greater'))
 # category_list = df_ecm_aggre['category'].tolist()
 
 ### violin plot
@@ -290,6 +316,7 @@ plt.xticks(rotation=30)
 plt.show()
 """
 ### heatmap/cluster map
+"""
 columns = ['standard_2h_GFP','standard_2h_SNED1','aggre_2h_GFP','aggre_2h_SNED1','standard_18h_GFP','standard_18h_SNED1','aggre_18h_GFP','aggre_18h_SNED1']
 df_heatmap = pd.DataFrame(dict(standard_2h_GFP=normal2GFP_cov, standard_2h_SNED1=normal2SNED_cov, aggre_2h_GFP=aggre_ko2_cov,aggre_2h_SNED1=aggre_2_cov,
                                standard_18h_GFP=normal18GFP_cov, standard_18h_SNED1=normal18SNED_cov, aggre_18h_GFP=aggre_ko18_cov, aggre_18h_SNED1=aggre_18_cov),
@@ -304,7 +331,7 @@ g.ax_heatmap.set_ylabel('ECM protein')
 plt.setp(g.ax_heatmap.get_xticklabels(), rotation=30, ha='right')
 plt.show()
 
-
+"""
 ### boxplot and dots connecting
 
 """
