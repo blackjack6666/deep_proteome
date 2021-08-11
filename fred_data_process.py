@@ -267,13 +267,13 @@ x = [log10(0.5), log10(2), log10(4), log10(18)]
 for each_cat,ax in zip(ecm_class_color_dict,axs):
     sub_df = df_ecm_aggre[df_ecm_aggre['category']==each_cat]
     for each in sub_df.itertuples():
-        y = each[-4:]
+        y = np.array(each[4:8])-np.array(each[8:12])
         y_log10 = np.log10(y)
-
-        if y[-1]-y[0] == 0: # if line is flat, make it transparent
-            ax.plot(x,y_log10, color='lightcoral', linestyle='-',alpha=0.1)
-        else:
-            ax.plot(x,y_log10, color='lightcoral', linestyle='-')
+        ax.plot(x, y, color='lightcoral', linestyle='-')
+        # if y[-1]-y[0] == 0: # if line is flat, make it transparent
+        #     ax.plot(x,y_log10, color='lightcoral', linestyle='-',alpha=0.1)
+        # else:
+        #     ax.plot(x,y_log10, color='lightcoral', linestyle='-')
     ax.set_xticks([log10(0.5), log10(2), log10(4), log10(18)])
     ax.set_xticklabels(['0.5h','2h','4h','18h'], fontsize=10)
     ax.set_title(each_cat, fontsize=12)
@@ -284,19 +284,23 @@ plt.show()
 """
 
 
-# df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F.xlsx',index_col=0)
-# normal18GFP_cov = [np.mean([df_summary.at[prot,'GFP_1080D_coverage'], df_summary.at[prot,'GFP_1080F_coverage']]) for prot in df_ecm_aggre.index]
-# normal2GFP_cov = [np.mean([df_summary.at[prot,'GFP_120D_coverage'], df_summary.at[prot,'GFP_120F_coverage']]) for prot in df_ecm_aggre.index]
-# normal18SNED_cov = [np.mean([df_summary.at[prot,'SNED1_1080D_coverage'], df_summary.at[prot,'SNED1_1080F_coverage']]) for prot in df_ecm_aggre.index]
-# normal2SNED_cov = [np.mean([df_summary.at[prot,'SNED1_120D_coverage'], df_summary.at[prot,'SNED1_120F_coverage']]) for prot in df_ecm_aggre.index]
-#
-# aggre_18_cov = df_ecm_aggre['SNED1_seq_1080_ave_aggre_cov'].tolist()
-# aggre_ko18_cov = df_ecm_aggre['GFP_seq_1080_ave_aggre_cov'].tolist()
-# aggre_2_cov = df_ecm_aggre['SNED1_seq_120_ave_aggre_cov'].tolist()
-# aggre_ko2_cov = df_ecm_aggre['GFP_seq_120_ave_aggre_cov'].tolist()
-#
-# print (np.mean(aggre_ko18_cov), np.mean(aggre_18_cov))
-# print (ttest_rel(gfp_1080_agg,sned1_1080_agg,alternative='greater'))
+df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F_squential_standard.xlsx',index_col=0)
+normal18GFP_cov = [np.mean([df_summary.at[prot,'GFP_1080D_coverage'], df_summary.at[prot,'GFP_1080F_coverage']]) for prot in df_ecm_aggre.index]
+normal2GFP_cov = [np.mean([df_summary.at[prot,'GFP_120D_coverage'], df_summary.at[prot,'GFP_120F_coverage']]) for prot in df_ecm_aggre.index]
+normal18SNED_cov = [np.mean([df_summary.at[prot,'SNED1_1080D_coverage'], df_summary.at[prot,'SNED1_1080F_coverage']]) for prot in df_ecm_aggre.index]
+normal2SNED_cov = [np.mean([df_summary.at[prot,'SNED1_120D_coverage'], df_summary.at[prot,'SNED1_120F_coverage']]) for prot in df_ecm_aggre.index]
+
+aggre_18_cov = df_ecm_aggre['SNED1_seq_1080_ave_aggre_cov'].tolist()
+aggre_ko18_cov = df_ecm_aggre['GFP_seq_1080_ave_aggre_cov'].tolist()
+aggre_2_cov = df_ecm_aggre['SNED1_seq_120_ave_aggre_cov'].tolist()
+aggre_ko2_cov = df_ecm_aggre['GFP_seq_120_ave_aggre_cov'].tolist()
+
+print (np.mean(aggre_ko18_cov), np.mean(aggre_18_cov))
+print (ttest_rel(normal2GFP_cov,normal2SNED_cov,alternative='greater'))
+
+df_new = pd.DataFrame(dict(gene=df_ecm_aggre.gene,category=df_ecm_aggre.category,GFP18_normal=normal18GFP_cov,
+                           SNED18_normal=normal18SNED_cov,diff=np.array(normal18GFP_cov)-np.array(normal18SNED_cov)),index=df_ecm_aggre.index)
+print (df_new.sort_values(by='diff',ascending=False))
 # category_list = df_ecm_aggre['category'].tolist()
 
 ### violin plot
@@ -317,40 +321,30 @@ ax.legend(handles[:2], labels[:2])
 plt.xticks(rotation=30)
 plt.show()
 """
-from tsv_reader import combined_proteintsv_map, peptide_counting
-info_dict = combined_proteintsv_map('D:/data/Naba_deep_matrisome/07232021_secondsearch/combined_protein.tsv')
-
-gfp_1080d_protein_spec_dict = info_dict['GFP_1080D']
-gfp_1080f_protein_spec_dict = info_dict['GFP_1080F']
-print (len(gfp_1080f_protein_spec_dict))
-sned1_1080d_protein_spec_dict = info_dict['SNED1_1080D']
-sned1_1080f_protein_spec_dict = info_dict['SNED1_1080F']
-gfp_1080f_protein_spec_dict.update(gfp_1080d_protein_spec_dict)
-sned1_1080f_protein_spec_dict.update(sned1_1080d_protein_spec_dict)
-print (len(gfp_1080f_protein_spec_dict),len(sned1_1080f_protein_spec_dict))
-
-print (len(set([pep for file in ['D:/data/Naba_deep_matrisome/07232021_secondsearch/GFP_1080D/peptide.tsv','D:/data/Naba_deep_matrisome/07232021_secondsearch/GFP_1080F/peptide.tsv']
-        for pep in peptide_counting((file))])))
-print (len(set([pep for file in ['D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_1080D/peptide.tsv','D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_1080F/peptide.tsv']
-        for pep in peptide_counting((file))])))
 
 ### heatmap/cluster map
 """
-columns = ['standard_2h_GFP','standard_2h_SNED1','aggre_2h_GFP','aggre_2h_SNED1','standard_18h_GFP','standard_18h_SNED1','aggre_18h_GFP','aggre_18h_SNED1']
-df_heatmap = pd.DataFrame(dict(standard_2h_GFP=normal2GFP_cov, standard_2h_SNED1=normal2SNED_cov, aggre_2h_GFP=aggre_ko2_cov,aggre_2h_SNED1=aggre_2_cov,
-                               standard_18h_GFP=normal18GFP_cov, standard_18h_SNED1=normal18SNED_cov, aggre_18h_GFP=aggre_ko18_cov, aggre_18h_SNED1=aggre_18_cov),
-                           index=df_ecm_aggre.index, columns=columns)
+# columns = ['standard_2h_GFP','standard_2h_SNED1','aggre_2h_GFP','aggre_2h_SNED1','standard_18h_GFP','standard_18h_SNED1','aggre_18h_GFP','aggre_18h_SNED1']
+columns = ['30min', '2h','4h','18h']
+# df_heatmap = pd.DataFrame(dict(standard_2h_GFP=normal2GFP_cov, standard_2h_SNED1=normal2SNED_cov, aggre_2h_GFP=aggre_ko2_cov,aggre_2h_SNED1=aggre_2_cov,
+#                                standard_18h_GFP=normal18GFP_cov, standard_18h_SNED1=normal18SNED_cov, aggre_18h_GFP=aggre_ko18_cov, aggre_18h_SNED1=aggre_18_cov),
+#                            index=df_ecm_aggre.index, columns=columns)
+df_sub = df_ecm_aggre.sort_values(by=['category']).iloc[:, 3:11]
+df_heatmap = pd.DataFrame([np.array(row[:4])-np.array(row[-4:]) for row in df_sub.itertuples(index=False)], columns=columns, index=df_sub.index)
+# print (df_heatmap.head)
 
 fig,ax = plt.subplots(1,1, figsize=(8,15))
-# g = sns.heatmap(data=df_heatmap, ax=ax,cbar_kws={'label': 'coverage','ticks': range(0,120,20),'shrink': 0.5},vmin=0,vmax=100, cmap="YlGnBu")
-# ax.set_xticklabels(labels=columns, rotation=30, fontsize=8, ha='right')
+g = sns.heatmap(data=df_heatmap, ax=ax,cbar_kws={'label': 'coverage difference of GFP and GFP-SNED1','shrink': 0.5},cmap="RdYlGn",yticklabels=True)
+ax.set_xticklabels(labels=columns, rotation=30, fontsize=10, ha='right')
 # ax.axes.yaxis.set_visible(False)
-g = sns.clustermap(data=df_heatmap,cbar_kws={'label': 'coverage','ticks': range(0,120,20),'shrink': 0.3},vmin=0,vmax=100, cmap="YlGnBu",yticklabels=False)
-g.ax_heatmap.set_ylabel('ECM protein')
-plt.setp(g.ax_heatmap.get_xticklabels(), rotation=30, ha='right')
-plt.show()
-
+# g = sns.clustermap(data=df_heatmap,cbar_kws={'label': 'coverage','ticks': range(0,120,20),'shrink': 0.3},vmin=0,vmax=100, cmap="YlGnBu",yticklabels=False)
+# g.ax_heatmap.set_ylabel('ECM protein')
+# plt.setp(g.ax_heatmap.get_xticklabels(), rotation=30, ha='right')
+plt.setp(ax.get_yticklabels(), fontsize=5)
+# plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/test.png', dpi=300)
+# plt.show()
 """
+
 ### boxplot and dots connecting
 
 """

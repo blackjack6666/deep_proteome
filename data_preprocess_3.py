@@ -149,7 +149,7 @@ if __name__=='__main__':
 
 
     # protein_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/protein.tsv"
-    peptide_tsv_path = "D:/data/PRIDE_raw_file/thermolyisin_search_result/peptide.tsv"
+    peptide_tsv_path = "D:/data/deep_proteome/different_protease/tryp_30_thermo_30/peptide.tsv"
     file_name = peptide_tsv_path.split('/')[-2]
     print (f'reading...{file_name}')
     # psm_tsv_path = "D:/data/deep_proteome/20200915_tryp_37C_1440min/psm.tsv"
@@ -170,4 +170,4 @@ if __name__=='__main__':
     print('number of proteins with polymers reported: %i' % len(protein_poly_dict))
     print(Counter([v for v in polymer_label_dict.values()]), len(polymer_label_dict))
     print('uncertain ploymer number: %i' % uncertain_polymer_no)
-    ppp.dump(polymer_label_dict, open('D:/data/deep_proteome/non_specfic_search/thermolysin_PRIDE.p', 'wb'))
+    ppp.dump(polymer_label_dict, open('D:/data/deep_proteome/non_specfic_search/tryp_30_thermo_30.p', 'wb'))

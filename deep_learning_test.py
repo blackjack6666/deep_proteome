@@ -19,9 +19,9 @@ from tsv_reader import logomaker_from_stop_codon, heatmap_gen
 
 # test the built model on different dataset
 
-model = keras.models.load_model('D:/data/deep_proteome/deep_learning_models/thermolysine_PRIDE',custom_objects={'TCN': TCN})
+model = keras.models.load_model('D:/data/deep_proteome/deep_learning_models/tryp_30_thermo_30',custom_objects={'TCN': TCN})
 
-test_data = ppp.load(open('D:/data/deep_proteome/non_specfic_search/thermolysin_PRIDE.p','rb'))
+test_data = ppp.load(open('D:/data/deep_proteome/non_specfic_search/tryp_30_thermo_30.p','rb'))
 
 # load keras model and training dataset
 matrix_seq,target = matrix_target(test_data)
@@ -42,11 +42,12 @@ seq_class1_list = matrix_seq[yhat_class_1_index, :]
 seq_class1_list = [''.join(each) for each in seq_class1_list]
 filtered_seq_class1_list = [each for each in seq_class1_list if each[7] == 'E']
 print (len(seq_class1_list))
-# prob_matrix = logomaker_from_stop_codon(seq_class1_list)
-# prob_matrix = prob_matrix.T*100
+prob_matrix = logomaker_from_stop_codon(seq_class1_list)
+prob_matrix = prob_matrix.T*100
 # heatmap_gen(prob_matrix)
 
 # show logo for prediction of missed cleavaged polymer
+"""
 yhat_class_0_index = np.where(yhat_classes==0)[0]
 seq_class0_list = matrix_seq[yhat_class_0_index, :]
 seq_class0_list = [''.join(each) for each in seq_class0_list]
@@ -56,7 +57,7 @@ prob_matrix = prob_matrix.T*100
 ax = heatmap_gen(prob_matrix)
 # print (model.predict(X_test))
 # print (model.predict(test_maxtrix))
-
+"""
 
 
 

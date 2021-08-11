@@ -221,7 +221,7 @@ def logomaker_from_stop_codon(plot_seq_list):
     logo.ax.set_xticklabels(['P'+str(i) for i in range(8,0,-1)]+['P'+str(i)+"'" for i in range(1,8)])
     logo.ax.axvline(7.5, color='black',linewidth=2,linestyle=':')
     logo.ax.set_ylabel('probability')
-    # plt.show()
+    plt.show()
     return prob_mat
 
 

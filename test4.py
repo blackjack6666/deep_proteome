@@ -1,9 +1,15 @@
 from tsv_reader import peptide_counting
 
-pep_path1 = 'D:/data/pats/results/hek_zz_sp_isoform_no_razor/peptide.tsv'
-pep_path2 = 'D:/data/pats/results/hek_zz_sp_isoform_default_closed_param/peptide.tsv'
+psm_set = set()
+counter = 0
+file_path = 'C:/Users/gao lab computer/Downloads/163-3A_1_psm_fido.tsv'
+with open(file_path,'r') as f:
+    next(f)
+    for line in f:
+        line_split = line.split('\t')
+        pep_seq = line_split[4]
+        counter+=1
+        print (pep_seq)
+        psm_set.add(pep_seq)
 
-pep_list1, pep_list2 = peptide_counting(pep_path1), peptide_counting(pep_path2)
-
-print ([pep for pep in pep_list2 if pep not in pep_list1])
-print (len([pep for pep in pep_list2 if pep not in pep_list1]))
+print (counter, len(psm_set))
