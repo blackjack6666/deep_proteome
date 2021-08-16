@@ -449,3 +449,19 @@ plt.plot(y)
 plt.show()
 
 """
+### swarmplot on top of boxplot
+"""
+df_new = pd.DataFrame(dict(gene=df_aggre_coverage.gene,category=df_aggre_coverage.category,GFP18_normal=normal18GFP_cov,
+                           SNED18_normal=normal18SNED_cov,diff=np.array(normal18GFP_cov)-np.array(normal18SNED_cov)),index=df_aggre_coverage.index)
+df_new.to_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/matrisome_18_standard_diff.xlsx')
+ecm_protein_list = df_aggre_coverage.index.tolist()
+# df_aggre_coverage['euclidean_dis/cosine_sim'] = df_aggre_coverage['euclidean_distance with +-']/df_aggre_coverage['cosine_sim']
+fig, ax = plt.subplots(1,1,figsize=(6,9))
+ax = sns.boxplot(x='category', y='diff', data=df_new)
+ax = sns.swarmplot(x='category', y='diff', data=df_new,color=".2",size=4)
+# ax.set_ylabel('Dissimilarity index')
+ax.set_ylabel('Coverage difference')
+plt.xticks(rotation=30)
+plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/test.png', dpi=300)
+plt.show()
+"""
