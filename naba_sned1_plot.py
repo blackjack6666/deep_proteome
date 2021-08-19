@@ -6,6 +6,7 @@ from statannot import add_stat_annotation
 
 df_ecm_aggre = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/8_1_matrisome_average_aggre.xlsx',index_col=0)
 df_ecm_aggre = df_ecm_aggre.copy()
+
 category_list = df_ecm_aggre['category']
 
 ecm_class_color_dict = {"Collagens": '#3DA8FB', 'ECM-affiliated Proteins':'#F3A343',
@@ -19,6 +20,7 @@ normal18SNED_cov = [np.mean([df_summary.at[prot,'SNED1_1080D_coverage'], df_summ
 normal2SNED_cov = [np.mean([df_summary.at[prot,'SNED1_120D_coverage'], df_summary.at[prot,'SNED1_120F_coverage']]) for prot in df_ecm_aggre.index]
 
 ##
+"""
 df_plot = pd.DataFrame(dict(gene=df_ecm_aggre['gene'],
                             category=category_list,
                             gfp_18_agg=df_ecm_aggre['GFP_seq_1080_ave_aggre_cov'],
@@ -43,7 +45,7 @@ plt.legend([])
 ax.get_legend().remove()
 plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figures/GFP_18h_agg_std_scatter_size_changeratio.png', dpi=300)
 plt.show()
-
+"""
 
 ### violin plot for oveall
 """
@@ -130,3 +132,61 @@ plt.xlabel('time point')
 plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figures/SNED_agg_lineplot_yaxis_cov_diff.png', dpi=300)
 plt.show()
 """
+### filter sp and tr entries into different
+"""
+from collections import defaultdict
+fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
+sp_tr_dict = defaultdict(set)
+with open(fasta_path,'r') as f:
+    f_split = f.read().split('\n>')
+    for each in f_split[1:]:
+        sp_tr_dict[each.split('|')[0]].add(each.split('|')[1])
+    sp_tr_dict[f_split[0].split('|')[0].split('>')[1]].add(f_split[0].split('|')[1])
+"""
+
+### scatter plot with density
+df_agg_summary = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_aggregated_D_F.xlsx',index_col=0)
+all_2_aggre = np.mean([np.array(df_agg_summary['GFP_seq_D_120_aggre_coverage']), np.array(df_agg_summary['GFP_seq_F_120_aggre_coverage'])],axis=0)
+all_18_aggre = np.mean([np.array(df_agg_summary['GFP_seq_D_1080_aggre_coverage']), np.array(df_agg_summary['GFP_seq_F_1080_aggre_coverage'])],axis=0)
+all_2_normal = np.mean([np.array(df_summary['GFP_120D_coverage']), np.array(df_summary['GFP_120F_coverage'])], axis=0)
+all_18_normal = np.mean([np.array(df_summary['GFP_1080D_coverage']), np.array(df_summary['GFP_1080F_coverage'])], axis=0)
+
+
+df_plot = pd.DataFrame(dict(gene=df_ecm_aggre['gene'],
+                            cat=category_list,
+                            gfp_1080_parallel=[each for each in normal18GFP_cov],
+                            gfp_1080_agg=df_ecm_aggre['GFP_seq_1080_ave_aggre_cov'],
+                            ),index=df_ecm_aggre.index)
+df_plot = df_plot[(df_plot['gfp_1080_parallel']!=0)&(df_plot['gfp_1080_agg']!=0)]
+
+fig,ax = plt.subplots()
+x = np.log2(df_plot['gfp_1080_parallel']+1)
+y = np.log2(df_plot['gfp_1080_agg']+1)
+# ax.plot(x, y, 'k.', markersize=1)
+# plt.show()
+
+import matplotlib.cm as cm
+from scipy.ndimage.filters import gaussian_filter
+
+def myplot(x, y, s, bins=1000):
+    # scatter density plot
+    heatmap, xedges, yedges = np.histogram2d(x, y, bins=bins)
+    heatmap = gaussian_filter(heatmap, sigma=s)
+
+    extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+    return heatmap.T, extent
+
+# img, extent = myplot(x, y, 16)
+# ax.imshow(img, extent=extent, origin='lower', cmap=cm.jet)
+# ax.set_xlabel('log2 (2h aggre. cov%)', fontsize=10)
+# ax.set_ylabel('log2 (18h aggre. cov%)',fontsize=10)
+
+g = sns.jointplot(data=df_plot, ax=ax, x='gfp_1080_parallel', y='gfp_1080_agg', hue='cat', palette=ecm_class_color_dict)
+
+g.ax_joint.legend_._visible=False
+g.ax_joint.set_xlabel('18h parallel cov%')
+g.ax_joint.set_ylabel('18h aggre. cov%')
+g.ax_marg_x.set_xlim(0, 100)
+g.ax_marg_y.set_ylim(0,100)
+plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figures/ECM_GFP_18_normal_aggre.png', dpi=300)
+plt.show()
