@@ -243,6 +243,29 @@ def heatmap_gen(matrix):
     plt.show()
     return ax
 
+
+def myplot(x, y, s, bins=1000):
+    """
+    usage:   img, extent = myplot(x, y, 16)
+             ax.imshow(img, extent=extent, origin='lower', cmap=cm.jet)
+             plt.show()
+    :param x: x coordinates
+    :param y: y coordinates
+    :param s: gaussian_filter sigma
+    :param bins:
+    :return:
+    """
+    import matplotlib.cm as cm
+    from scipy.ndimage.filters import gaussian_filter
+
+    heatmap, xedges, yedges = np.histogram2d(x, y, bins=bins)
+    heatmap = gaussian_filter(heatmap, sigma=s)
+
+    extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+    return heatmap.T, extent
+
+
+
 def combined_proteintsv_map(combined_protein_tsv):
     """
     map spectra count from combined protein tsv file to each file
