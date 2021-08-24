@@ -80,6 +80,20 @@ def read_description(fasta_file):
     return ID_description_dict
 
 
+def read_prot_id_gene(fasta_file:str):
+    """
+    read protein id and gene from fasta file into dict
+    """
+    protein_id_gene_dict = {}
+    with open(fasta_file,'r') as f:
+        file_split = f.read().split('\n>')
+        for each in file_split:
+            protein_id = each.split('|')[1]
+            gene_id = each.split('GN=')[1].split(' ')[0] if 'GN=' in each else ''
+            protein_id_gene_dict[protein_id] = gene_id
+    return protein_id_gene_dict
+
+
 def fasta_reverse_generator(fasta_file_in, fasta_file_out):
     print ('reverse_algorithm = null, or other protease')
     # read protein sequence into dic
