@@ -100,7 +100,7 @@ def predict(matrix,model):
 
 
 if __name__ == '__main__':
-    t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/tryp_30_thermo_30.p','rb'))
+    t_37C_240min_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/tryps_4h_15mer.p','rb'))
     # t_37C_240min_dict = {each:t_37C_240min_dict[each] for each in [key for key in t_37C_240min_dict][:15000]}
     test_dataset_dict = ppp.load(open('D:/data/deep_proteome/non_specfic_search/pombe_gluc_tryps_rep1_31mer.p','rb'))
     predict_matrix_array = ppp.load(open('P62908_matrix_2d_array.p', 'rb'))
@@ -175,7 +175,7 @@ if __name__ == '__main__':
         class_weight = class_weight_dict
     )
 
-    save_path = 'D:/data/deep_proteome/deep_learning_models/tryp_30_thermo_30'
+    save_path = 'D:/data/deep_proteome/deep_learning_models/trypsin_4h_15mer_tcn'
     print ('saving model...to %s' % save_path)
     model.save(save_path)
 
@@ -194,6 +194,7 @@ if __name__ == '__main__':
     # plt.legend(loc='lower right')
     # plt.show()
 
+    """
     # plot loss during training
     plt.subplot(211)
     plt.title('Loss')
@@ -256,4 +257,4 @@ if __name__ == '__main__':
     plt.title('ROC')
     plt.legend(loc="lower right")
     plt.show()
-
+    """

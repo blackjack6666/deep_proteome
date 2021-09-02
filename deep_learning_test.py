@@ -19,7 +19,10 @@ from tsv_reader import logomaker_from_stop_codon, heatmap_gen
 
 # test the built model on different dataset
 
-model = keras.models.load_model('D:/data/deep_proteome/deep_learning_models/tryp_30_thermo_30',custom_objects={'TCN': TCN})
+model = keras.models.load_model('D:/data/deep_proteome/deep_learning_models/Tryp_15mer_tcn',custom_objects={'TCN': TCN})
+for lay in model.layers:
+    print (lay.name)
+    print (lay.get_weights())
 
 test_data = ppp.load(open('D:/data/deep_proteome/non_specfic_search/tryp_30_thermo_30.p','rb'))
 
@@ -32,6 +35,7 @@ matrix = custom_ohe(matrix_seq,polymer_len=15)
 # results = model.evaluate(matrix, target, batch_size=64)
 
 ### class analysis
+"""
 yhat_classes = np.argmax(predict(matrix,model=model), axis=-1)  # use when model produce 1D output (sigmoid, units=1, probability for class 1)
 yhat_class_1_index =np.nonzero(yhat_classes)[0]
 
@@ -45,7 +49,7 @@ print (len(seq_class1_list))
 prob_matrix = logomaker_from_stop_codon(seq_class1_list)
 prob_matrix = prob_matrix.T*100
 # heatmap_gen(prob_matrix)
-
+"""
 # show logo for prediction of missed cleavaged polymer
 """
 yhat_class_0_index = np.where(yhat_classes==0)[0]

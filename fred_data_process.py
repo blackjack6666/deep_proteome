@@ -4,7 +4,7 @@ from pandas import ExcelWriter
 # os.environ["MODIN_ENGINE"] = "ray"
 import pandas as pd
 from dash_dataframe_naba import dash_dataframe
-
+from collections import defaultdict
 from protein_coverage import fasta_reader
 from parameters import protein_mass_calculator
 import numpy as np
@@ -14,9 +14,14 @@ from scipy.stats import ttest_rel,ttest_1samp
 import seaborn as sns
 from statannot import add_stat_annotation
 import pickle as ppp
+import matplotlib
 # import ray
 # ray.init()
+font = {'family' : 'Arial',
+        'weight' : 'medium',
+        'size'   : 8}
 
+matplotlib.rc('font', **font)
 fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
 protein_dict = fasta_reader(fasta_path)
 
@@ -182,9 +187,15 @@ for prot in df_summary_slice.index:
 
 df_aggre_coverage.to_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_ecm_aggregated_D_F_average.xlsx')
 """
-
+sp_tr_dict = defaultdict(set)
+with open(fasta_path,'r') as f:
+    f_split = f.read().split('\n>')
+    for each in f_split[1:]:
+        sp_tr_dict[each.split('|')[0]].add(each.split('|')[1])
+    sp_tr_dict[f_split[0].split('|')[0].split('>')[1]].add(f_split[0].split('|')[1])
 df_ecm_aggre = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/8_1_matrisome_average_aggre.xlsx',index_col=0)
 df_ecm_aggre = df_ecm_aggre.copy()
+df_ecm_aggre = df_ecm_aggre[df_ecm_aggre.index.isin(sp_tr_dict['sp'])]
 category_list = df_ecm_aggre['category']
 df_cov_derivative_delta = pd.DataFrame()
 gfp_1080_agg = df_ecm_aggre.loc[df_ecm_aggre['category']=='ECM-affiliated Proteins']['GFP_seq_1080_ave_aggre_cov'].tolist()
@@ -219,9 +230,9 @@ print (df_cov_derivative_delta_sub.loc[df_cov_derivative_delta_sub['0.5-2h']<0])
 # ecm_class_color_dict = {"Collagens": '#F23F51', 'ECM-affiliated Proteins':'#23AECA',
 #                         'ECM Regulators':"#23CA66","Secreted Factors":"#E3EB09",
 #                         "ECM Glycoproteins":"#EBA709", "Proteoglycans":"#EB09DC"}
-ecm_class_color_dict = {"Collagens": '#3DA8FB', 'ECM-affiliated Proteins':'#F3A343',
-                        'ECM Regulators':"#FADDBE","Secreted Factors":"#F3BEDD",
-                        "ECM Glycoproteins":"#C47CFD", "Proteoglycans":"#77F9F1"}
+ecm_class_color_dict = {"Collagens": '#0584B7', 'ECM-affiliated Proteins':'#F4511E',
+                        'ECM Regulators':"#F9A287","Secreted Factors":"#FFE188",
+                        "ECM Glycoproteins":"#133463", "Proteoglycans":"#59D8E6"}
 color_map = {prot:ecm_class_color_dict[ecm_class] for prot,ecm_class in zip(df_ecm_aggre.index,df_ecm_aggre['category'])}
 
 colors = [v for v in ecm_class_color_dict.values()]
@@ -459,15 +470,21 @@ plt.show()
 # df_new.to_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/matrisome_18_standard_diff.xlsx')
 # ecm_protein_list = df_aggre_coverage.index.tolist()
 df_ecm_aggre['euclidean_dis/cosine_sim'] = df_ecm_aggre['euclidean_distance with +-']/df_ecm_aggre['cosine_sim']
-fig, ax = plt.subplots(1,1,figsize=(10,10))
+
+
+fig, ax = plt.subplots(1,1,figsize=(6,6))
 ax = sns.boxplot(x='category', y='euclidean_dis/cosine_sim', hue='category',palette=ecm_class_color_dict, data=df_ecm_aggre,linewidth=2.5,
-                 order=['Collagens','ECM Glycoproteins','ECM-affiliated Proteins','ECM Regulators', 'Proteoglycans','Secreted Factors'],
-                 hue_order=['Collagens','ECM Glycoproteins','ECM-affiliated Proteins','ECM Regulators', 'Proteoglycans','Secreted Factors'], dodge=False)
+                 order=["ECM Glycoproteins", "Collagens", "Proteoglycans", "ECM-affiliated Proteins",
+                                "ECM Regulators","Secreted Factors"],
+                 hue_order=["ECM Glycoproteins", "Collagens", "Proteoglycans", "ECM-affiliated Proteins",
+                                "ECM Regulators","Secreted Factors"], dodge=False)
 ax = sns.swarmplot(x='category', y='euclidean_dis/cosine_sim', data=df_ecm_aggre,color=".2",size=5,
-                   order=['Collagens','ECM Glycoproteins','ECM-affiliated Proteins','ECM Regulators', 'Proteoglycans','Secreted Factors'])
+                   order=["ECM Glycoproteins", "Collagens", "Proteoglycans", "ECM-affiliated Proteins",
+                                "ECM Regulators","Secreted Factors"])
 ax.get_legend().remove()
-ax.set_ylabel('Dissimilarity index', fontsize=20)
+ax.set_ylabel('Dissimilarity index', fontsize=8)
 # ax.set_ylabel('Coverage difference')
-plt.xticks(rotation=30)
-plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/test.png', dpi=300)
+plt.xticks(rotation=30,fontsize=8)
+plt.tight_layout()
+plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/test.png', dpi=300)
 plt.show()
