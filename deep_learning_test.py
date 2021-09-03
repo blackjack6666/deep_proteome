@@ -16,20 +16,30 @@ from tcn import TCN
 from neural_net import predict
 from tsv_reader import logomaker_from_stop_codon, heatmap_gen
 
+def cosine_sim_calculating(v1, v2):
+    """
+    calculate the cosine similarity beweeen two b/y ions binned vectors
+    :param v1:
+    :param v2:
+    :return:
+    """
+    from scipy import spatial
+    return 1-spatial.distance.cosine(v1,v2)
 
 # test the built model on different dataset
+tcn_layer_weight_dict = ppp.load(open('D:/data/deep_proteome/deep_learning_models/tcn_layer_weight_dict_oneD.p','rb'))
+print(cosine_sim_calculating(tcn_layer_weight_dict['ct_4h_15mer_tcn'],tcn_layer_weight_dict['tryp_4h_gluc_ON']))
 
-model = keras.models.load_model('D:/data/deep_proteome/deep_learning_models/Tryp_15mer_tcn',custom_objects={'TCN': TCN})
-for lay in model.layers:
-    print (lay.name)
-    print (lay.get_weights())
+models = ['tryp_4h_gluc_ON','trypsin_4h_15mer_tcn','trypsin_CT_15mer_tcn','ct_4h_15mer_tcn','tryp_30_thermo_30','thermolysine_PRIDE', 'ct_24h_15mer_tcn']
 
-test_data = ppp.load(open('D:/data/deep_proteome/non_specfic_search/tryp_30_thermo_30.p','rb'))
 
-# load keras model and training dataset
-matrix_seq,target = matrix_target(test_data)
 
-matrix = custom_ohe(matrix_seq,polymer_len=15)
+# test_data = ppp.load(open('D:/data/deep_proteome/non_specfic_search/tryp_30_thermo_30.p','rb'))
+#
+# # load keras model and training dataset
+# matrix_seq,target = matrix_target(test_data)
+#
+# matrix = custom_ohe(matrix_seq,polymer_len=15)
 
 
 # results = model.evaluate(matrix, target, batch_size=64)

@@ -1,4 +1,8 @@
 """
+-----
+protease prediction, get feature weights matrix (SHAP values), get max and min in each column (feature) and use
+max/min array as input for cosine sim comparison
+-----
 SHAP implementation
 complete code is in lab jupyter hub xshao/dL_model_interpret.ipynb
 """
@@ -12,6 +16,8 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 from tcn import TCN
+
+
 def cosine_sim_calculating(v1, v2):
     """
     calculate the cosine similarity beweeen two b/y ions binned vectors
@@ -24,8 +30,8 @@ def cosine_sim_calculating(v1, v2):
 
 tf.compat.v1.disable_v2_behavior()
 
-models = ['tryp_4h_gluc_ON','trypsin_4h_15mer_tcn','trypsin_CT_15mer_tcn','ct_4h_15mer_tcn','tryp_30_thermo_30','thermolysine_PRIDE']
-datasets = ['tryp_Gluc_ON_15mer.p','tryps_4h_15mer.p','trypsin_CT_15mer.p', 'ct_37_15mer.p', 'tryp_30_thermo_30.p', 'thermolysin_PRIDE.p']
+models = ['gluc_4h_tryps_ON','tryp_4h_gluc_ON','trypsin_4h_15mer_tcn','trypsin_CT_15mer_tcn','ct_4h_15mer_tcn','tryp_30_thermo_30','thermolysine_PRIDE','ct_24h_15mer_tcn']
+datasets = ['gluc_4h_tryps_ON.p','tryp_Gluc_ON_15mer.p','tryps_4h_15mer.p','trypsin_CT_15mer.p', 'ct_37_15mer.p', 'tryp_30_thermo_30.p', 'thermolysin_PRIDE.p','ct_24h_15mer.p']
 
 """
 model_weight_dict = {}
@@ -49,7 +55,7 @@ for each_model_path, data_path in zip(models,datasets):
 
     #initialize js methods for visualization
     shap.initjs()
-    background = X_train[np.random.choice(X_train.shape[0], 1000, replace=False)]
+    background = X_train[np.random.choice(X_train.shape[0], 500, replace=False)]
     # print (background.shape)
     # create an instance of the DeepSHAP which is called DeepExplainer
     explainer_shap = shap.DeepExplainer(model=model,
@@ -57,29 +63,26 @@ for each_model_path, data_path in zip(models,datasets):
 
 
     # Fit the explainer on a subset of the data (you can try all but then gets slower)
-    shap_values = explainer_shap.shap_values(X=X_test[:500,:], ranked_outputs=True)
-    model_weight_dict[each_model_path] = np.sum(shap_values[0][0],axis=0)
+    shap_values = explainer_shap.shap_values(X=X_test[np.random.choice(X_test.shape[0], 500, replace=False),:], ranked_outputs=True)
+    max_array,min_array = np.amax(shap_values[0][0],axis=0), np.amin(shap_values[0][0],axis=0)
+    model_weight_dict[each_model_path]=(max_array,min_array)
     print (each_model_path)
 
-ppp.dump(model_weight_dict,open('D:/data/deep_proteome/deep_learning_models/models_weight.p','wb'))
+# ppp.dump(model_weight_dict,open('D:/data/deep_proteome/deep_learning_models/models_weight_shap_max_min_dict.p','wb'))
 """
-model_weight_dict = ppp.load(open('D:/data/deep_proteome/deep_learning_models/models_weight.p','rb'))
-print (model_weight_dict['tryp_4h_gluc_ON'][154:176])
-combined_array = []
-# for i, j in zip(model_weight_dict['trypsin_4h_15mer_tcn'], model_weight_dict['ct_4h_15mer_tcn']):
-#     if i>0 and j>0 and i>=j:
-#         combined_array.append(i)
-#     elif i>0 and j>0 and i<j:
-#         combined_array.append(j)
-#     elif i<0 and j<0 and i<=j:
-#         combined_array.append(i)
-#     elif i<0 and j<0 and i>j:
-#         combined_array.append(j)
-#     else:
-#         combined_array.append((i+i)/2)
-#
-# print(cosine_sim_calculating(model_weight_dict['trypsin_CT_15mer_tcn'],combined_array ))
-# print (shap_values)
+model_weight_dict = ppp.load(open('D:/data/deep_proteome/deep_learning_models/models_weight_shap_max_min_dict.p','rb'))
+trypsin_ct_combined = np.mean([np.concatenate((model_weight_dict['ct_4h_15mer_tcn'][0],model_weight_dict['ct_4h_15mer_tcn'][1]),axis=0),
+                               np.concatenate((model_weight_dict['trypsin_CT_15mer_tcn'][0],model_weight_dict['trypsin_CT_15mer_tcn'][1]),axis=0)],axis=0)
+
+trypsin_thermolysin_combined = np.mean([np.concatenate((model_weight_dict['trypsin_4h_15mer_tcn'][0],model_weight_dict['trypsin_4h_15mer_tcn'][1]),axis=0),
+                               np.concatenate((model_weight_dict['thermolysine_PRIDE'][0],model_weight_dict['thermolysine_PRIDE'][1]),axis=0)],axis=0)
+
+fig,axs = plt.subplots(1,1)
+axs.plot(trypsin_thermolysin_combined,c='black')
+plt.title('trypsin_4h_thermolysin_PRIDE_combined_npmean_+-_impact')
+plt.show()
+# print (cosine_sim_calculating(np.concatenate((model_weight_dict['tryp_30_thermo_30'][0],model_weight_dict['tryp_30_thermo_30'][1]),axis=0),
+#                               trypsin_thermolysin_combined))
 
 """
 # now let's inspect some individual explanations inferred by DeepSHAP
