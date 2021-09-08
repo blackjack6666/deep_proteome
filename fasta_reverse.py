@@ -36,6 +36,6 @@ def fasta_reverse_generator(fasta_file_in, fasta_file_out):
 if __name__=='__main__':
     from glob import glob
 
-    fasta_file_in = 'D:/data/pats/breast_cancer_raw/human_sp_only_with_btreast_cancer_mutant.fasta'
+    fasta_file_in = 'D:/data/proteome_fasta/COL1A1_P02452.txt'
 
-    fasta_reverse_generator(fasta_file_in,fasta_file_in.replace('.fasta','_rev.fasta'))
+    fasta_reverse_generator(fasta_file_in,fasta_file_in.replace('.txt','_rev.fasta'))

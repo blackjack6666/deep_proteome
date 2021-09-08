@@ -18,6 +18,7 @@ matplotlib.rc('font', **font)
 fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
 sp_tr_dict = defaultdict(set)
 with open(fasta_path,'r') as f:
+
     f_split = f.read().split('\n>')
     for each in f_split[1:]:
         sp_tr_dict[each.split('|')[0]].add(each.split('|')[1])
@@ -55,7 +56,7 @@ df_plot = pd.DataFrame(dict(gene=df_ecm_aggre['gene'],
                             sned_18_agg=df_ecm_aggre['SNED1_seq_1080_ave_aggre_cov'],
                             sned_18_standard=normal18SNED_cov),index=df_ecm_aggre.index)
 ### scatter plot with sizes
-
+"""
 def rand_jitter(arr):
     stdev = .01 * (max(arr) - min(arr))
     return arr + np.random.randn(len(arr)) * stdev
@@ -86,7 +87,7 @@ ax.get_legend().remove()
 # figlegend.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/legend.png',dpi=300)
 plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/GFP_scatter_x_MW_alpha.png', dpi=300)
 plt.show()
-
+"""
 
 ### violin plot for oveall
 """
@@ -190,11 +191,11 @@ all_2_normal = np.mean([np.array(df_summary['GFP_120D_coverage']), np.array(df_s
 all_18_normal = np.mean([np.array(df_summary['GFP_1080D_coverage']), np.array(df_summary['GFP_1080F_coverage'])], axis=0)
 
 
-df_plot = pd.DataFrame(dict(gene=df_summary['gene'],
+df_plot = pd.DataFrame(dict(gene=df_ecm_aggre['gene'],
 
-                            gfp_1080_parallel=all_05_aggre,
-                            gfp_1080_agg=all_18_aggre,
-                            ),index=df_summary.index)
+                            gfp_1080_parallel=df_ecm_aggre['GFP_seq_30_ave_aggre_cov'],
+                            gfp_1080_agg=df_ecm_aggre['GFP_seq_1080_ave_aggre_cov'],
+                            ),index=df_ecm_aggre.index)
 # df_plot = df_plot[(df_plot['gfp_1080_parallel']!=0)&(df_plot['gfp_1080_agg']!=0)]
 
 fig,ax = plt.subplots()
@@ -230,9 +231,10 @@ plt.xlim(0,6.5)
 plt.ylim(0,6.5)
 ax.set_aspect('equal', adjustable='box')
 ax.plot(ax.get_xlim(), ax.get_ylim(), ls="--", c=".3")
-plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/05h_aggre_18h_aggre_all_protein.png', dpi=300)
+plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/05h_aggre_18h_aggre_ECM.png', dpi=300)
 plt.show()
 """
+
 ### jointplot
 """
 g = sns.jointplot(data=df_plot, ax=ax, x='gfp_1080_parallel', y='gfp_1080_agg', hue='cat', palette=ecm_class_color_dict)
@@ -243,5 +245,25 @@ g.ax_joint.set_ylabel('18h aggre. cov%')
 g.ax_marg_x.set_xlim(0, 100)
 g.ax_marg_y.set_ylim(0,100)
 plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figures/ECM_GFP_18_normal_aggre.png', dpi=300)
+plt.show()
+"""
+### matrisome db coverage
+"""
+matrisome_df = pd.read_excel('D:/data/Naba_deep_matrisome/matrisome coverage_norepeat.xlsx')
+
+fig,axs = plt.subplots(2,3,figsize=(10,5))
+props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+for each, ax in zip(sort_category,[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]):
+    color = ecm_class_color_dict[each]
+    sub_df = matrisome_df[matrisome_df['category']==each]
+    ave_cov = sub_df['cov'].mean()*100
+    text = 'Ave Cov:\n%.2f%%' % ave_cov
+    axs[ax[0],ax[1]].hist(sub_df['cov']*100,50,color=color)
+    axs[ax[0],ax[1]].text(0.75, 0.95, text, transform=axs[ax[0],ax[1]].transAxes, fontsize=8,
+        verticalalignment='top', bbox=props)
+    axs[ax[0],ax[1]].set_xlabel(each+' coverage')
+    axs[ax[0],ax[1]].set_ylabel('Frequency')
+
+plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/matrisome_ave_cov.png', dpi=300)
 plt.show()
 """
