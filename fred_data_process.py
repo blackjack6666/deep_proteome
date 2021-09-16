@@ -464,6 +464,7 @@ plt.show()
 
 """
 ### swarmplot on top of boxplot
+"""
 
 # df_new = pd.DataFrame(dict(gene=df_aggre_coverage.gene,category=df_aggre_coverage.category,GFP18_normal=normal18GFP_cov,
 #                            SNED18_normal=normal18SNED_cov,diff=np.array(normal18GFP_cov)-np.array(normal18SNED_cov)),index=df_aggre_coverage.index)
@@ -488,3 +489,4 @@ plt.xticks(rotation=30,fontsize=8)
 plt.tight_layout()
 plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/test.png', dpi=300)
 plt.show()
+"""

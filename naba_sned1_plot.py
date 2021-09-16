@@ -178,6 +178,35 @@ plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/GFP
 # plt.tight_layout()
 plt.show()
 """
+### line plot showing aggreated coverage for each category
+
+fig,axs = plt.subplots(6,1, figsize=(8,10))
+x=[0.5,2,4,8]
+for each_cat,ax in zip(sort_category,axs):
+    sub_df = df_ecm_aggre[df_ecm_aggre['category']==each_cat]
+    for each in sub_df.itertuples():
+        y = each[4:8]
+        # bax = brokenaxes(xlims=((0,8),(15,20)),hspace=1.5)
+        # y_log10 = np.log10(y)
+        # ax.plot(x, y, color=color_map[each[0]], linestyle='-')
+        if y[-1]-y[0] == 0: # if line is flat, make it transparent
+            ax.plot(x, y, color=color_map[each[0]], linestyle='-',alpha=0.2)
+        else:
+            ax.plot(x, y, color=color_map[each[0]], linestyle='-')
+    ax.set_xticks([0.5, 2, 4, 8])
+    ax.set_xticklabels(['0.5h','2h','4h','18h'], fontsize=8)
+    # ax.set_yticks([0,10,20])
+    # ax.set_yticklabels(['0','10','20'])
+    # ax.set_xlim(0.5,8)
+    # ax.set_title(each_cat, fontsize=12)
+    # ax.set_xlabel('time point', fontsize=12)
+    # ax.set_ylabel('%coverage',fontsize=12)
+    # ax.set(yticklabels=[])
+plt.xlabel('time point')
+plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/GFP_agg_lineplot.png', dpi=300)
+plt.tight_layout()
+plt.show()
+
 
 ### scatter plot with density
 """
