@@ -8,6 +8,8 @@ import pylab
 from brokenaxes import brokenaxes
 from matplotlib.gridspec import GridSpec
 import matplotlib
+from protein_coverage import fasta_reader
+from tsv_reader import peptide_counting
 
 font = {'family' : 'Arial',
         'weight' : 'medium',
@@ -179,13 +181,13 @@ plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/GFP
 plt.show()
 """
 ### line plot showing aggreated coverage for each category
-
+"""
 fig,axs = plt.subplots(6,1, figsize=(8,10))
 x=[0.5,2,4,8]
 for each_cat,ax in zip(sort_category,axs):
     sub_df = df_ecm_aggre[df_ecm_aggre['category']==each_cat]
     for each in sub_df.itertuples():
-        y = each[4:8]
+        y = each[8:12]
         # bax = brokenaxes(xlims=((0,8),(15,20)),hspace=1.5)
         # y_log10 = np.log10(y)
         # ax.plot(x, y, color=color_map[each[0]], linestyle='-')
@@ -203,10 +205,10 @@ for each_cat,ax in zip(sort_category,axs):
     # ax.set_ylabel('%coverage',fontsize=12)
     # ax.set(yticklabels=[])
 plt.xlabel('time point')
-plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/GFP_agg_lineplot.png', dpi=300)
+plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/SNED1_agg_lineplot.png', dpi=300)
 plt.tight_layout()
 plt.show()
-
+"""
 
 ### scatter plot with density
 """
@@ -296,3 +298,17 @@ for each, ax in zip(sort_category,[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]):
 plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/matrisome_ave_cov.png', dpi=300)
 plt.show()
 """
+
+from calculations_and_plot import one_d_covearge_bar
+from tsv_reader import modified_peptide_from_psm
+protein_dict = fasta_reader(fasta_path)
+time_points = ['30','120','240','1080']
+pep_tsv1 = 'D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_seq_30D/peptide.tsv'
+pep_tsv2 = 'D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_seq_120D/peptide.tsv'
+peptide_list = [peptide_counting('D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_seq_'+each+'D/peptide.tsv')+
+                peptide_counting('D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_seq_'+each+'F/peptide.tsv') for each in time_points]
+
+html_template = 'D:/data/Naba_deep_matrisome/html_template.html'
+new_str = one_d_covearge_bar(html_template,peptide_list,protein_dict['P28301'],
+                             output_html_path='D:/data/Naba_deep_matrisome/07232021_secondsearch/coverage_1d/P28301_SNED.html',
+                             screenshot='P28301_SNED.png')

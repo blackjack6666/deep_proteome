@@ -86,6 +86,19 @@ def peptide_phospho_reader(peptide_tsv_file, mod=0.9840): # 79.9663 is the delta
     return pep_phos_dict
 
 
+def modified_peptide_from_psm(psm_path):
+    psm_list = []
+    with open(psm_path, 'r') as f_open:
+        next(f_open)
+        for line in f_open:
+            line_split = line.split('\t')
+            match = re.search('\w{1}\[\d+\.?\d+\]',line)
+            if match:
+                psm_list.append(line_split[3])
+            else:
+                psm_list.append(line_split[2])
+    return psm_list
+
 def psm_ptm_reader(psm_tsv_file_list,gene_set,mod=0.9840):
     total_psm = 0
     ptm_psm_dict = defaultdict(list)

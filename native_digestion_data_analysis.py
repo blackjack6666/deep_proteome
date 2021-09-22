@@ -112,10 +112,11 @@ for each in df.index:
             np_array[pep_loc:pep_end_loc] += 1
         aggregated_cov = np.count_nonzero(np_array) / len(np_array) * 100
 
-        df_aggregated.at[each, time + '_1_native_aggre_coverage'] = aggregated_cov
+        df_aggregated.at[each, time + '_1_native_aggre_coverage'] = aggregated_cov 
         # df_aggregated.at[each, sample + '_' + time + '_aggre_unique_pep_count'] = aggregated_unique_pep_count
 
 df_aggregated.to_excel('D:/data/native_protein_digestion/dialysis_casset_aggre_cov.xlsx')
+"""
 """
 df_ecm = pd.read_excel('D:/data/Naba_deep_matrisome/matrisome coverage_norepeat.xlsx')
 df_native = pd.read_excel('D:/data/native_protein_digestion/dialysis_casset_aggre_cov.xlsx',index_col=0)
@@ -125,3 +126,29 @@ ecm_protein_list = df_ecm['protein_id'].values
 for i in protein_list:
     if i in ecm_protein_list:
         print (i)
+"""
+
+def protein_cov_reader_from_tsv(protein_tsv):
+    """
+
+    :param protein_tsv:
+    :return: a dictionary that stores protein and coverage from protein.tsv
+    """
+    protein_cov_dict = {}
+    with open(protein_tsv,'r') as f:
+        next(f)
+        for line in f:
+            line_split = line.split('\t')
+            protein_cov_dict[line_split[3]] = float(line_split[7])
+
+    return protein_cov_dict
+
+tryp_cov_dict = protein_cov_reader_from_tsv('D:/data/deep_proteome/different_protease/Tryp/protein1.tsv')
+thermo_cov_dict = protein_cov_reader_from_tsv('D:/data/deep_proteome/different_protease/thermolysin_30min/protein.tsv')
+tryp_thermo_cov_dict = protein_cov_reader_from_tsv('D:/data/deep_proteome/different_protease/tryp_30_thermo_30/protein.tsv')
+
+for each in tryp_thermo_cov_dict:
+    if each in tryp_cov_dict and each in thermo_cov_dict:
+        if tryp_thermo_cov_dict[each]>tryp_cov_dict[each] and tryp_thermo_cov_dict[each]>thermo_cov_dict[each]:
+            print (each, tryp_cov_dict[each],thermo_cov_dict[each],tryp_thermo_cov_dict[each])
+

@@ -70,6 +70,104 @@ def identified_proteome_cov(aho_result, protein_dict):
     return np.mean([v for v in iden_prot_cov_dict.values()]), iden_prot_cov_dict, prot_cov_dict
 
 
+def my_replace(match_obj):
+    match_obj = match_obj.group()
+    return match_obj[0]  # gives back the first element of matched object as string
+
+
+def freq_array_and_PTM_index_generator(peptide_list, protein_seq_string,regex_pat='\w{1}\[\d+\.?\d+\]'):
+    """
+    map single protein seq
+    :param peptide_list:
+    :param protein_seq_string:
+    :param regex_pat:
+    :return:
+    """
+    import re
+    freq_array = np.zeros(len(protein_seq_string))
+    PTM_sites_counting = defaultdict(int)
+    PTM_loc_list = []
+
+    # reformat the peptide with PTM numbers into characters only
+    new_pep_list = [re.sub(regex_pat, my_replace, pep) for pep in peptide_list]
+    PTM_list = [re.findall(regex_pat, pep) for pep in peptide_list]
+    # print (PTM_list)
+    # calculation
+
+    for pep, new_pep, PTM in zip(peptide_list, new_pep_list,PTM_list):  # PTM_list is list of list
+        if new_pep in protein_seq_string:
+            # print(new_pep)
+            start_pos = protein_seq_string.find(new_pep)
+            end_pos = start_pos + len(new_pep) -1
+            # print (start_pos,end_pos,new_pep)
+            freq_array[start_pos:end_pos + 1] += 1
+            if PTM:  # the peptide has ptm site
+                for ele in PTM:
+
+                    PTM_index = pep.find(ele)
+                   #PTM_site = pep[PTM_index] # single amino acid
+                    PTM_sites_counting[ele] += 1
+                    PTM_loc_list.append(start_pos+PTM_index)
+    # print (PTM_sites_counting, PTM_loc_list)
+
+    return freq_array, PTM_loc_list, PTM_sites_counting
+
+
+def one_d_covearge_bar(html_template,peptide_list,protein_seq,output_html_path=None,screenshot=None):
+    """
+    generate 1d coverage bar on html
+    :param html_template:
+    :param peptide_list: 2d list containing result from different sample
+    :param protein_seq:
+    :return:
+    """
+
+
+    freq_array_2d = [freq_array_and_PTM_index_generator(pep_list,protein_seq)[0] for pep_list in peptide_list]
+    # print (freq_array_2d)
+    # rgb color list for 4 time points
+    rgb_list = ['rgba(156,0,252,1) ','rgba(236,142,56,1) ','rgba(155,255,119,1) ','rgba(71,182,221,1) ']
+    color_assign_dict = {i:j for i,j in zip(range(len(freq_array_2d)),rgb_list)}
+    replace_str = ''
+    for i in range(len(protein_seq)):
+        percen = f'{i/float(len(protein_seq))*100:.1f}%'
+        percen_next = f'{(i+1)/float(len(protein_seq))*100:.1f}%'
+        # print (i,i+1,len(protein_seq),percen,percen_next)
+        cov = False
+        for j in range(len(freq_array_2d)):
+            if freq_array_2d[j][i] == 0:
+                continue
+            else:
+                cov = True
+                replace_str += color_assign_dict[j]
+                replace_str += percen
+                replace_str += ', '
+                replace_str += color_assign_dict[j]
+                replace_str += percen_next
+                replace_str += ', '
+                break  # make sure the only color the peptide that shows first time
+        if cov == False:
+            replace_str += 'rgba(191,191,191,1) '  # not covered part show as grey
+            replace_str += percen
+            replace_str += ', '
+            replace_str += 'rgba(191,191,191,1) '
+            replace_str += percen_next
+            replace_str += ', '
+    replace_str = replace_str[:-2]  # delete ', ' in the end
+    if output_html_path:
+        f_open = open(html_template, 'r')
+        new_html = f_open.read().replace('#insert_replace_here',replace_str)
+        f_write = open(output_html_path,'w')
+        f_write.write(new_html)
+        if screenshot:
+            from html2image import Html2Image
+            hti = Html2Image()
+            hti.screenshot(url=output_html_path,save_as=screenshot,size=(800,600))
+        f_open.close()
+        f_write.close()
+    return replace_str
+
+
 def whole_proteome_cov(aho_result, seq_line):
     """
     -----
