@@ -298,17 +298,19 @@ for each, ax in zip(sort_category,[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]):
 plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/matrisome_ave_cov.png', dpi=300)
 plt.show()
 """
-
+### generate 1d coverage bar
 from calculations_and_plot import one_d_covearge_bar
 from tsv_reader import modified_peptide_from_psm
 protein_dict = fasta_reader(fasta_path)
 time_points = ['30','120','240','1080']
-pep_tsv1 = 'D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_seq_30D/peptide.tsv'
-pep_tsv2 = 'D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_seq_120D/peptide.tsv'
 peptide_list = [peptide_counting('D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_seq_'+each+'D/peptide.tsv')+
                 peptide_counting('D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_seq_'+each+'F/peptide.tsv') for each in time_points]
 
+
+# peptide_list = [df_summary.at['P28301','SNED1_seq_'+each+'D_total peptides identified'].split(', ')+\
+#                df_summary.at['P28301','SNED1_seq_'+each+'F_total peptides identified'].split(', ') for each in time_points]
+
 html_template = 'D:/data/Naba_deep_matrisome/html_template.html'
-new_str = one_d_covearge_bar(html_template,peptide_list,protein_dict['P28301'],
-                             output_html_path='D:/data/Naba_deep_matrisome/07232021_secondsearch/coverage_1d/P28301_SNED.html',
-                             screenshot='P28301_SNED.png')
+new_str = one_d_covearge_bar(html_template,peptide_list,protein_dict['Q8TER0'],
+                             output_html_path='D:/data/Naba_deep_matrisome/07232021_secondsearch/coverage_1d/Q8TER0_SNED_beta.html',
+                             screenshot='Q8TER0_SNED_beta.png')

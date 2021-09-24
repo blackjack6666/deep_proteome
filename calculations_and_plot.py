@@ -116,7 +116,7 @@ def freq_array_and_PTM_index_generator(peptide_list, protein_seq_string,regex_pa
 def one_d_covearge_bar(html_template,peptide_list,protein_seq,output_html_path=None,screenshot=None):
     """
     generate 1d coverage bar on html
-    :param html_template:
+    :param html_template: a html template containing linear gradient
     :param peptide_list: 2d list containing result from different sample
     :param protein_seq:
     :return:
@@ -159,12 +159,13 @@ def one_d_covearge_bar(html_template,peptide_list,protein_seq,output_html_path=N
         new_html = f_open.read().replace('#insert_replace_here',replace_str)
         f_write = open(output_html_path,'w')
         f_write.write(new_html)
+        f_write.close()
         if screenshot:
             from html2image import Html2Image
             hti = Html2Image()
-            hti.screenshot(url=output_html_path,save_as=screenshot,size=(800,600))
+            hti.screenshot(url=output_html_path,save_as=screenshot)
         f_open.close()
-        f_write.close()
+
     return replace_str
 
 
