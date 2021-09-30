@@ -116,7 +116,7 @@ df_ecm_original.to_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/ecm_
 
 
 ### NSAF analysis
-
+"""
 from collections import defaultdict
 fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
 protein_dict = fasta_reader(fasta_path)
@@ -132,17 +132,48 @@ ecm_df = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/8_1_ma
 ecm_list = ecm_df.index.tolist()
 ecm_list_sp = [each for each in ecm_list if each in sp_tr_dict['sp']]
 
-df_DF = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F_squential_standard.xlsx',index_col=0)
+df_DF = pd.read_excel('D:/data/Naba_deep_matrisome/BCDF_combined/BCDF_combined_summary_sp_only.xlsx',index_col=0)
 selected_columns = [each for each in df_DF.columns if '_total_spec' in each]
 new_columns = [each.replace('_total_spec','nsaf') for each in selected_columns]
+print (selected_columns)
 # get the sum of nsaf for each condition
-column_total_nsaf_dict = {each:sum([df_DF.at[prot,each]/len(prot) for prot in ecm_list_sp]) for each in selected_columns}
+
+column_total_nsaf_dict = {each:sum([df_DF.at[prot,each]/len(protein_dict[prot]) for prot in ecm_list_sp]) for each in selected_columns}
 df = pd.DataFrame(index=ecm_list_sp, columns=['gene','ECM category']+new_columns)
 
 for protein in ecm_list_sp:
     df.at[protein,'gene'] = ecm_df.at[protein,'gene']
     df.at[protein,'ECM category'] = ecm_df.at[protein,'category']
     for clm,old_clm in zip(new_columns,selected_columns):
-        df.at[protein,clm] = df_DF.at[protein,old_clm]/len(protein_dict[protein])/column_total_nsaf_dict[old_clm]
+        df.at[protein,clm] = (df_DF.at[protein,old_clm]/len(protein_dict[protein]))/column_total_nsaf_dict[old_clm]
 
-df.to_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/nsaf_raw.xlsx')
+df.to_excel('D:/data/Naba_deep_matrisome/BCDF_combined/bcdf_nsaf_raw.xlsx')
+"""
+
+### peptide index mapping from tsv
+from multiprocessing_naive_algorithym import map_peptide_index
+from glob import glob
+import os
+fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
+protein_dict = fasta_reader(fasta_path)
+
+base_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
+folders = [base_path+each+folder for each in ['KOB/','KOC/', 'SNEDB/', 'SNEDC/'] for folder in os.listdir(base_path+each) if '.' not in folder]
+files = [each+'/peptide.tsv' for each in folders if 'Re4' not in each]
+print (files)
+
+# base_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
+# samples, times = ['KOB','KOC', 'SNEDB', 'SNEDC'], ['0o5','']
+# peptide_file_list = glob(base_path+'*_*/peptide.tsv')
+
+with pd.ExcelWriter('D:/data/Naba_deep_matrisome/peptide_info_BC_XS.xlsx') as writer:
+    for each_file in files:
+        with open(each_file,'r') as f_o:
+            next(f_o)
+            peptide_gene_list = [(line.split('\t')[0],line.split('\t')[11]) for line in f_o]
+            pep_list, gene_list = zip(*peptide_gene_list)
+            pep_start_end_dict = map_peptide_index(protein_dict,pep_list)
+            df = pd.DataFrame(dict(gene=gene_list,
+                                   protein_start_end=[pep_start_end_dict[each] for each in pep_list]),index=pep_list)
+            df.to_excel(writer,sheet_name=each_file.split('/')[-2])
+            print (each_file)

@@ -124,26 +124,65 @@ def separator_pos(seq_line):
     return sep_pos_array
 
 
+def find_protein_start(id_list,seq_list):
+    """
+    find the start of each protein on the long seq
+    :param id_list:
+    :param seq_list:
+    :return:
+    """
+    prot_start_pos_dict = {}
+    pos = 0
+    for each, seq in zip(id_list, seq_list):
+        prot_start_pos_dict[each] = pos
+        pos += len(seq)+1
+
+    return prot_start_pos_dict
+
+
+def map_peptide_index(protein_dict,peptide_list):
+    """
+    get index of peptide on each protein
+    :return:
+    """
+    from aho_corasick import automaton_trie,automaton_matching
+    peptide_start_end_dict = defaultdict(set)
+
+    # load variables
+    id_list, seq_list = extract_UNID_and_seq(protein_dict)
+    protein_start_dict = find_protein_start(id_list,seq_list)
+
+    seq_line = creat_total_seq_line(seq_list,sep='|')
+    pos_id_dict = read_position_ID_into_dict(id_list,seq_list,seq_line)
+
+    # ahocorasick mapping
+    aho_result = automaton_matching(automaton_trie(peptide_list),seq_line)
+
+    # find start position for each peptide
+    for each in aho_result:
+        start, end, pep = each
+        protein_id = pos_id_dict[start]
+        protein_start_pos = protein_start_dict[protein_id]
+        start = start-protein_start_pos  # absolute start of peptide - the start of protein
+        end = start+len(pep)-1
+        peptide_start_end_dict[pep].add((protein_id,start,end))
+
+    return peptide_start_end_dict
+
 if __name__ == "__main__":
+    from protein_coverage import fasta_reader
+    from tsv_reader import peptide_counting
+    fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
+    protein_dict = fasta_reader(fasta_path)
+    protein_ids = [key for key in protein_dict]
+    sub_protein_dict={each:protein_dict[each] for each in protein_ids[:3]}
+    print (sub_protein_dict.items())
+    pep_tsv = 'D:/data/Naba_deep_matrisome/07232021_secondsearch/GFP_120D/peptide.tsv'
+    peptide_list = peptide_counting(pep_tsv)
+    # peptide_list = ['ISTVEFNYSGDLLATGDKGGRVVIFQR','PEQPVTLRSVLRDEKGALFRAHARYRADSHGELDLARVPALGGSFSG']
+    map_peptide_index(protein_dict,peptide_list)
 
-    filename = 'C:/uic/lab/data/xinhao_data1/uniprot-proteome_UP000005640.fasta'
-    test_filename = 'C:/uic/lab/data/TEST/test_fasta.txt'
-    protein_dict = read_fasta_into_dict(filename)[0]
-    #print protein_dict, protein_dict.values()
-    uniprot_ID_list, seq_list = extract_UNID_and_seq(protein_dict)
-    seq_line = creat_total_seq_line(seq_list)
-    zero_line = zero_line_for_seq(seq_line)
-    seq_line_ID_dict = read_position_ID_into_dict(uniprot_ID_list, seq_list, zero_line)
-    #ppp.dump(seq_line_ID_dict, open('ID_position_dict.P'), protocol=-1) # read it into a pickle file
-    path = 'C:/uic/lab/data/xinhao_data1/'
-    test_path = 'C:/uic/lab/data/TEST/'
-    dtafiles = glob.glob(path+'*.dta')
-    start = time.clock()
-    peptide_list = read_peptide(dtafiles)
-    peptide_list_set = set(peptide_list)
-    peptide_list_unique = list(peptide_list_set)
-    print (time.clock()-start, len(peptide_list), len(peptide_list_unique))
-
+    """
     #chunk_list = chunks(peptide_list, 10)
     chunk_list = chunks(peptide_list_unique, 10)
     parm_list = [(seq_line, p) for p in chunk_list]
@@ -158,6 +197,7 @@ if __name__ == "__main__":
     print (time.clock()-start)
 
     sep_pos_array = separator_pos(seq_line)
+    """
     # trie implementation
     '''
     zero_line_trie = in_trie(make_trie(peptide_list_unique), seq_line)
@@ -168,6 +208,8 @@ if __name__ == "__main__":
     zero_line_naive = ppp.load(open('zero_line.p', 'rb'))
     print np.count_nonzero(zero_line_naive)
     '''
+
+    """
     print (time.clock()-start)
     total_seq_len = len(zero_line) - len(sep_pos_array) + 2  # artifically added two separator positions into sep_pos_array so need to plus 2
     total_non_zero = np.count_nonzero(zero_line)
@@ -180,3 +222,4 @@ if __name__ == "__main__":
         #ppp.dump(uniprot_ID_list, pf)
 
     #print protein_dict, seq_line, peptide_list, sep_pos_array, zero_line_trie
+    """

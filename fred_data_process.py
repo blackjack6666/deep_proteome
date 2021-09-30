@@ -163,10 +163,11 @@ for each in df.index:
 
 ### get ECM category info with gene and filter ECM gene in total genes
 df_ecm = pd.read_excel('D:/data/Naba_deep_matrisome/matrisome coverage_norepeat.xlsx')
+df_ecm_aggre = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/8_1_matrisome_average_aggre.xlsx',index_col=0)
 ecm_gene_category_dict = {gene:category for gene,category in zip(df_ecm['gene_id'], df_ecm['category'])}
 
 df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_aggregated_D_F.xlsx',index_col=0)
-df_summary_slice = df_summary[df_summary['gene'].isin(ecm_gene_category_dict)]
+df_summary_slice = df_summary[df_summary['gene'].isin(df_ecm_aggre.gene)]
 # df_summary_slice.to_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_ecm_aggregated_D_F.xlsx')
 
 

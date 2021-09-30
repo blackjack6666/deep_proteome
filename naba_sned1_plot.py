@@ -43,19 +43,31 @@ sort_category = ["ECM Glycoproteins","Collagens","Proteoglycans","ECM-affiliated
                   "Secreted Factors"]
 color_map = {prot:ecm_class_color_dict[ecm_class] for prot,ecm_class in zip(df_ecm_aggre.index,df_ecm_aggre['category'])}
 
-df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F_squential_standard.xlsx',index_col=0)
-normal18GFP_cov = [np.mean([df_summary.at[prot,'GFP_1080D_coverage'], df_summary.at[prot,'GFP_1080F_coverage']]) for prot in df_ecm_aggre.index]
+# df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F_squential_standard.xlsx',index_col=0)
+df_aggre_DF = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_ecm_aggregated_D_F.xlsx', index_col=0)
+df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/BCDF_combined/BCDF_combined_summary_sp_only.xlsx', index_col=0)
+normal18GFP_cov = [np.mean([df_summary.at[prot,'GFP_1080D_coverage'], df_summary.at[prot,'GFP_1080F_coverage'],
+                            df_summary.at[prot,'GFP_parallel_1080B_coverage'],df_summary.at[prot,'GFP_parallel_1080C_coverage']]) for prot in df_ecm_aggre.index]
 normal2GFP_cov = [np.mean([df_summary.at[prot,'GFP_120D_coverage'], df_summary.at[prot,'GFP_120F_coverage']]) for prot in df_ecm_aggre.index]
-normal18SNED_cov = [np.mean([df_summary.at[prot,'SNED1_1080D_coverage'], df_summary.at[prot,'SNED1_1080F_coverage']]) for prot in df_ecm_aggre.index]
+normal18SNED_cov = [np.mean([df_summary.at[prot,'SNED1_1080D_coverage'], df_summary.at[prot,'SNED1_1080F_coverage'],
+                             df_summary.at[prot,'SNED1_parallel_1080B_coverage'],df_summary.at[prot,'SNED1_parallel_1080C_coverage']]) for prot in df_ecm_aggre.index]
 normal2SNED_cov = [np.mean([df_summary.at[prot,'SNED1_120D_coverage'], df_summary.at[prot,'SNED1_120F_coverage']]) for prot in df_ecm_aggre.index]
 
+
+# df_plot = pd.DataFrame(dict(gene=df_ecm_aggre['gene'],
+#                             category=category_list,
+#                             mw=df_ecm_aggre['MW_kDa'],
+#                             gfp_18_agg=df_ecm_aggre['GFP_seq_1080_ave_aggre_cov'],
+#                             gfp_18_standard=normal18GFP_cov,
+#                             sned_18_agg=df_ecm_aggre['SNED1_seq_1080_ave_aggre_cov'],
+#                             sned_18_standard=normal18SNED_cov),index=df_ecm_aggre.index)
 
 df_plot = pd.DataFrame(dict(gene=df_ecm_aggre['gene'],
                             category=category_list,
                             mw=df_ecm_aggre['MW_kDa'],
-                            gfp_18_agg=df_ecm_aggre['GFP_seq_1080_ave_aggre_cov'],
+                            gfp_18_agg=[df_aggre_DF.at[prot,'GFP_seq_F_1080_aggre_coverage'] for prot in df_ecm_aggre.index],
                             gfp_18_standard=normal18GFP_cov,
-                            sned_18_agg=df_ecm_aggre['SNED1_seq_1080_ave_aggre_cov'],
+                            sned_18_agg=[df_aggre_DF.at[prot, 'SNED1_seq_F_1080_aggre_coverage'] for prot in df_ecm_aggre.index],
                             sned_18_standard=normal18SNED_cov),index=df_ecm_aggre.index)
 ### scatter plot with sizes
 """
@@ -112,17 +124,17 @@ fig,axs = plt.subplots(2,3,figsize=(10,5))
 for each, ax in zip(sort_category,[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]):
     color = ecm_class_color_dict[each]
     sub_df = df_plot[df_plot['category']==each]
-    sub_df_plot = pd.DataFrame(dict(agg_or_standard=['SNED_18h']*sub_df.shape[0]+['SNED_18h_agg']*sub_df.shape[0],
-                                    coverage=sub_df['sned_18_standard'].tolist()+sub_df['sned_18_agg'].tolist()))
+    sub_df_plot = pd.DataFrame(dict(agg_or_standard=['GFP_18h']*sub_df.shape[0]+['GFP_18h_agg']*sub_df.shape[0],
+                                    coverage=sub_df['gfp_18_standard'].tolist()+sub_df['gfp_18_agg'].tolist()))
     # axs[ax[0],ax[1]].set_ylim([0,100])
     sns.violinplot(data=sub_df_plot, x='agg_or_standard', y='coverage', ax=axs[ax[0],ax[1]], color=color)
     add_stat_annotation(ax=axs[ax[0],ax[1]], data=sub_df_plot, x='agg_or_standard', y='coverage',
-                        box_pairs=[("SNED_18h", "SNED_18h_agg")],
+                        box_pairs=[("GFP_18h", "GFP_18h_agg")],
                         test='t-test_paired', text_format='star',loc='inside', verbose=2)
     axs[ax[0],ax[1]].set_xlabel('')
     axs[ax[0], ax[1]].set_ylabel('')
 
-plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/SNED_violin_category.png', dpi=300)
+plt.savefig('D:/data/Naba_deep_matrisome/BCDF_combined/GFP_F_aggre18_to_BCDF_standard18', dpi=300)
 plt.show()
 """
 
@@ -298,7 +310,8 @@ for each, ax in zip(sort_category,[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]):
 plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/matrisome_ave_cov.png', dpi=300)
 plt.show()
 """
-### generate 1d coverage bar
+### generate 1d coverage bar based on html and css
+"""
 from calculations_and_plot import one_d_covearge_bar
 from tsv_reader import modified_peptide_from_psm
 protein_dict = fasta_reader(fasta_path)
@@ -314,3 +327,4 @@ html_template = 'D:/data/Naba_deep_matrisome/html_template.html'
 new_str = one_d_covearge_bar(html_template,peptide_list,protein_dict['Q8TER0'],
                              output_html_path='D:/data/Naba_deep_matrisome/07232021_secondsearch/coverage_1d/Q8TER0_SNED_beta.html',
                              screenshot='Q8TER0_SNED_beta.png')
+"""
