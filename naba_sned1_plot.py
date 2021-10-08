@@ -10,6 +10,8 @@ from matplotlib.gridspec import GridSpec
 import matplotlib
 from protein_coverage import fasta_reader
 from tsv_reader import peptide_counting
+from scipy import stats
+
 
 font = {'family' : 'Arial',
         'weight' : 'medium',
@@ -47,28 +49,28 @@ color_map = {prot:ecm_class_color_dict[ecm_class] for prot,ecm_class in zip(df_e
 df_aggre_DF = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_ecm_aggregated_D_F.xlsx', index_col=0)
 df_summary = pd.read_excel('D:/data/Naba_deep_matrisome/BCDF_combined/BCDF_combined_summary_sp_only.xlsx', index_col=0)
 normal18GFP_cov = [np.mean([df_summary.at[prot,'GFP_1080D_coverage'], df_summary.at[prot,'GFP_1080F_coverage'],
-                            df_summary.at[prot,'GFP_parallel_1080B_coverage'],df_summary.at[prot,'GFP_parallel_1080C_coverage']]) for prot in df_ecm_aggre.index]
+                            ]) for prot in df_ecm_aggre.index]
 normal2GFP_cov = [np.mean([df_summary.at[prot,'GFP_120D_coverage'], df_summary.at[prot,'GFP_120F_coverage']]) for prot in df_ecm_aggre.index]
 normal18SNED_cov = [np.mean([df_summary.at[prot,'SNED1_1080D_coverage'], df_summary.at[prot,'SNED1_1080F_coverage'],
-                             df_summary.at[prot,'SNED1_parallel_1080B_coverage'],df_summary.at[prot,'SNED1_parallel_1080C_coverage']]) for prot in df_ecm_aggre.index]
+                             ]) for prot in df_ecm_aggre.index]
 normal2SNED_cov = [np.mean([df_summary.at[prot,'SNED1_120D_coverage'], df_summary.at[prot,'SNED1_120F_coverage']]) for prot in df_ecm_aggre.index]
 
-
-# df_plot = pd.DataFrame(dict(gene=df_ecm_aggre['gene'],
-#                             category=category_list,
-#                             mw=df_ecm_aggre['MW_kDa'],
-#                             gfp_18_agg=df_ecm_aggre['GFP_seq_1080_ave_aggre_cov'],
-#                             gfp_18_standard=normal18GFP_cov,
-#                             sned_18_agg=df_ecm_aggre['SNED1_seq_1080_ave_aggre_cov'],
-#                             sned_18_standard=normal18SNED_cov),index=df_ecm_aggre.index)
 
 df_plot = pd.DataFrame(dict(gene=df_ecm_aggre['gene'],
                             category=category_list,
                             mw=df_ecm_aggre['MW_kDa'],
-                            gfp_18_agg=[df_aggre_DF.at[prot,'GFP_seq_F_1080_aggre_coverage'] for prot in df_ecm_aggre.index],
+                            gfp_18_agg=df_ecm_aggre['GFP_seq_1080_ave_aggre_cov'],
                             gfp_18_standard=normal18GFP_cov,
-                            sned_18_agg=[df_aggre_DF.at[prot, 'SNED1_seq_F_1080_aggre_coverage'] for prot in df_ecm_aggre.index],
+                            sned_18_agg=df_ecm_aggre['SNED1_seq_1080_ave_aggre_cov'],
                             sned_18_standard=normal18SNED_cov),index=df_ecm_aggre.index)
+
+# df_plot = pd.DataFrame(dict(gene=df_ecm_aggre['gene'],
+#                             category=category_list,
+#                             mw=df_ecm_aggre['MW_kDa'],
+#                             gfp_18_agg=[df_aggre_DF.at[prot,'GFP_seq_F_1080_aggre_coverage'] for prot in df_ecm_aggre.index],
+#                             gfp_18_standard=normal18GFP_cov,
+#                             sned_18_agg=[df_aggre_DF.at[prot, 'SNED1_seq_F_1080_aggre_coverage'] for prot in df_ecm_aggre.index],
+#                             sned_18_standard=normal18SNED_cov),index=df_ecm_aggre.index)
 ### scatter plot with sizes
 """
 def rand_jitter(arr):
@@ -124,6 +126,8 @@ fig,axs = plt.subplots(2,3,figsize=(10,5))
 for each, ax in zip(sort_category,[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]):
     color = ecm_class_color_dict[each]
     sub_df = df_plot[df_plot['category']==each]
+    # print (each, stats.ks_1samp(sub_df['gfp_18_standard'],stats.norm.cdf))  # test for
+
     sub_df_plot = pd.DataFrame(dict(agg_or_standard=['GFP_18h']*sub_df.shape[0]+['GFP_18h_agg']*sub_df.shape[0],
                                     coverage=sub_df['gfp_18_standard'].tolist()+sub_df['gfp_18_agg'].tolist()))
     # axs[ax[0],ax[1]].set_ylim([0,100])
@@ -132,11 +136,12 @@ for each, ax in zip(sort_category,[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]):
                         box_pairs=[("GFP_18h", "GFP_18h_agg")],
                         test='t-test_paired', text_format='star',loc='inside', verbose=2)
     axs[ax[0],ax[1]].set_xlabel('')
-    axs[ax[0], ax[1]].set_ylabel('')
+    axs[ax[0],ax[1]].set_ylabel('')
 
 plt.savefig('D:/data/Naba_deep_matrisome/BCDF_combined/GFP_F_aggre18_to_BCDF_standard18', dpi=300)
 plt.show()
 """
+
 
 ### heatmap
 # fig,ax = plt.subplots(1,1,figsize=(8,15))
@@ -327,4 +332,50 @@ html_template = 'D:/data/Naba_deep_matrisome/html_template.html'
 new_str = one_d_covearge_bar(html_template,peptide_list,protein_dict['Q8TER0'],
                              output_html_path='D:/data/Naba_deep_matrisome/07232021_secondsearch/coverage_1d/Q8TER0_SNED_beta.html',
                              screenshot='Q8TER0_SNED_beta.png')
+"""
+### grid plot
+"""
+def corrfunc(x, y, **kws):
+  r, p = stats.pearsonr(x, y)
+  # p_stars = ''
+  # if p <= 0.05:
+  #   p_stars = '*'
+  # if p <= 0.01:
+  #   p_stars = '**'
+  # if p <= 0.001:
+  #   p_stars = '***'
+  ax = plt.gca()
+  ax.annotate('r = {:.2f} '.format(r),
+              xy=(0.05, 0.9), xycoords=ax.transAxes, fontweight='bold', fontsize=10)
+
+def annotate_colname(x, **kws):
+  ax = plt.gca()
+  ax.annotate(x.name, xy=(0.05, 1), xycoords=ax.transAxes,
+              fontweight='bold',fontsize=10)
+
+def cor_matrix(df):
+  g = sns.PairGrid(df, palette=['red'])
+  # Use normal regplot as `lowess=True` doesn't provide CIs.
+  g.map_upper(sns.regplot, scatter_kws={'s':10,'color':'black'},color='black')
+  g.map_diag(sns.histplot,color='black')
+  g.map_diag(annotate_colname)
+  cmap = sns.light_palette('#000000',as_cmap=True)
+  g.map_lower(sns.kdeplot, cmap=cmap)
+  g.map_lower(corrfunc)
+  # Remove axis labels, as they're in the diagonals.
+  for ax in g.axes.flatten():
+    ax.set_ylabel('')
+    ax.set_xlabel('')
+    ax.set_xlim(-2,8)
+    ax.set_ylim(-2,8)
+  return g
+
+df_grid = np.log2(df_ecm_aggre.iloc[:,7:11]+1)
+df_grid = df_grid.rename(columns={'SNED1_seq_30_ave_aggre_cov':'SNED1 30min aggre. cov',
+                        'SNED1_seq_120_ave_aggre_cov':'SNED1 2h aggre. cov',
+                        'SNED1_seq_240_ave_aggre_cov':'SNED1 4h aggre. cov',
+                        'SNED1_seq_1080_ave_aggre_cov':'SNED1 18h aggre. cov'})
+cor_matrix(df_grid)
+plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/SNED_pairgrid_log2.png',dpi=300)
+plt.show()
 """

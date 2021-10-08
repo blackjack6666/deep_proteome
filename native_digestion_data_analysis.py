@@ -1,4 +1,4 @@
-from tsv_reader import combined_proteintsv_map, protein_info_from_combined,protein_reader,protein_info_from_fasta
+from tsv_reader import combined_proteintsv_map, protein_info_from_combined,protein_reader,protein_info_from_fasta,peptide_counting
 import pandas as pd
 from dash_dataframe_naba import dash_dataframe
 from collections import defaultdict
@@ -143,6 +143,9 @@ def protein_cov_reader_from_tsv(protein_tsv):
 
     return protein_cov_dict
 
+
+### compare coverage of different proteases
+"""
 tryp_cov_dict = protein_cov_reader_from_tsv('D:/data/deep_proteome/different_protease/Tryp/protein1.tsv')
 thermo_cov_dict = protein_cov_reader_from_tsv('D:/data/deep_proteome/different_protease/thermolysin_30min/protein.tsv')
 tryp_thermo_cov_dict = protein_cov_reader_from_tsv('D:/data/deep_proteome/different_protease/tryp_30_thermo_30/protein.tsv')
@@ -151,4 +154,57 @@ for each in tryp_thermo_cov_dict:
     if each in tryp_cov_dict and each in thermo_cov_dict:
         if tryp_thermo_cov_dict[each]>tryp_cov_dict[each] and tryp_thermo_cov_dict[each]>thermo_cov_dict[each]:
             print (each, tryp_cov_dict[each],thermo_cov_dict[each],tryp_thermo_cov_dict[each])
+"""
 
+
+df_native = pd.read_excel('D:/data/native_protein_digestion/native_digest_cassette_aggrecov.xlsx',index_col=0)
+protein_list = df_native.index
+df_raw = pd.read_excel('D:/data/native_protein_digestion/raw_result.xlsx',index_col=0)
+columns = ['1h','2h','4h','18h']
+proteid_ids_dict = {time:df_raw.loc[df_raw[time+'_1_native_total_spec']!=0].index.tolist() for time in columns}
+peptide_ids_dict = {time:peptide_counting('D:/data/native_protein_digestion/'+time+'_1_native/peptide.tsv') for time in columns}
+### heatmap
+"""
+fig,ax = plt.subplots(1,1, figsize=(8,15))
+
+df_heatmap = [[df_raw.at[each,'1h_1_native_coverage'],
+               df_raw.at[each,'2h_1_native_coverage'],
+               df_raw.at[each,'4h_1_native_coverage'],
+               df_raw.at[each,'18h_1_native_coverage']] for each in protein_list]
+# df_heatmap = df_native.iloc[:,-4:]
+g = sns.heatmap(data=df_heatmap,ax=ax,
+                cbar_kws={'label': 'absolute coverage','shrink': 0.5},cmap="coolwarm",yticklabels=False)
+ax.set_xticklabels(labels=columns, rotation=30, fontsize=10, ha='right')
+plt.savefig('D:/data/native_protein_digestion/dialysis_cassette_absolute_heatmap.png', dpi=300)
+plt.show()
+"""
+
+### venn diagram
+"""
+from tsv_reader import venn_diagram_gen2
+venn_diagram_gen2(peptide_ids_dict,png_output='D:/data/native_protein_digestion/figures/cassette_peptide_id_compare.png')
+"""
+
+### coverage calculation
+from multiprocessing_naive_algorithym import extract_UNID_and_seq, creat_total_seq_line, zero_line_for_seq
+from aho_corasick import automaton_trie, automaton_matching
+from calculations_and_plot import whole_proteome_cov
+
+total_protein_list = set([protein_id for time in proteid_ids_dict for protein_id in proteid_ids_dict[time]])
+print (len(total_protein_list))
+proteine_sub_dict = {each:protein_dict[each] for each in total_protein_list}
+id_list, seq_list = extract_UNID_and_seq(proteine_sub_dict)
+seq_line = creat_total_seq_line(seq_list)
+
+# for time in columns:
+#     pep_list = peptide_ids_dict[time]
+#     aho_result = automaton_matching(automaton_trie(pep_list),seq_line)
+#     proteome_cov = whole_proteome_cov(aho_result,seq_line)
+#     print (time, proteome_cov)
+
+for i in range(len(columns)):
+    time_list = columns[:i+1]
+    agg_peplist = [pep for each in time_list for pep in peptide_ids_dict[each]]
+    aho_result = automaton_matching(automaton_trie(agg_peplist),seq_line)
+    proteome_cov = whole_proteome_cov(aho_result,seq_line)
+    print (time_list, proteome_cov)

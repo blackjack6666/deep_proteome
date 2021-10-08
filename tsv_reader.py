@@ -191,7 +191,7 @@ def venn_diagram_gen(dictionary, title=''): # parameter could be a dictionary of
     plt.show()
 
 
-def venn_diagram_gen2(dictionary, title=None): # parameter could be a dictionary of proteins or peptides from different samples {'sample1': [], 'sample2': []}
+def venn_diagram_gen2(dictionary, title=None, png_output=None): # parameter could be a dictionary of proteins or peptides from different samples {'sample1': [], 'sample2': []}
     import matplotlib.pyplot as plt
     import matplotlib
     import venn
@@ -206,6 +206,8 @@ def venn_diagram_gen2(dictionary, title=None): # parameter could be a dictionary
         ax = venn.venn(venn_dict)
         if title:
             ax.set_title(title)
+    if png_output:
+        plt.savefig(png_output,dpi=300)
     plt.show()
 
 
