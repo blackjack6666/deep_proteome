@@ -334,7 +334,7 @@ new_str = one_d_covearge_bar(html_template,peptide_list,protein_dict['Q8TER0'],
                              screenshot='Q8TER0_SNED_beta.png')
 """
 ### grid plot
-"""
+
 def corrfunc(x, y, **kws):
   r, p = stats.pearsonr(x, y)
   # p_stars = ''
@@ -354,28 +354,32 @@ def annotate_colname(x, **kws):
               fontweight='bold',fontsize=10)
 
 def cor_matrix(df):
-  g = sns.PairGrid(df, palette=['red'])
+  g = sns.PairGrid(df, palette=['red'], corner=True)
   # Use normal regplot as `lowess=True` doesn't provide CIs.
-  g.map_upper(sns.regplot, scatter_kws={'s':10,'color':'black'},color='black')
+  # g.map_upper(sns.regplot, scatter_kws={'s':10,'color':'black'},color='black')
+  g.map_lower(sns.regplot, scatter_kws={'s': 10, 'color': 'black'}, color='black')
+  g.map_lower(corrfunc)
   g.map_diag(sns.histplot,color='black')
   g.map_diag(annotate_colname)
   cmap = sns.light_palette('#000000',as_cmap=True)
-  g.map_lower(sns.kdeplot, cmap=cmap)
-  g.map_lower(corrfunc)
+  # g.map_lower(sns.kdeplot, cmap=cmap)
+  print (g.axes.flatten())
   # Remove axis labels, as they're in the diagonals.
   for ax in g.axes.flatten():
-    ax.set_ylabel('')
-    ax.set_xlabel('')
-    ax.set_xlim(-2,8)
-    ax.set_ylim(-2,8)
+    try:
+        ax.set_ylabel('')
+        ax.set_xlabel('')
+        ax.set_xlim(-2,8)
+        ax.set_ylim(-2,8)
+    except:
+        continue
   return g
 
-df_grid = np.log2(df_ecm_aggre.iloc[:,7:11]+1)
-df_grid = df_grid.rename(columns={'SNED1_seq_30_ave_aggre_cov':'SNED1 30min aggre. cov',
-                        'SNED1_seq_120_ave_aggre_cov':'SNED1 2h aggre. cov',
-                        'SNED1_seq_240_ave_aggre_cov':'SNED1 4h aggre. cov',
-                        'SNED1_seq_1080_ave_aggre_cov':'SNED1 18h aggre. cov'})
+df_grid = np.log2(df_ecm_aggre.iloc[:,3:7]+1)
+df_grid = df_grid.rename(columns={'GFP_seq_30_ave_aggre_cov':'GFP 30min aggre. cov',
+                        'GFP_seq_120_ave_aggre_cov':'GFP 2h aggre. cov',
+                        'GFP_seq_240_ave_aggre_cov':'GFP 4h aggre. cov',
+                        'GFP_seq_1080_ave_aggre_cov':'GFP 18h aggre. cov'})
 cor_matrix(df_grid)
-plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/SNED_pairgrid_log2.png',dpi=300)
+plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/GFP_regplot_log2.png',dpi=300)
 plt.show()
-"""
