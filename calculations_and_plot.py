@@ -226,6 +226,18 @@ def miss_cleavage_identify(peptide_list,regex_pattern=r'(?:K|R)\w+'):
     from re import search
     return {each: bool(search(regex_pattern,each)) for each in peptide_list}
 
+
+def num_miss_identify(peptide_list,regex_pattern=r'([KR](?=[^P]))|((?<=W)K(?=P))|((?<=M)R(?=P))'):
+    from re import findall
+    from collections import defaultdict
+
+    miss_peptide_set = defaultdict(set)
+    for each in peptide_list:
+        num_miss = len(findall(regex_pattern,each))
+        miss_peptide_set[num_miss].add(each)
+    return miss_peptide_set
+
+
 # the following function returns a dictionary with uniprotID as key and aa frequency as value
 def ID_number_line(zero_line, sep_pos_array, ID_list):
     ID_number_line_dict = {}

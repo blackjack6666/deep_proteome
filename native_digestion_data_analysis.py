@@ -143,6 +143,21 @@ def protein_cov_reader_from_tsv(protein_tsv):
 
     return protein_cov_dict
 
+from calculations_and_plot import miss_cleavage_identify,num_miss_identify
+from glob import glob
+base_path = 'D:/data/native_protein_digestion/10282021/search_result_4miss'
+folder_path = glob(base_path+'/*/peptide.tsv')
+for each in folder_path:
+    peptide_list = peptide_counting(each)
+    miss_cleav = miss_cleavage_identify(peptide_list)
+    bool_array = [v for v in miss_cleav.values()]
+    num_miss_dict = num_miss_identify(peptide_list)
+    print (each,len(peptide_list))
+    for each in num_miss_dict:
+
+        print ('%i miss cleavage: ratio %f' %(each,len(num_miss_dict[each])/len(peptide_list)))
+
+
 
 ### compare coverage of different proteases
 """
@@ -157,12 +172,12 @@ for each in tryp_thermo_cov_dict:
 """
 
 
-df_native = pd.read_excel('D:/data/native_protein_digestion/native_digest_cassette_aggrecov.xlsx',index_col=0)
-protein_list = df_native.index
-df_raw = pd.read_excel('D:/data/native_protein_digestion/raw_result.xlsx',index_col=0)
-columns = ['1h','2h','4h','18h']
-proteid_ids_dict = {time:df_raw.loc[df_raw[time+'_1_native_total_spec']!=0].index.tolist() for time in columns}
-peptide_ids_dict = {time:peptide_counting('D:/data/native_protein_digestion/'+time+'_1_native/peptide.tsv') for time in columns}
+# df_native = pd.read_excel('D:/data/native_protein_digestion/native_digest_cassette_aggrecov.xlsx',index_col=0)
+# protein_list = df_native.index
+# df_raw = pd.read_excel('D:/data/native_protein_digestion/raw_result.xlsx',index_col=0)
+# columns = ['1h','2h','4h','18h']
+# proteid_ids_dict = {time:df_raw.loc[df_raw[time+'_1_native_total_spec']!=0].index.tolist() for time in columns}
+# peptide_ids_dict = {time:peptide_counting('D:/data/native_protein_digestion/'+time+'_1_native/peptide.tsv') for time in columns}
 ### heatmap
 """
 fig,ax = plt.subplots(1,1, figsize=(8,15))
@@ -186,6 +201,7 @@ venn_diagram_gen2(peptide_ids_dict,png_output='D:/data/native_protein_digestion/
 """
 
 ### coverage calculation
+"""
 from multiprocessing_naive_algorithym import extract_UNID_and_seq, creat_total_seq_line, zero_line_for_seq
 from aho_corasick import automaton_trie, automaton_matching
 from calculations_and_plot import whole_proteome_cov
@@ -208,3 +224,4 @@ for i in range(len(columns)):
     aho_result = automaton_matching(automaton_trie(agg_peplist),seq_line)
     proteome_cov = whole_proteome_cov(aho_result,seq_line)
     print (time_list, proteome_cov)
+"""
