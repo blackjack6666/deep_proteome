@@ -1,4 +1,4 @@
-from tsv_reader import combined_proteintsv_map, protein_info_from_combined,protein_reader,protein_info_from_fasta,peptide_counting
+from tsv_reader import combined_proteintsv_map, protein_info_from_combined,protein_reader,protein_info_from_fasta,peptide_counting, psm_reader
 import pandas as pd
 from dash_dataframe_naba import dash_dataframe
 from collections import defaultdict
@@ -17,9 +17,14 @@ import os
 fasta_path = 'D:/data/pats/human_fasta/uniprot-proteome_UP000005640_sp_only.fasta'
 protein_dict = fasta_reader(fasta_path)
 ### process tsv files
+base_path = 'D:/data/native_protein_digestion/11052021/search_result/'
+folders = [base_path+folder for folder in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, folder))]
+
+psm_path_list = [each+'/psm.tsv' for each in folders]
+pep_path_list = [each+'/peptide.tsv' for each in folders]
+print (pep_path_list)
+
 """
-
-
 protein_info_dict = protein_info_from_fasta(fasta_path)
 
 total_protein_set = protein_reader('D:/data/native_protein_digestion/combined_protein.tsv')
@@ -143,12 +148,20 @@ def protein_cov_reader_from_tsv(protein_tsv):
 
     return protein_cov_dict
 
+
+### missed cleavage analysis
+"""
 from calculations_and_plot import miss_cleavage_identify,num_miss_identify
 from glob import glob
-base_path = 'D:/data/native_protein_digestion/10282021/search_result_4miss'
-folder_path = glob(base_path+'/*/peptide.tsv')
-for each in folder_path:
-    peptide_list = peptide_counting(each)
+from tsv_reader import get_unique_peptide
+base_path = 'D:/data/native_protein_digestion/11052021/search_result/'
+folder_path = [base_path + folder+'/peptide.tsv' for folder in os.listdir(base_path)
+               if os.path.isdir(os.path.join(base_path, folder))]
+print (folder_path)
+unique_pep_dict = get_unique_peptide(folder_path)
+for each in unique_pep_dict:
+    # peptide_list = peptide_counting(each)
+    peptide_list = unique_pep_dict[each]
     miss_cleav = miss_cleavage_identify(peptide_list)
     bool_array = [v for v in miss_cleav.values()]
     num_miss_dict = num_miss_identify(peptide_list)
@@ -156,8 +169,7 @@ for each in folder_path:
     for each in num_miss_dict:
 
         print ('%i miss cleavage: ratio %f' %(each,len(num_miss_dict[each])/len(peptide_list)))
-
-
+"""
 
 ### compare coverage of different proteases
 """
@@ -172,12 +184,17 @@ for each in tryp_thermo_cov_dict:
 """
 
 
-# df_native = pd.read_excel('D:/data/native_protein_digestion/native_digest_cassette_aggrecov.xlsx',index_col=0)
-# protein_list = df_native.index
-# df_raw = pd.read_excel('D:/data/native_protein_digestion/raw_result.xlsx',index_col=0)
-# columns = ['1h','2h','4h','18h']
+df_native = pd.read_excel('D:/data/native_protein_digestion/native_digest_cassette_aggrecov.xlsx',index_col=0)
+protein_list = df_native.index
+df_raw = pd.read_excel('D:/data/native_protein_digestion/raw_result.xlsx',index_col=0)
+columns = [x[0] for x in os.walk('D:/data/native_protein_digestion/11052021/search_result/')][1:]
+print (columns)
 # proteid_ids_dict = {time:df_raw.loc[df_raw[time+'_1_native_total_spec']!=0].index.tolist() for time in columns}
-# peptide_ids_dict = {time:peptide_counting('D:/data/native_protein_digestion/'+time+'_1_native/peptide.tsv') for time in columns}
+peptide_ids_dict = {time:peptide_counting(time+'/peptide.tsv') for time in columns}
+combined_prot_tsv = 'D:/data/native_protein_digestion/11052021/search_result/combined_protein.tsv'
+combined_prot_dict = combined_proteintsv_map(combined_prot_tsv)
+
+
 ### heatmap
 """
 fig,ax = plt.subplots(1,1, figsize=(8,15))
@@ -206,9 +223,11 @@ from multiprocessing_naive_algorithym import extract_UNID_and_seq, creat_total_s
 from aho_corasick import automaton_trie, automaton_matching
 from calculations_and_plot import whole_proteome_cov
 
-total_protein_list = set([protein_id for time in proteid_ids_dict for protein_id in proteid_ids_dict[time]])
-print (len(total_protein_list))
-proteine_sub_dict = {each:protein_dict[each] for each in total_protein_list}
+# total_protein_list = set([protein_id for time in proteid_ids_dict for protein_id in proteid_ids_dict[time]])
+# proteine_sub_dict = {each:protein_dict[each] for each in total_protein_list}
+
+proteine_sub_dict = {each:protein_dict[each] for each in protein_reader(combined_prot_tsv)}
+print (len(proteine_sub_dict))
 id_list, seq_list = extract_UNID_and_seq(proteine_sub_dict)
 seq_line = creat_total_seq_line(seq_list)
 
@@ -223,5 +242,69 @@ for i in range(len(columns)):
     agg_peplist = [pep for each in time_list for pep in peptide_ids_dict[each]]
     aho_result = automaton_matching(automaton_trie(agg_peplist),seq_line)
     proteome_cov = whole_proteome_cov(aho_result,seq_line)
-    print (time_list, proteome_cov)
+    print (time_list[-1], proteome_cov)
+"""
+
+### mass distribution
+
+from tsv_reader import pep_mass_dist
+from calculations_and_plot import protein_mass
+import pickle
+insilico_pep_dict = pickle.load(open('D:/data/native_protein_digestion/inslico_digest_human_fasta.p','rb'))
+peptide_set = {pep for v in insilico_pep_dict.values() for pep in v}
+# peptide_set = peptide_counting('D:/data/deep_proteome/20200915_tryp_37C_240min/peptide.tsv')
+
+print (len(peptide_set))
+mass_list = [protein_mass(each) for each in peptide_set]
+sns.kdeplot(mass_list,linewidth=2, alpha=.5)
+plt.axvline(x=3500, color='k', linestyle='--')
+plt.xlabel('Mass in Da')
+plt.ylabel('frequency')
+plt.show()
+# pep_mass_dist(pep_path_list,plot='kde')
+"""
+### covered distance analysis
+
+fig,axs = plt.subplots(1,1, figsize=(10,8))
+
+df = pd.read_excel('D:/data/native_protein_digestion/11052021/cov_distance_fillw_previous.xlsx',index_col=0)
+# df = df.T.ffill().bfill()
+df = df.dropna()
+columns = list(df.columns)
+idx = list(df.index)
+new_columns = [str(int(columns[i][:4]))+'_'+str(int(columns[i+1][:4]))+'min' for i in range(len(columns)-1)]
+
+print (new_columns)
+#
+df_new = pd.DataFrame(index=df.index, columns=new_columns)
+for i in range(df.shape[0]):
+    for j in range(df.shape[1]-1):
+        df_new.at[idx[i],new_columns[j]] = (df.iloc[i,j+1]-df.iloc[i,j])/(int(columns[j+1][:4])-int(columns[j][:4]))
+# df_new.to_excel('D:/data/native_protein_digestion/11052021/distance_change_rate.xlsx')
+df_new = df_new.astype(float)
+
+num_prot = df.shape[0]
+for each in df:
+    print (each, df[each].mean())
+x = range(1,13)
+#
+#line plot
+# for tp in df_new.itertuples(index=False):
+#     axs.plot(x,[i for i in tp],linestyle='-',alpha=0.8)
+# axs.set_xticks(x)
+# axs.set_xticklabels(list(df_new.columns), fontsize=12,ha="center", rotation=45)
+
+#heatmap
+# g = sns.clustermap(data=df_new,cbar_kws={'label': 'distance to protein centroid','shrink': 0.5},
+#                cmap="YlGnBu",yticklabels=False)
+# g.set_xticklabels(labels=list(df_new.columns), ha='right',fontsize=10,rotation = 45)
+
+
+### violin plot
+# time_point_list = [each for each in df.columns for i in range(num_prot)]
+# dist_list = [v for each in df.columns for v in df[each]]
+# df_violin = pd.DataFrame(dict(timepoints=time_point_list,
+#                               dist=dist_list))
+# sns.violinplot(data=df_violin,x='timepoints',y='dist',ax =axs)
+# plt.show()
 """

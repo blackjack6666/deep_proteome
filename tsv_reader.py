@@ -421,6 +421,55 @@ def pepxml_peptide_getter(pepxml):
             psm_hit_list.append(peptide)
     return psm_hit_list
 
+
+def pep_mass_dist(pep_tsv_list:list, plot='kde'):
+    from calculations_and_plot import protein_mass
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    from statistics import mean
+
+    ylabel_dict = {'kde':'Density','hist':'Frequency'}
+
+    for pep_tsv in pep_tsv_list:
+        sample_name = pep_tsv.split('/')[-2]
+        mass_list = [protein_mass(each) for each in peptide_counting(pep_tsv)]
+        print (sample_name,'average mass %f' % mean(mass_list))
+        # draw density plot
+        if plot == 'kde':
+            sns.kdeplot(mass_list,linewidth=2, alpha=.5,label=sample_name)
+        else:
+            sns.histplot(mass_list,bins=100, alpha=.5, fill=False,label=sample_name)
+    plt.legend(prop={'size': 10}, title='Time points')
+    plt.title('%s plot native digestion multiple time points' % plot)
+    plt.xlabel('Mass in Da')
+    plt.ylabel('%s' % ylabel_dict[plot])
+
+    plt.show()
+
+
+def get_unique_peptide(list_of_peptsv:list):
+    """
+    from pep tsv file only get unique peptides compared with previous ones, e.g. in 4 hour sample, filter out peptides
+    in 1h,2h and only retain peptides uniquely identified in 4h
+    :param list_of_peptide:
+    :return:
+    """
+
+    unique_peptide_dict = {}
+    peptide_list = []
+    for idx, val in enumerate(list_of_peptsv):
+
+        file_name = val.split("/")[-2]
+        print (file_name)
+        unique_peptide_list = [each for each in peptide_counting(val) if each not in peptide_list]
+
+        peptide_list += unique_peptide_list
+
+        unique_peptide_dict[file_name] = unique_peptide_list
+
+    return unique_peptide_dict
+
+
 if __name__=="__main__":
     from glob import glob
     import numpy as np
