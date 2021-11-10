@@ -2,17 +2,11 @@ import mmap
 import os
 import numpy as np
 import time
-# import pybase64
+import pybase64
 import zlib
 from xml.etree import cElementTree as ET
-import pip
-
-try:
-    import pybase64
-except ImportError:
-    os.system("python3 -m pip install pybase64")
-    import pybase64
-
+import zstandard
+from io import BytesIO
 
 np_dtype_numtype = {'i': np.int32, 'e': np.single, 'f': np.float32, 'q': np.int64, 'd': np.float64}
 
@@ -63,8 +57,10 @@ accession_dict = {"MS:1000519": "32i",
                   "MS:1000514": "mass"}
 
 
-def find_string(mzml_read_fp, match_tag_start, match_tag_end, data_format, spec_no):
+def find_string(mzml_read_fp, match_tag_start, match_tag_end, data_format, spec_no, compression='auto'):
     start_time = time.time()
+    if compression=='zstd':
+        compressor = zstandard.ZstdCompressor(threads=2)
     file_name = mzml_read_fp.name
     file_size = os.path.getsize(file_name)
     encoded_start_tag = match_tag_start.encode('utf-8')
@@ -75,7 +71,8 @@ def find_string(mzml_read_fp, match_tag_start, match_tag_end, data_format, spec_
     mass_fmt = ("$%s$" % '$'.join([data_format['mass']['data_encoding'], data_format['mass']['data_compression'], data_format['mass']['data_type']])).encode('utf-8')
     int_fmt = ("$%s$" % '$'.join([data_format['intensity']['data_encoding'], data_format['intensity']['data_compression'], data_format['intensity']['data_type']])).encode('utf-8')
     i = 0
-    with open(file_name.replace('.mzML', '.smzml'), 'wb') as fo:
+    smzml_io = BytesIO()
+    with smzml_io as fo:
         # memory-map the file, size 0 means whole file
         m = mmap.mmap(mzml_read_fp.fileno(), 0, access=mmap.ACCESS_READ)
         last_end = 0
@@ -83,6 +80,11 @@ def find_string(mzml_read_fp, match_tag_start, match_tag_end, data_format, spec_
             if i == spec_no * 2:
                 print("total time used to position all b64 data:", time.time() - start_time)
                 fo.write(m.read(file_size - m.tell()))
+                with open(file_name.replace('.mzML', '.smzml'), 'wb') as write_file:
+                    if compression=='zstd':
+                        write_file.write(compressor.compress(smzml_io.getvalue()))
+                    else:
+                        write_file.write(smzml_io.getvalue())
                 return data_positions
             start = m.find(encoded_start_tag)
             fo.write(m.read(start + len_start_tag - last_end))
@@ -99,16 +101,18 @@ def find_string(mzml_read_fp, match_tag_start, match_tag_end, data_format, spec_
             i += 1
 
 
-def mzml_splitter(mzml_file: str):
+def mzml_splitter(mzml_file: str, compression='auto'):
     start = time.time()
+    if compression == 'zstd':
+        compressor = zstandard.ZstdCompressor(threads=2)
     # Generate file names
     int_binary_file = mzml_file.replace('.mzML', '.bint')
     mass_binary_file = mzml_file.replace('.mzML', '.bmass')
     # mzml_out = mzml_file.replace('.mzML', '.smzml')
 
     # Open file pointers
-    mass_binary_out_fp = open(mass_binary_file, 'wb')
-    int_binary_out_fp = open(int_binary_file, 'wb')
+    mass_binary_out_fp = BytesIO()
+    int_binary_out_fp = BytesIO()
     mzml_read_fp = open(mzml_file, 'rb')
     # mzml_out_fp = open(mzml_out, 'w', newline='\n', encoding='utf-8')
 
@@ -136,7 +140,7 @@ def mzml_splitter(mzml_file: str):
             print("Mass and intensity data format", data_format)
             break
 
-    data_position = find_string(mzml_read_fp, '<binary>', '</binary>', data_format, spec_no)
+    data_position = find_string(mzml_read_fp, '<binary>', '</binary>', data_format, spec_no, compression=compression)
     data_chunks = chunks(data_position, 2)
 
     mass_num_data_list = []
@@ -160,86 +164,108 @@ def mzml_splitter(mzml_file: str):
     int_binary_out_fp.write(np.array(int_num_data_list, dtype=np.int32).tobytes())
 
     mzml_read_fp.close()
-    int_binary_out_fp.close()
-    mass_binary_out_fp.close()
+
+    with open(int_binary_file, 'wb') as int_binary_out_fp_final, open(mass_binary_file, 'wb') as mass_binary_out_fp_final:
+        if compression == 'zstd':
+            int_binary_out_fp_final.write(compressor.compress(int_binary_out_fp.getvalue()))
+            mass_binary_out_fp_final.write(compressor.compress(mass_binary_out_fp.getvalue()))
+        else:
+            int_binary_out_fp_final.write(int_binary_out_fp.getvalue())
+            mass_binary_out_fp_final.write(mass_binary_out_fp.getvalue())
 
 
 def mzml_lossy_splitter(mzml_file: str):
     start = time.time()
     # Generate file names
-    int_binary_file = mzml_file.replace('.mzML', '.bint')
-    mass_binary_file = mzml_file.replace('.mzML', '.bmass')
-    # mzml_out = mzml_file.replace('.mzML', '.smzml')
+    # int_binary_file = mzml_file.replace('.mzML', '.bint')
+    # mass_binary_file = mzml_file.replace('.mzML', '.bmass')
+    # # mzml_out = mzml_file.replace('.mzML', '.smzml')
+    #
+    # # Open file pointers
+    # mass_binary_out_fp = open(mass_binary_file, 'wb')
+    # int_binary_out_fp = open(int_binary_file, 'wb')
+    # mzml_read_fp = open(mzml_file, 'rb')
+    # # mzml_out_fp = open(mzml_out, 'w', newline='\n', encoding='utf-8')
+    #
+    # data_format = {}
+    #
+    # # Iterate mzML file and get all data into data_position[]
+    # current_encoding = '32f'
+    # current_compress = 'no compression'
+    # spec_no = 0
+    # for event, elem in iter(ET.iterparse(mzml_file, events=('start',))):
+    #     if elem.tag.endswith('}cvParam'):
+    #         if elem.get('accession').endswith(('MS:1000521', 'MS:1000522', 'MS:1000523', 'MS:1000519', 'MS:1000520')):  # retrieves the datatype based on MS accession
+    #             current_encoding = accession_dict[elem.get('accession')]
+    #         if elem.get('accession').endswith(('MS:1000576', 'MS:1000574')):  # retrieves the compression based on MS accession
+    #             current_compress = accession_dict[elem.get('accession')]
+    #         if elem.get('accession').endswith(('MS:1000515', 'MS:1000514')):  # retrives array_type
+    #             current_type = accession_dict[elem.get('accession')]
+    #             data_format[current_type] = {'data_encoding': current_encoding, 'data_compression': current_compress, 'data_type': current_type}
+    #
+    #     elif elem.tag.endswith('}spectrumList'):
+    #         spec_no = int(elem.get('count'))
+    #         print("Total binary data:", spec_no * 2)
+    #
+    #     elif len(data_format.keys()) == 2:
+    #         print("Mass and intensity data format", data_format)
+    #         break
+    #
+    # data_position = find_string(mzml_read_fp, '<binary>', '</binary>', data_format, spec_no)
+    # data_chunks = chunks(data_position, 2)
+    #
+    # mass_num_data_list = []
+    # int_num_data_list = []
+    #
+    # for each_data in data_chunks:
+    #     mass_pos, int_pos = each_data
+    #
+    #     mass_num_data, mass_data_to_write = decode_pos(mass_pos, mzml_read_fp, data_format['mass'], 'mass')
+    #     mass_binary_out_fp.write(mass_data_to_write)
+    #     mass_num_data_list.append(mass_num_data)
+    #
+    #     int_num_data, int_data_to_write = decode_pos(int_pos, mzml_read_fp, data_format['intensity'], 'intensity')
+    #     int_binary_out_fp.write(int_data_to_write)
+    #     int_num_data_list.append(int_num_data)
+    #
+    # mass_num_data_list.append(len(mass_num_data_list))
+    # int_num_data_list.append(len(int_num_data_list))
+    #
+    # mass_binary_out_fp.write(np.array(mass_num_data_list, dtype=np.int32).tobytes())
+    # int_binary_out_fp.write(np.array(int_num_data_list, dtype=np.int32).tobytes())
+    #
+    # mzml_read_fp.close()
+    # int_binary_out_fp.close()
+    # mass_binary_out_fp.close()
 
-    # Open file pointers
-    mass_binary_out_fp = open(mass_binary_file, 'wb')
-    int_binary_out_fp = open(int_binary_file, 'wb')
-    mzml_read_fp = open(mzml_file, 'rb')
-    # mzml_out_fp = open(mzml_out, 'w', newline='\n', encoding='utf-8')
 
-    data_format = {}
+def mzml_decoder(smzml_file, bmass_file, bint_file, mzml_file, compression='auto'):
+    mass_io = BytesIO()
+    int_io = BytesIO()
+    smzml_io = BytesIO()
 
-    # Iterate mzML file and get all data into data_position[]
-    current_encoding = '32f'
-    current_compress = 'no compression'
-    spec_no = 0
-    for event, elem in iter(ET.iterparse(mzml_file, events=('start',))):
-        if elem.tag.endswith('}cvParam'):
-            if elem.get('accession').endswith(('MS:1000521', 'MS:1000522', 'MS:1000523', 'MS:1000519', 'MS:1000520')):  # retrieves the datatype based on MS accession
-                current_encoding = accession_dict[elem.get('accession')]
-            if elem.get('accession').endswith(('MS:1000576', 'MS:1000574')):  # retrieves the compression based on MS accession
-                current_compress = accession_dict[elem.get('accession')]
-            if elem.get('accession').endswith(('MS:1000515', 'MS:1000514')):  # retrives array_type
-                current_type = accession_dict[elem.get('accession')]
-                data_format[current_type] = {'data_encoding': current_encoding, 'data_compression': current_compress, 'data_type': current_type}
-
-        elif elem.tag.endswith('}spectrumList'):
-            spec_no = int(elem.get('count'))
-            print("Total binary data:", spec_no * 2)
-
-        elif len(data_format.keys()) == 2:
-            print("Mass and intensity data format", data_format)
-            break
-
-    data_position = find_string(mzml_read_fp, '<binary>', '</binary>', data_format, spec_no)
-    data_chunks = chunks(data_position, 2)
-
-    mass_num_data_list = []
-    int_num_data_list = []
-
-    for each_data in data_chunks:
-        mass_pos, int_pos = each_data
-
-        mass_num_data, mass_data_to_write = decode_pos(mass_pos, mzml_read_fp, data_format['mass'], 'mass')
-        mass_binary_out_fp.write(mass_data_to_write)
-        mass_num_data_list.append(mass_num_data)
-
-        int_num_data, int_data_to_write = decode_pos(int_pos, mzml_read_fp, data_format['intensity'], 'intensity')
-        int_binary_out_fp.write(int_data_to_write)
-        int_num_data_list.append(int_num_data)
-
-    mass_num_data_list.append(len(mass_num_data_list))
-    int_num_data_list.append(len(int_num_data_list))
-
-    mass_binary_out_fp.write(np.array(mass_num_data_list, dtype=np.int32).tobytes())
-    int_binary_out_fp.write(np.array(int_num_data_list, dtype=np.int32).tobytes())
-
-    mzml_read_fp.close()
-    int_binary_out_fp.close()
-    mass_binary_out_fp.close()
-
-
-def mzml_decoder(smzml_file, bmass_file, bint_file, mzml_file):
+    if compression=='zstd':
+        decompressor = zstandard.ZstdDecompressor()
+        decompressor.copy_stream(open(bmass_file, 'rb'), mass_io)
+        decompressor.copy_stream(open(bint_file, 'rb'), int_io)
+        decompressor.copy_stream(open(smzml_file, 'rb'), smzml_io)
+        mass_in_fp = mass_io
+        int_in_fp = int_io
+        smzml_file = smzml_io.getvalue().decode('utf8').splitlines()
+        compression_end = '\n'
+    else:
+        mass_in_fp = open(bmass_file, 'rb')
+        int_in_fp = open(bint_file, 'rb')
+        smzml_file = open(smzml_file, 'r', encoding='utf-8')
+        compression_end = ''
     # Create file pointers
-    mass_in_fp = open(bmass_file, 'rb')
-    int_in_fp = open(bint_file, 'rb')
-    smzml_file = open(smzml_file, 'r', encoding='utf-8')
 
     int_in_fp.seek(-4, os.SEEK_END)
     total_spec_no = int.from_bytes(int_in_fp.read(4), byteorder='little')
     int_in_fp.seek(-4 * (total_spec_no + 1), os.SEEK_END)
     spec_no_array = np.frombuffer(int_in_fp.read(4 * total_spec_no), np.int32)
     int_in_fp.seek(0)
+    mass_in_fp.seek(0)
 
     i = 0
     # Restore mzML file from smzml
@@ -250,22 +276,22 @@ def mzml_decoder(smzml_file, bmass_file, bint_file, mzml_file):
                 _, data_fmt, data_compression, data_type, _ = line.split('$')
                 data_num = spec_no_array[i]
                 if data_type == 'mass':
-                    number_array = np.frombuffer(mass_in_fp.read(int(int(data_fmt[:2]) * int(data_num) / 8)), np_dtype_numtype[data_fmt[-1]])
+                    read_number = int(int(data_fmt[:2]) * int(data_num) / 8)
+                    number_array = np.frombuffer(mass_in_fp.read(read_number), np_dtype_numtype[data_fmt[-1]])
                 else:
-                    read_number=int(int(data_fmt[:2]) * int(data_num) / 8)
+                    read_number = int(int(data_fmt[:2]) * int(data_num) / 8)
                     number_array = np.frombuffer(int_in_fp.read(read_number), np_dtype_numtype[data_fmt[-1]])
                     i += 1
                 f_out.write('<binary>%s</binary>\n' % base64_encoder(number_array, data_compression))
 
             else:
-                f_out.write(line)
+                f_out.write(line+compression_end)
 
     # Close file pointers
     mass_in_fp.close()
     int_in_fp.close()
-    smzml_file.close()
-
-
+    if compression != 'zstd':
+        smzml_file.close()
 
 
 if __name__ == '__main__':
@@ -274,7 +300,7 @@ if __name__ == '__main__':
     # bmass_file = r'J:\mass_cloud\projects_folder\1000111\test\fusion_20200116_qjl_YLD_19.bmass'
     # bint_file = r'J:\mass_cloud\projects_folder\1000111\test\fusion_20200116_qjl_YLD_19.bint'
     # mzml_out = r'J:\mass_cloud\projects_folder\1000111\test\test2.mzML'
-
+    start = time.time()
     __status__ = "Development"
     __version__ = "0.0.1"
 
@@ -291,14 +317,13 @@ if __name__ == '__main__':
 
     # Creating the parser object
     parser = argparse.ArgumentParser(
-        description="MSCompress is used for highly efficient compression of mass spec raw data"
+        description="MSCompress is used to high efficiently compress mass spec raw data"
     )
-
 
     # Add required argument group
     required = parser.add_argument_group("required arguments")
     required.add_argument(
-        "-i","--mzml", help="mzml file path",
+        "-i", "--mzml", help="mzml file path",
         required=True
     )
     required.add_argument(
@@ -317,12 +342,14 @@ if __name__ == '__main__':
         "--spec_no", help="specify spec number or spec number range. if not specified, process all"
     )
     optional.add_argument(
-        "--spec_type", help="MS1, MS2 or all", default="all", choices=('MS1','MS2','all')
+        "--spec_type", help="MS1, MS2 or all", default="all", choices=('MS1', 'MS2', 'all')
     )
     optional.add_argument(
-        "--loss_type", help="lossless or lossy compression", default="lossless", choices=("lossless",'lossy')
+        "--loss_type", help="lossless or lossy compression", default="lossless", choices=("lossless", 'lossy')
     )
-
+    optional.add_argument(
+        "--compression", help="compression method, zstandard [zstd], turbopfor [tp], auto [auto]", default="auto", choices=("zstd", 'tp', 'auto')
+    )
     # parse arguments
     args = parser.parse_args()
 
@@ -340,15 +367,17 @@ if __name__ == '__main__':
     smzml = mzml_input.replace('.mzML', '.smzml')
 
     if args.loss_type == 'lossless':
-        mzml_splitter(mzml_input)
+        mzml_splitter(mzml_input, compression=args.compression)
     elif args.loss_type == 'lossy':
-        mzml_lossy_splitter(mzml_input)
+        mzml_lossy_splitter(mzml_input, compression=args.compression)
     else:
         raise ValueError("only lossless and lossy compression could be performed")
 
-    mzml_decoder(smzml,mass_binary_file,int_binary_file,mzs_output)
+    print("total time for packing: %ss" % (time.time()-start))
+    start=time.time()
 
-
+    mzml_decoder(smzml, mass_binary_file, int_binary_file, mzs_output, compression=args.compression)
+    print("total time for unpacking: %ss"% (time.time()-start))
     # import pandas as pd
     # compressed_time = 'D:/data/mscompress/testfile_decompresstime.xlsx'
     # df = pd.read_excel(compressed_time,index_col=0)
