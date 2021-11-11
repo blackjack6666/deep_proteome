@@ -184,15 +184,15 @@ for each in tryp_thermo_cov_dict:
 """
 
 
-df_native = pd.read_excel('D:/data/native_protein_digestion/native_digest_cassette_aggrecov.xlsx',index_col=0)
-protein_list = df_native.index
-df_raw = pd.read_excel('D:/data/native_protein_digestion/raw_result.xlsx',index_col=0)
-columns = [x[0] for x in os.walk('D:/data/native_protein_digestion/11052021/search_result/')][1:]
-print (columns)
-# proteid_ids_dict = {time:df_raw.loc[df_raw[time+'_1_native_total_spec']!=0].index.tolist() for time in columns}
-peptide_ids_dict = {time:peptide_counting(time+'/peptide.tsv') for time in columns}
-combined_prot_tsv = 'D:/data/native_protein_digestion/11052021/search_result/combined_protein.tsv'
-combined_prot_dict = combined_proteintsv_map(combined_prot_tsv)
+# df_native = pd.read_excel('D:/data/native_protein_digestion/native_digest_cassette_aggrecov.xlsx',index_col=0)
+# protein_list = df_native.index
+# df_raw = pd.read_excel('D:/data/native_protein_digestion/raw_result.xlsx',index_col=0)
+# columns = [x[0] for x in os.walk('D:/data/native_protein_digestion/11052021/search_result/')][1:]
+# print (columns)
+# # proteid_ids_dict = {time:df_raw.loc[df_raw[time+'_1_native_total_spec']!=0].index.tolist() for time in columns}
+# peptide_ids_dict = {time:peptide_counting(time+'/peptide.tsv') for time in columns}
+# combined_prot_tsv = 'D:/data/native_protein_digestion/11052021/search_result/combined_protein.tsv'
+# combined_prot_dict = combined_proteintsv_map(combined_prot_tsv)
 
 
 ### heatmap
@@ -246,7 +246,7 @@ for i in range(len(columns)):
 """
 
 ### mass distribution
-
+"""
 from tsv_reader import pep_mass_dist
 from calculations_and_plot import protein_mass
 import pickle
@@ -263,8 +263,9 @@ plt.ylabel('frequency')
 plt.show()
 # pep_mass_dist(pep_path_list,plot='kde')
 """
-### covered distance analysis
 
+### covered distance analysis
+"""
 fig,axs = plt.subplots(1,1, figsize=(10,8))
 
 df = pd.read_excel('D:/data/native_protein_digestion/11052021/cov_distance_fillw_previous.xlsx',index_col=0)
@@ -287,6 +288,7 @@ num_prot = df.shape[0]
 for each in df:
     print (each, df[each].mean())
 x = range(1,13)
+"""
 #
 #line plot
 # for tp in df_new.itertuples(index=False):
@@ -295,16 +297,45 @@ x = range(1,13)
 # axs.set_xticklabels(list(df_new.columns), fontsize=12,ha="center", rotation=45)
 
 #heatmap
-# g = sns.clustermap(data=df_new,cbar_kws={'label': 'distance to protein centroid','shrink': 0.5},
-#                cmap="YlGnBu",yticklabels=False)
+df = pd.read_excel('D:/data/native_protein_digestion/10282021/h20_cov_dist_centroid_mean_nadrop.xlsx',index_col=0)
+df_new = df.iloc[:,:4]
+g = sns.clustermap(data=df_new,cbar_kws={'label': 'distance to protein centroid','shrink': 0.5},
+               cmap="viridis",yticklabels=False)
 # g.set_xticklabels(labels=list(df_new.columns), ha='right',fontsize=10,rotation = 45)
-
+plt.show()
 
 ### violin plot
+"""
 # time_point_list = [each for each in df.columns for i in range(num_prot)]
 # dist_list = [v for each in df.columns for v in df[each]]
 # df_violin = pd.DataFrame(dict(timepoints=time_point_list,
 #                               dist=dist_list))
 # sns.violinplot(data=df_violin,x='timepoints',y='dist',ax =axs)
 # plt.show()
+"""
+
+### swarmplot
+"""
+df = pd.read_excel('D:/data/native_protein_digestion/10282021/h20_cov_dist_centroid_mean_nadrop.xlsx',index_col=0)
+df_swarmplot = pd.DataFrame(dict(distance=df['01h_h2o'].tolist()+df['02h_h2o'].tolist()+
+                                df['04h_h2o'].tolist()+df['20h_h2o'].tolist(),
+                       time_point=[1]*df.shape[0]+[2]*df.shape[0]+[4]*df.shape[0]+[20]*df.shape[0],
+                       gene=df['gene'].tolist()*4,
+                       description=df['description'].tolist()*4,len=df['length'].tolist()*4,
+                       mass=df['mass'].tolist()*4),index=df.index.tolist()*4)
+
+fig,ax = plt.subplots(1,1, figsize=(8,5))
+colormap = {1: '#FF3F33', 2: '#36FF33', 4: '#F033FF', 20: '#33B8FF'}
+
+g = sns.swarmplot(ax=ax,data=df_swarmplot, x='time_point', y='distance', hue='time_point',size=2, palette=colormap,
+                   dodge=False)
+add_stat_annotation(ax=ax, data=df_swarmplot, x='time_point', y='distance',
+                        box_pairs=[(1,2),
+                                   (2,4),
+                                   (4,20)
+                                   ],
+                        test='Wilcoxon', text_format='star',loc='inside', verbose=2,comparisons_correction='bonferroni')
+# plt.xticks(rotation=30)
+# plt.show()
+plt.savefig('D:/data/native_protein_digestion/10282021/search_result_4miss/h20/dist_swarmplot.png',dpi=300)
 """
