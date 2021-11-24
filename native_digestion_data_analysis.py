@@ -13,43 +13,38 @@ from statannot import add_stat_annotation
 import pickle as ppp
 import matplotlib
 import os
+from glob import glob
 
 fasta_path = 'D:/data/pats/human_fasta/uniprot-proteome_UP000005640_sp_only.fasta'
 protein_dict = fasta_reader(fasta_path)
 ### process tsv files
-base_path = 'D:/data/native_protein_digestion/11052021/search_result/'
-folders = [base_path+folder for folder in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, folder))]
+# base_path = 'D:/data/native_protein_digestion/11052021/search_result/'
+# folders = [base_path+folder for folder in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, folder))]
+#
+# psm_path_list = [each+'/psm.tsv' for each in folders]
+# pep_path_list = [each+'/peptide.tsv' for each in folders]
+# print (pep_path_list)
 
-psm_path_list = [each+'/psm.tsv' for each in folders]
-pep_path_list = [each+'/peptide.tsv' for each in folders]
-print (pep_path_list)
-
+### get raw summary report
 """
 protein_info_dict = protein_info_from_fasta(fasta_path)
 
-total_protein_set = protein_reader('D:/data/native_protein_digestion/combined_protein.tsv')
+total_protein_set = protein_reader('D:/data/native_protein_digestion/11052021/search_result/combined_protein.tsv')
 
-base_path = 'D:/data/native_protein_digestion/'
+base_path = 'D:/data/native_protein_digestion/11052021/search_result/'
 folders = [base_path+folder for folder in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, folder))]
 
 print (folders)
 psm_path_list = [each+'/psm.tsv' for each in folders]
 pep_path_list = [each+'/peptide.tsv' for each in folders]
 
-
-
-file_list = ['1h_1_native','2h_1_native','4h_1_native','18h_1_native','30min_1_native_parallel','1h_1_native_parallel',
-             '2h_1_native_parallel','4h_1_native_parallel','8h_1_native_parallel','18h_1_native_parallel']
-
+file_list = [each.split('\\')[-2] for each in glob(base_path+'*/')]
 
 file_protein_cov_dict, file_id_pep_dict,file_unique_id_pep_dict, file_prot_spec_dict,file_unique_id_pep_count_dict,file_id_pep_count_dict  = dash_dataframe(pep_path_list,psm_path_list,protein_dict,psm_path_list,psm_path_list,psm_path_list)
 file_protein_info_dict = {file:protein_info_dict for file in file_list}
 
 protein_mass_dict = protein_mass_calculator(total_protein_set,protein_dict)
 
-# combined_protein_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/SNEDC/combined_protein.tsv'
-# file_protein_spec_dict = combined_proteintsv_map(combined_protein_path)
-# protein_info_dict = protein_info_from_combined(combined_protein_path)
 column =['gene','MW']+[file+'_'+i for file in file_list for i in ['total_spec', 'total peptides identified', 'total peptides count','coverage','unique peptides identified', 'unique peptides count']]
 
 print (column)
@@ -66,15 +61,14 @@ for prot in total_protein_set:
                 df_info.at[prot,file+'_'+i]=j[file][prot]
             else:
                 df_info.at[prot,file+'_'+i]=0
-df_info.to_excel('D:/data/native_protein_digestion/raw_result.xlsx')
-
+df_info.to_excel('D:/data/native_protein_digestion/11052021/raw_result.xlsx')
 """
 ### aggregate coverage from dialysis cassette digestion
+
+df = pd.read_excel('D:/data/native_protein_digestion/11052021/raw_result.xlsx',index_col=0)  # manually delete
+base_path = 'D:/data/native_protein_digestion/11052021/search_result/'
+time_points = [each.split('\\')[-2] for each in glob(base_path+'*/')]
 """
-df = pd.read_excel('D:/data/native_protein_digestion/raw_result.xlsx',index_col=0)  # manually delete
-
-time_points = ['1h','2h','4h','18h']
-
 df_aggregated = pd.DataFrame()
 protein_aggre_peptide_dict = {}
 for each in df.index:
@@ -91,7 +85,7 @@ for each in df.index:
 
         aggreted_peptide_set = set()
         for each_time in indx_list:
-            total_peptides = df.at[each, each_time + '_1_native_total peptides identified']
+            total_peptides = df.at[each, each_time + '_total peptides identified']
             if total_peptides != 0:
                 if ', ' in total_peptides:
                     for pep in total_peptides.split(', '):
@@ -103,7 +97,7 @@ for each in df.index:
         # aggre_unique_pepset = set()
         # for each_time in indx_list:
         #     unique_peptides = df.at[each, sample[:-1] + each_time + sample[-1] + '_total peptides identified']
-        #     if unique_peptides != 'set()' and unique_peptides != 0:
+        #     if unique_peptides !=  'set()' and unique_peptides != 0:
         #         if ', ' in unique_peptides:
         #             for pep in unique_peptides.split(', '):
         #                 aggre_unique_pepset.add(pep)
@@ -117,11 +111,56 @@ for each in df.index:
             np_array[pep_loc:pep_end_loc] += 1
         aggregated_cov = np.count_nonzero(np_array) / len(np_array) * 100
 
-        df_aggregated.at[each, time + '_1_native_aggre_coverage'] = aggregated_cov 
+        df_aggregated.at[each, time + '_aggre_coverage'] = aggregated_cov
         # df_aggregated.at[each, sample + '_' + time + '_aggre_unique_pep_count'] = aggregated_unique_pep_count
 
-df_aggregated.to_excel('D:/data/native_protein_digestion/dialysis_casset_aggre_cov.xlsx')
+df_aggregated.to_excel('D:/data/native_protein_digestion/11182021/search_result_XS/aggre_cov.xlsx')
 """
+
+### get unique coverage at each time point (calculated by mapping peptides only showed at current time point, filter
+### peptides from previous time points)
+"""
+df_unique = pd.DataFrame()
+protein_aggre_peptide_dict = {}
+for each in df.index:
+    print (each)
+    protein_seq = protein_dict[each]
+    gene = df.at[each,'gene']
+    MW = df.at[each,'MW']
+    df_unique.at[each, 'gene'] = gene
+    df_unique.at[each, 'MW_kDa'] = MW
+
+    all_peptides = set()
+    for ind, time in enumerate(time_points):
+        np_array = np.zeros(len(protein_seq))
+        peptide_list = df.at[each, time+'_total peptides identified']
+        # print (peptide_list)
+        if peptide_list!=0:
+            if ', ' in peptide_list:
+                peptide_list = peptide_list.split(', ')
+            else:
+                peptide_list = [peptide_list]
+
+            unique_peptides = [each for each in peptide_list if each not in all_peptides]
+            # print (time,unique_peptides)
+            for i in unique_peptides:
+                all_peptides.add(i)
+            if unique_peptides != []:
+                for pep in unique_peptides:
+                    pep_loc = protein_seq.find(pep)
+                    pep_end_loc = pep_loc + len(pep)
+                    np_array[pep_loc:pep_end_loc] += 1
+                unique_cov = np.count_nonzero(np_array) / len(np_array) * 100
+                df_unique.at[each,time+'_unique_cov'] = unique_cov
+
+            else:
+                df_unique.at[each, time + '_unique_cov'] = 0
+        # when no peptides identified
+        else:
+            df_unique.at[each,time+'_unique_cov'] = 0
+df_unique.to_excel('D:/data/native_protein_digestion/11052021//unique_cov.xlsx')
+"""
+
 """
 df_ecm = pd.read_excel('D:/data/Naba_deep_matrisome/matrisome coverage_norepeat.xlsx')
 df_native = pd.read_excel('D:/data/native_protein_digestion/dialysis_casset_aggre_cov.xlsx',index_col=0)
@@ -268,10 +307,15 @@ plt.show()
 """
 fig,axs = plt.subplots(1,1, figsize=(10,8))
 
-df = pd.read_excel('D:/data/native_protein_digestion/11052021/cov_distance_fillw_previous.xlsx',index_col=0)
+df = pd.read_excel('D:/data/native_protein_digestion/11182021/search_result_RN/cov_distance_each_unique_RN.xlsx',index_col=0)
 # df = df.T.ffill().bfill()
+
 df = df.dropna()
+
+# df = df.T
+
 columns = list(df.columns)
+print(columns)
 idx = list(df.index)
 new_columns = [str(int(columns[i][:4]))+'_'+str(int(columns[i+1][:4]))+'min' for i in range(len(columns)-1)]
 
@@ -287,23 +331,26 @@ df_new = df_new.astype(float)
 num_prot = df.shape[0]
 for each in df:
     print (each, df[each].mean())
-x = range(1,13)
-"""
+x = range(1,len(new_columns)+1)
+
 #
 #line plot
-# for tp in df_new.itertuples(index=False):
-#     axs.plot(x,[i for i in tp],linestyle='-',alpha=0.8)
-# axs.set_xticks(x)
-# axs.set_xticklabels(list(df_new.columns), fontsize=12,ha="center", rotation=45)
+for tp in df_new.itertuples(index=False):
+    axs.plot(x,[i for i in tp],linestyle='-',alpha=0.8)
+axs.set_xticks(x)
+axs.set_xticklabels(list(df_new.columns), fontsize=12,ha="center", rotation=45)
+plt.show()
+"""
 
 #heatmap
+"""
 df = pd.read_excel('D:/data/native_protein_digestion/10282021/h20_cov_dist_centroid_mean_nadrop.xlsx',index_col=0)
 df_new = df.iloc[:,:4]
 g = sns.clustermap(data=df_new,cbar_kws={'label': 'distance to protein centroid','shrink': 0.5},
                cmap="viridis",yticklabels=False)
 # g.set_xticklabels(labels=list(df_new.columns), ha='right',fontsize=10,rotation = 45)
 plt.show()
-
+"""
 ### violin plot
 """
 # time_point_list = [each for each in df.columns for i in range(num_prot)]
@@ -339,3 +386,72 @@ add_stat_annotation(ax=ax, data=df_swarmplot, x='time_point', y='distance',
 # plt.show()
 plt.savefig('D:/data/native_protein_digestion/10282021/search_result_4miss/h20/dist_swarmplot.png',dpi=300)
 """
+
+### generate coverage excel between two replicates
+"""
+df_XS = pd.read_excel('D:/data/native_protein_digestion/11182021/search_result_XS/unique_cov_XS.xlsx', index_col=0)
+df_RN = pd.read_excel('D:/data/native_protein_digestion/11052021/unique_cov_11052021.xlsx',index_col=0)
+
+protein_list_XS, protein_list_RN = df_XS.index.tolist(), df_RN.index.tolist()
+protein_to_check = [each for each in protein_list_XS if each in protein_list_RN]  # get overlapped proteins
+
+xs_columns = df_XS.columns.tolist()[3:]
+rn_columns = [each+'_unique_cov' for each in ['0030min','0060min','0120min','0240min','0480min','1320min','1800min']]
+print (xs_columns,rn_columns)
+df_plot = pd.DataFrame(columns=xs_columns+rn_columns)
+for prot in protein_to_check:
+    cov_xs = df_XS.loc[prot,xs_columns].tolist()
+    cov_rn = df_RN.loc[prot,rn_columns].tolist()
+    df_plot.loc[prot] = cov_xs+cov_rn
+
+df_plot.to_excel('D:/data/native_protein_digestion/11182021/unique_cov_XS_1105_1108.xlsx')
+"""
+
+### generate residue-to-centroid distance between replicates
+"""
+df_XS = pd.read_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov_distance_each_unique_XS.xlsx',index_col=0)
+df_RN = pd.read_excel('D:/data/native_protein_digestion/11052021/cov_distance_each_unique.xlsx',index_col=0)
+protein_list_XS, protein_list_RN = df_XS.index.tolist(), df_RN.index.tolist()
+protein_to_check = [each for each in protein_list_XS if each in protein_list_RN]
+
+xs_columns = df_XS.columns.tolist()[1:]
+rn_columns = [each for each in ['0030min','0060min','0120min','0240min','0480min','1320min','1800min']]
+df_plot = pd.DataFrame(columns=xs_columns+rn_columns)
+for prot in protein_to_check:
+    cov_xs = df_XS.loc[prot,xs_columns].tolist()
+    cov_rn = df_RN.loc[prot,rn_columns].tolist()
+    df_plot.loc[prot] = cov_xs+cov_rn
+df_plot.to_excel('D:/data/native_protein_digestion/11182021/residue_dist_XS_1105_1118.xlsx')
+"""
+
+### scatter plot of plddt and similarity between replicates
+"""
+from scipy import stats
+df = pd.read_excel('D:/data/native_protein_digestion/11182021/cos_sim_plddt_xs_rn.xlsx',index_col=0)
+
+# slope, intercept, r_value, p_value, std_err = stats.linregress(df.dropna()['Euclidean'],df.dropna()['ave_plddt'],)
+# ax = sns.regplot(data=df.dropna(), x='Euclidean',y='ave_plddt',color='k',scatter_kws={'s':5},
+#                  line_kws={'label':"y={0:.1f}x+{1:.1f}".format(slope,intercept)})
+# ax.legend()
+# sns.kdeplot(data=df.dropna(),x='Euclidean')
+sns.kdeplot(data=df.dropna(),x='distance_cossim',color='k')
+plt.show()
+"""
+
+### correlation plot heatmap
+
+d_corr = pd.read_excel('D:/data/native_protein_digestion/11182021/residue_dist_XS_1105_1118.xlsx',index_col=0).corr()
+print (d_corr)
+# mask = np.triu(np.ones_like(d_corr, dtype=bool))
+mask =  np.triu(d_corr)
+# Set up the matplotlib figure
+f, ax = plt.subplots(figsize=(11, 9))
+
+# Generate a custom diverging colormap
+# cmap = sns.diverging_palette(230, 20, as_cmap=True)
+
+# Draw the heatmap with the mask and correct aspect ratio
+sns.heatmap(d_corr, cmap='viridis', mask=mask, annot=True,
+            square=True, linewidths=.5, cbar_kws={"shrink": .5})
+
+plt.show()

@@ -74,7 +74,7 @@ from tsv_reader import protein_info_from_fasta
 # df_raw['mass'] = [protein_mass(protein_dict[each]) for each in prot_list]
 # df_raw.to_excel('D:/data/native_protein_digestion/10282021/h20_cov_dist_centroid_mean_nadrop.xlsx')
 
-df_raw = pd.read_excel('D:/uic/lab/native_protein_digestion/h20_cov_dist_centroid_mean_nadrop.xlsx',index_col=0)
+df_raw = pd.read_excel('D:/data/native_protein_digestion/10282021/h20_cov_dist_centroid_mean_nadrop.xlsx',index_col=0)
 df = pd.DataFrame(dict(distance=df_raw['01h_h2o'].tolist()+df_raw['02h_h2o'].tolist()+
                                 df_raw['04h_h2o'].tolist()+df_raw['20h_h2o'].tolist(),
                        time_point=[1]*df_raw.shape[0]+[2]*df_raw.shape[0]+[4]*df_raw.shape[0]+[20]*df_raw.shape[0],
