@@ -15,6 +15,7 @@ import matplotlib
 import os
 from glob import glob
 
+
 fasta_path = 'D:/data/pats/human_fasta/uniprot-proteome_UP000005640_sp_only.fasta'
 protein_dict = fasta_reader(fasta_path)
 ### process tsv files
@@ -65,9 +66,9 @@ df_info.to_excel('D:/data/native_protein_digestion/11052021/raw_result.xlsx')
 """
 ### aggregate coverage from dialysis cassette digestion
 
-df = pd.read_excel('D:/data/native_protein_digestion/11052021/raw_result.xlsx',index_col=0)  # manually delete
-base_path = 'D:/data/native_protein_digestion/11052021/search_result/'
-time_points = [each.split('\\')[-2] for each in glob(base_path+'*/')]
+# df = pd.read_excel('D:/data/native_protein_digestion/11052021/raw_result.xlsx',index_col=0)  # manually delete
+# base_path = 'D:/data/native_protein_digestion/11052021/search_result/'
+# time_points = [each.split('\\')[-2] for each in glob(base_path+'*/')]
 """
 df_aggregated = pd.DataFrame()
 protein_aggre_peptide_dict = {}
@@ -304,43 +305,59 @@ plt.show()
 """
 
 ### covered distance analysis
-"""
+
 fig,axs = plt.subplots(1,1, figsize=(10,8))
 
-df = pd.read_excel('D:/data/native_protein_digestion/11182021/search_result_RN/cov_distance_each_unique_RN.xlsx',index_col=0)
+df = pd.read_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov_plddt_XS.xlsx',index_col=0)
 # df = df.T.ffill().bfill()
-
+# print (df)
 df = df.dropna()
 
 # df = df.T
 
-columns = list(df.columns)
-print(columns)
-idx = list(df.index)
-new_columns = [str(int(columns[i][:4]))+'_'+str(int(columns[i+1][:4]))+'min' for i in range(len(columns)-1)]
 
-print (new_columns)
+# columns = list(df.columns)
 #
-df_new = pd.DataFrame(index=df.index, columns=new_columns)
-for i in range(df.shape[0]):
-    for j in range(df.shape[1]-1):
-        df_new.at[idx[i],new_columns[j]] = (df.iloc[i,j+1]-df.iloc[i,j])/(int(columns[j+1][:4])-int(columns[j][:4]))
-# df_new.to_excel('D:/data/native_protein_digestion/11052021/distance_change_rate.xlsx')
-df_new = df_new.astype(float)
+# idx = list(df.index)
+# new_columns = [str(int(columns[i][:4]))+'_'+str(int(columns[i+1][:4]))+'min' for i in range(len(columns)-1)]
+#
+# print (new_columns)
+# ### calculate first derivative of cov distance
+#
+# df_new = pd.DataFrame(index=df.index, columns=new_columns)
+# for i in range(df.shape[0]):
+#     for j in range(df.shape[1]-1):
+#         df_new.at[idx[i],new_columns[j]] = (df.iloc[i,j+1]-df.iloc[i,j])/(int(columns[j+1][:4])-int(columns[j][:4]))
+# # df_new.to_excel('D:/data/native_protein_digestion/11052021/distance_change_rate.xlsx')
+# df_new = df_new.astype(float)
+#
+#
+# num_prot = df.shape[0]
+# for each in df:
+#     print (each, df[each].mean())
+# x = range(1,len(new_columns)+1)
 
-num_prot = df.shape[0]
-for each in df:
-    print (each, df[each].mean())
-x = range(1,len(new_columns)+1)
+df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_plddt=df.to_numpy().flatten()))
+print (df_plot)
+# sns.regplot(x='time',y='cov_plddt',data=df_plot,color='k')
+sns.boxplot(x='time',y='cov_plddt',data=df_plot,linewidth=2.5)
+# sns.kdeplot(data=df_plot, x="cov_plddt", hue="time",legend=False)
+add_stat_annotation(axs,data=df_plot, x='time',y='cov_plddt',box_pairs=[(1,2),(1,8),(2,8)],test='Wilcoxon',
+                    text_format='star',loc='outside', verbose=2)
+# plt.xlim([0, 9])
+# axs.set_xticks(range(1,9))
+axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
+# plt.legend(title='Time', loc='upper right', labels=list(df.columns))
+plt.show()
 
 #
 #line plot
-for tp in df_new.itertuples(index=False):
-    axs.plot(x,[i for i in tp],linestyle='-',alpha=0.8)
-axs.set_xticks(x)
-axs.set_xticklabels(list(df_new.columns), fontsize=12,ha="center", rotation=45)
-plt.show()
-"""
+# for tp in df_new.itertuples(index=False):
+#     axs.plot(x,[i for i in tp],linestyle='-',alpha=0.8)
+# axs.set_xticks(x)
+# axs.set_xticklabels(list(df_new.columns), fontsize=12,ha="center", rotation=45)
+# plt.show()
+
 
 #heatmap
 """
@@ -439,7 +456,7 @@ plt.show()
 """
 
 ### correlation plot heatmap
-
+"""
 d_corr = pd.read_excel('D:/data/native_protein_digestion/11182021/residue_dist_XS_1105_1118.xlsx',index_col=0).corr()
 print (d_corr)
 # mask = np.triu(np.ones_like(d_corr, dtype=bool))
@@ -455,3 +472,4 @@ sns.heatmap(d_corr, cmap='viridis', mask=mask, annot=True,
             square=True, linewidths=.5, cbar_kws={"shrink": .5})
 
 plt.show()
+"""
