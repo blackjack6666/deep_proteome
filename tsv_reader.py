@@ -470,6 +470,63 @@ def get_unique_peptide(list_of_peptsv:list):
     return unique_peptide_dict
 
 
+def map_k_r(psm_list, protein_dict):
+    """
+    map the start and end of each tryptic peptide
+    :param psm_list:
+    :param protein_dict:
+    :param regex_dict: {regex:HEX color}
+    :return:
+    """
+
+    import time
+    import multiprocessing_naive_algorithym
+    from aho_corasick import automaton_matching,automaton_trie
+
+    id_kr_mapp_dict = {}
+
+    # aho mapping
+    id_list, seq_list = multiprocessing_naive_algorithym.extract_UNID_and_seq(protein_dict)
+    seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list, sep="|")
+    zero_line = multiprocessing_naive_algorithym.zero_line_for_seq(seq_line)
+    separtor_pos_array = multiprocessing_naive_algorithym.separator_pos(seq_line)
+
+    aho_result = automaton_matching(automaton_trie(psm_list), seq_line)
+    for tp in aho_result:
+        # matched_pep = tp[2]  # without ptm site
+        zero_line[tp[0]-1]+=1
+        zero_line[tp[1]]+=1
+
+    time_start = time.time()
+    for i in range(len(separtor_pos_array)-1):
+        zero_line_slice = zero_line[separtor_pos_array[i]+1:separtor_pos_array[i+1]]
+        if np.count_nonzero(zero_line_slice) != 0:
+            id_kr_mapp_dict[id_list[i]] = zero_line_slice
+
+
+    return id_kr_mapp_dict
+
+
+def kr_calculate(id_kr_mapp_dict,protein_dict):
+    """
+    calculate the number of K and R being cut for each protein
+    :param id_kr_mapp_dict:
+    :param protein_dict:
+    :return:
+    """
+
+    from collections import Counter
+    id_kr_count_dict = {}
+    k_sum, r_sum = 0,0
+    for prot in id_kr_mapp_dict:
+        kr_index = np.nonzero(id_kr_mapp_dict[prot])[0]
+        prot_seq = protein_dict[prot]
+        kr_count_dict = Counter([prot_seq[idx] for idx in kr_index])
+        k_sum += kr_count_dict['K']
+        r_sum += kr_count_dict['R']
+        id_kr_count_dict[prot] = {'K': kr_count_dict['K'],'R':kr_count_dict['R']}
+    return id_kr_count_dict,k_sum,r_sum
+
 if __name__=="__main__":
     from glob import glob
     import numpy as np
