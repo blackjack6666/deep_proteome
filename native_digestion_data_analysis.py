@@ -305,14 +305,18 @@ plt.show()
 """
 
 ### covered distance analysis
-
+"""
+import pymannkendall as mk
 fig,axs = plt.subplots(1,1, figsize=(10,8))
 
-df = pd.read_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov_plddt_XS.xlsx',index_col=0)
+df = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock/cov_KR_density_heatshock.xlsx',index_col=0)
 # df = df.T.ffill().bfill()
 # print (df)
-df = df.dropna()
-
+# df = df.dropna()
+# print(df.mean())
+mk_result = mk.original_test(df.median().tolist())
+df = df.fillna(df.mean())
+print(mk_result)
 # df = df.T
 
 
@@ -337,27 +341,28 @@ df = df.dropna()
 #     print (each, df[each].mean())
 # x = range(1,len(new_columns)+1)
 
-df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_plddt=df.to_numpy().flatten()))
-print (df_plot)
-# sns.regplot(x='time',y='cov_plddt',data=df_plot,color='k')
-sns.boxplot(x='time',y='cov_plddt',data=df_plot,linewidth=2.5)
+df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
+
+sns.regplot(x='time',y='cov_KR_dens',data=df_plot,color='k')
+# sns.boxplot(x='time',y='cov_KR_dens',data=df_plot,linewidth=2.5)
 # sns.kdeplot(data=df_plot, x="cov_plddt", hue="time",legend=False)
-add_stat_annotation(axs,data=df_plot, x='time',y='cov_plddt',box_pairs=[(1,2),(1,8),(2,8)],test='Wilcoxon',
-                    text_format='star',loc='outside', verbose=2)
-# plt.xlim([0, 9])
-# axs.set_xticks(range(1,9))
+# add_stat_annotation(axs,data=df_plot, x='time',y='cov_KR_dens',box_pairs=[(1,2)],test='Wilcoxon',
+#                     text_format='star',loc='inside', verbose=2)
+plt.xlim([0,8])
+axs.set_xticks(range(1,8))
 axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
 # plt.legend(title='Time', loc='upper right', labels=list(df.columns))
 plt.show()
 
 #
-#line plot
-# for tp in df_new.itertuples(index=False):
+## line plot
+# x = range(1,len(df.columns)+1)
+# for tp in df.itertuples(index=False):
 #     axs.plot(x,[i for i in tp],linestyle='-',alpha=0.8)
 # axs.set_xticks(x)
-# axs.set_xticklabels(list(df_new.columns), fontsize=12,ha="center", rotation=45)
+# axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
 # plt.show()
-
+"""
 
 #heatmap
 """
@@ -472,4 +477,46 @@ sns.heatmap(d_corr, cmap='viridis', mask=mask, annot=True,
             square=True, linewidths=.5, cbar_kws={"shrink": .5})
 
 plt.show()
+"""
+### mapped cleavage density analysis
+
+def cosine_sim_calculating(v1, v2):
+    """
+    calculate the cosine similarity beweeen two b/y ions binned vectors
+    :param v1:
+    :param v2:
+    :return:
+    """
+    from scipy import spatial
+    return 1-spatial.distance.cosine(v1,v2)
+"""
+df = pd.read_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov_KR_density.xlsx',index_col=0)
+df_fill = df.fillna(df.mean())
+mean_array = df_fill.mean().tolist()
+
+for tp in df_fill.itertuples(index=True):
+    protein = tp[0]
+    kr_density = tp[1:]
+    cos_sim = cosine_sim_calculating(kr_density,mean_array)
+    df_fill.at[protein,'cos_sim_with_mean'] = cos_sim
+
+df_fill.to_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov_KR_density_cosine.xlsx')
+"""
+
+### spearman correlation analysis of cleaved K/R densities between control and heat shock
+"""
+df_control = pd.read_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov_KR_density.xlsx',index_col=0)
+df_heatshock = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock/cov_KR_density_heatshock.xlsx',index_col=0)
+from scipy.stats import spearmanr
+
+df_control_median = df_control.median().tolist()
+df_control_fill = df_control.fillna(df_control.median())
+
+df_spearman = pd.DataFrame(index=df_control.index, columns=['spearman correlation', 'p value'])
+for tp in df_control_fill.itertuples():
+    prot, kr_densities = tp[0], tp[1:]
+    corr, p_val = spearmanr(kr_densities,df_control_median,nan_policy='omit')
+    df_spearman.at[prot,'spearman correlation'] = corr
+    df_spearman.at[prot,'p value'] = p_val
+df_spearman.to_excel('D:/data/native_protein_digestion/11182021/search_result_XS/spearman_corr_pval.xlsx')
 """
