@@ -305,17 +305,17 @@ plt.show()
 """
 
 ### covered distance analysis
-"""
+
 import pymannkendall as mk
 fig,axs = plt.subplots(1,1, figsize=(10,8))
 
-df = pd.read_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov_KR_density.xlsx',index_col=0)
+df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx',index_col=0)
 # df = df.T.ffill().bfill()
 # print (df)
 # df = df.dropna()
 # print(df.mean())
 mk_result = mk.original_test(df.median().tolist())
-df = df.fillna(df.median())
+# df = df.fillna(df.median())
 print(mk_result)
 # df = df.T
 
@@ -341,27 +341,27 @@ print(mk_result)
 #     print (each, df[each].mean())
 # x = range(1,len(new_columns)+1)
 
-df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
+# df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
 
-sns.regplot(x='time',y='cov_KR_dens',data=df_plot,color='k')
+# sns.regplot(x='time',y='cov_KR_dens',data=df_plot,color='k')
 # sns.boxplot(x='time',y='cov_KR_dens',data=df_plot,linewidth=2.5)
 # sns.kdeplot(data=df_plot, x="cov_plddt", hue="time",legend=False)
 # add_stat_annotation(axs,data=df_plot, x='time',y='cov_KR_dens',box_pairs=[(1,2)],test='Wilcoxon',
 #                     text_format='star',loc='inside', verbose=2)
-plt.xlim([0,8])
-axs.set_xticks(range(1,8))
-axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
+# plt.xlim([0,8])
+# axs.set_xticks(range(1,8))
+# axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
 # plt.legend(title='Time', loc='upper right', labels=list(df.columns))
-plt.show()
-"""
+# plt.show()
+
 #
 ## line plot
-# x = range(1,len(df.columns)+1)
-# for tp in df.itertuples(index=False):
-#     axs.plot(x,[i for i in tp],linestyle='-',alpha=0.8)
-# axs.set_xticks(x)
-# axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
-# plt.show()
+x = range(1,len(df.columns)+1)
+for tp in df.itertuples(index=False):
+    axs.plot(x,[i for i in tp],linestyle='-',alpha=0.8)
+axs.set_xticks(x)
+axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
+plt.show()
 
 
 #heatmap
@@ -504,8 +504,8 @@ df_fill.to_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov
 """
 
 ### spearman correlation analysis of cleaved K/R densities between control and heat shock
-
-df_control = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density.xlsx',index_col=0)
+"""
+df_control = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock/cov_KR_density_heatshock.xlsx',index_col=0)
 # df_heatshock = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock/cov_KR_density_heatshock.xlsx',index_col=0)
 from scipy.stats import spearmanr
 
@@ -522,12 +522,23 @@ for tp in df_control.itertuples():
     except:
         df_spearman.at[prot, 'spearman correlation'] = 0
         df_spearman.at[prot,'p value'] = 0
-df_spearman.to_excel('D:/data/native_protein_digestion/12072021/control/spearman_corr_pval_nofill.xlsx')
+df_spearman.to_excel('D:/data/native_protein_digestion/12072021/heat_shock/spearman_corr_pval_nofill.xlsx')
 
-
-# df_spearman = pd.read_excel('D:/data/native_protein_digestion/11182021/search_result_RN/spearman_corr_pval_RN.xlsx',index_col=0)
+"""
+# df_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock/spearman_corr_pval_nofill.xlsx',index_col=0)
+# df_spearman = df_spearman.dropna()
 # df_spearman['-log10p'] = -np.log10(df_spearman['p value']+0.0001)
 #
 # df_spearman.plot.scatter(x='spearman correlation',y='-log10p',c='-log10p', colormap='viridis', s=5)
 # plt.xlim([-1,0])
 # plt.show()
+
+# proteins = df_spearman.loc[(df_spearman['spearman correlation']<0)&(df_spearman['p value']<0.05)].index
+# for each in proteins:
+#     print (each)
+
+### analysis of dimethylation dataset
+# from tsv_reader import id_pep_from_peptsv
+# pep_tsv = 'D:/data/native_protein_digestion/dimethylation/heavy_search/peptide.tsv'
+# id_peptide_dict = id_pep_from_peptsv(pep_tsv)
+# print (id_peptide_dict)
