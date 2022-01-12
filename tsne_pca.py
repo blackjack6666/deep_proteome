@@ -4,7 +4,7 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+"""
 df = pd.read_csv('D:/data/Naba_deep_matrisome/02152021_1/18_2_accumulated_cov_transpose.csv')
 
 print (len(df['category'].unique()))
@@ -41,3 +41,12 @@ sns.scatterplot(
 # ax.set_ylabel('pca-two')
 # ax.set_zlabel('pca-three')
 plt.show()
+"""
+from os import rename
+from glob import glob
+folder_path = 'D:/data/Naba_deep_matrisome/proteomeXchange_submission/*/'
+folders_peptide = glob(folder_path+'peptide.tsv')
+folders_psms = glob(folder_path+'psm.tsv')
+for each in folders_psms:
+    sample = each.split('\\')[-2]
+    rename(each,each.replace('psm.tsv',sample+'_'+'psm.tsv'))

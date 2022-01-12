@@ -12,7 +12,7 @@ from protein_coverage import fasta_reader
 from tsv_reader import peptide_counting
 from scipy import stats
 
-
+"""
 font = {'family' : 'Arial',
         'weight' : 'medium',
         'size'   : 8}
@@ -73,6 +73,7 @@ df_plot = pd.DataFrame(dict(gene=df_ecm_aggre['gene'],
                             gfp_18_standard=normal18GFP_cov,
                             sned_18_agg=[df_aggre_DF.at[prot, 'SNED1_seq_F_1080_aggre_coverage'] for prot in df_ecm_aggre.index],
                             sned_18_standard=normal18SNED_cov),index=df_ecm_aggre.index)
+"""
 ### scatter plot with sizes
 """
 def rand_jitter(arr):
@@ -122,6 +123,7 @@ plt.show()
 """
 
 ### violin plot for each category
+"""
 import plotting
 fig,axs = plt.subplots(2,3,figsize=(10,5))
 
@@ -155,7 +157,7 @@ for each, ax in zip(sort_category,[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]):
 
 plt.savefig('D:/data/Naba_deep_matrisome/BCDF_combined/sned_F_BCDF_wilcoxon.png', dpi=300)
 plt.show()
-
+"""
 
 
 ### heatmap
@@ -398,3 +400,31 @@ def cor_matrix(df):
 # cor_matrix(df_grid)
 # plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/GFP_regplot_log2.png',dpi=300)
 # plt.show()
+
+### SCV example
+df = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F_squential_standard.xlsx',index_col=0)
+timepoints = ['30','120','240','1080']
+time_peptides_dict = {}
+for each_time in timepoints:
+
+
+    peptide_list = df.loc['Q8TER0','SNED1_seq_'+each_time+'D'+'_total peptides identified'].split(', ')+\
+                   df.loc['Q8TER0','SNED1_seq_'+each_time+'F'+'_total peptides identified'].split(', ')
+    time_peptides_dict[each_time] = peptide_list
+## get unique peptides from each time point
+total_peptide_list = []
+peptide_dict_unique = {}
+for each in timepoints:
+    pep_list = [pep for pep in time_peptides_dict[each] if pep not in total_peptide_list]
+    total_peptide_list += pep_list
+    peptide_dict_unique[each] = set(pep_list)
+
+for time in peptide_dict_unique:
+    print(time)
+    for peptide in peptide_dict_unique[time]:
+        # new_peptide = ''.join([aa+'['+time+']' for aa in peptide])
+        peplist = [aa for aa in peptide]
+        peplist.insert(0,'(')
+        peplist.append(')')
+        peplist.append('['+time+']')
+        print (''.join(peplist))

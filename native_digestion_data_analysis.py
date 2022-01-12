@@ -305,7 +305,7 @@ plt.show()
 """
 
 ### covered distance analysis
-
+"""
 import pymannkendall as mk
 fig,axs = plt.subplots(1,1, figsize=(10,8))
 
@@ -363,7 +363,7 @@ axs.set_xticks(x)
 axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
 plt.show()
 
-
+"""
 #heatmap
 """
 df = pd.read_excel('D:/data/native_protein_digestion/10282021/h20_cov_dist_centroid_mean_nadrop.xlsx',index_col=0)
@@ -505,7 +505,7 @@ df_fill.to_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov
 
 ### spearman correlation analysis of cleaved K/R densities between control and heat shock
 """
-df_control = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock/cov_KR_density_heatshock.xlsx',index_col=0)
+df_control = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx',index_col=0)
 # df_heatshock = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock/cov_KR_density_heatshock.xlsx',index_col=0)
 from scipy.stats import spearmanr
 
@@ -522,23 +522,23 @@ for tp in df_control.itertuples():
     except:
         df_spearman.at[prot, 'spearman correlation'] = 0
         df_spearman.at[prot,'p value'] = 0
-df_spearman.to_excel('D:/data/native_protein_digestion/12072021/heat_shock/spearman_corr_pval_nofill.xlsx')
+df_spearman.to_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx')
 
 """
-# df_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock/spearman_corr_pval_nofill.xlsx',index_col=0)
-# df_spearman = df_spearman.dropna()
+df_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_corr_pval_nofill.xlsx',index_col=0)
+df_spearman_cov_dist = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx',index_col=0)
+df_spearman = df_spearman.dropna()
+df_spearman_cov_dist = df_spearman_cov_dist.dropna()
 # df_spearman['-log10p'] = -np.log10(df_spearman['p value']+0.0001)
 #
 # df_spearman.plot.scatter(x='spearman correlation',y='-log10p',c='-log10p', colormap='viridis', s=5)
 # plt.xlim([-1,0])
 # plt.show()
 
-# proteins = df_spearman.loc[(df_spearman['spearman correlation']<0)&(df_spearman['p value']<0.05)].index
-# for each in proteins:
-#     print (each)
+proteins_kr = df_spearman.loc[(df_spearman['spearman correlation']<0)&(df_spearman['p value']<0.05)].index
+proteins_distance = df_spearman_cov_dist.loc[(df_spearman_cov_dist['spearman correlation']<0)&(df_spearman_cov_dist['p value']<0.05)].index
+
+print ([each for each in proteins_kr if each in proteins_distance])
 
 ### analysis of dimethylation dataset
-# from tsv_reader import id_pep_from_peptsv
-# pep_tsv = 'D:/data/native_protein_digestion/dimethylation/heavy_search/peptide.tsv'
-# id_peptide_dict = id_pep_from_peptsv(pep_tsv)
-# print (id_peptide_dict)
+

@@ -27,7 +27,7 @@ protein_dict = fasta_reader(fasta_path)
 
 ### combine B and C sample and output a single spreadsheet
 
-"""
+
 protein_info_dict = protein_info_from_fasta(fasta_path)
 # folder_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
 # combined_protein_file_list = [folder_path+each+'/combined_protein.tsv' for each in ['KOB','KOC', 'SNEDB', 'SNEDC']]
@@ -88,7 +88,7 @@ for prot in total_protein_set:
                 df_info.at[prot,file+'_'+i]=0
 df_info.to_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F.xlsx')
 
-"""
+
 
 # with ExcelWriter('D:/data/Naba_deep_matrisome/05142021_secondsearch/SNEDC/mat_protein_spec_SNEDC.xlsx') as writer:
 #     for file in file_protein_spec_dict:
