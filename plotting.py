@@ -33,3 +33,25 @@ def label_stats(x_pos,y_pos, y_offset, p_val, ax, correction=False,number_compar
         xytext=(0, 1), textcoords='offset points',
         xycoords='data', ha='center', va='bottom')
     return ax
+
+
+def volcano_plot(df,lfc,pv,
+                 lfc_thr=(1, 2), pv_thr=(0.05, 0.01),
+                 color=("#00239CFF", "grey", "#E10600FF")):
+    """
+
+    :param df: a pandas dataframe
+    :param lfc: column name for logfold change
+    :param pv: column name for p value
+    :return:
+    """
+    from bioinfokit import analys, visuz
+    visuz.GeneExpression.volcano(df=df,
+                                 lfc=lfc,
+                                 pv=pv,
+                                 lfc_thr=lfc_thr,
+                                 pv_thr=pv_thr,
+                                 color=color,
+                                 sign_line=True,
+                                 show=True)
+

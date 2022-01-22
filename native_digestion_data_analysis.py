@@ -529,16 +529,23 @@ df_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/s
 df_spearman_cov_dist = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx',index_col=0)
 df_spearman = df_spearman.dropna()
 df_spearman_cov_dist = df_spearman_cov_dist.dropna()
-# df_spearman['-log10p'] = -np.log10(df_spearman['p value']+0.0001)
-#
-# df_spearman.plot.scatter(x='spearman correlation',y='-log10p',c='-log10p', colormap='viridis', s=5)
-# plt.xlim([-1,0])
+# df_spearman['-log10p'] = -np.log10(df_spearman['p value'])
+df_spearman_cov_dist['-log10p'] = [-np.log10(each+np.random.uniform(-0.05,0.05)) for each in df_spearman_cov_dist['p value']]
+df_spearman_cov_dist['spearman correlation'] = [each+np.random.uniform(-0.05,0.05) for each in df_spearman_cov_dist['spearman correlation']]
+
+## scatter plot showing spearman correlation and -log10 pval
+# df_spearman_cov_dist.plot.scatter(x='spearman correlation',y='-log10p',c='-log10p', colormap='viridis', s=8)
+# plt.axhline(y=-np.log10(0.05), color="black", linestyle="--")
+# plt.axvline(x=0, color="black", linestyle="--")
+# # plt.xlim([-1,0])
 # plt.show()
 
-proteins_kr = df_spearman.loc[(df_spearman['spearman correlation']<0)&(df_spearman['p value']<0.05)].index
-proteins_distance = df_spearman_cov_dist.loc[(df_spearman_cov_dist['spearman correlation']<0)&(df_spearman_cov_dist['p value']<0.05)].index
+proteins_kr = df_spearman.loc[(df_spearman['spearman correlation']<0)&(df_spearman['p value']<0.05)]
+proteins_distance = df_spearman_cov_dist.loc[(df_spearman_cov_dist['spearman correlation']<0)&(df_spearman_cov_dist['p value']<0.05)]
 
-print ([each for each in proteins_kr if each in proteins_distance])
+
+
+# print ([each for each in proteins_kr if each in proteins_distance])
 
 ### analysis of dimethylation dataset
 

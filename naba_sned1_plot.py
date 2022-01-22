@@ -423,8 +423,8 @@ for time in peptide_dict_unique:
     print(time)
     for peptide in peptide_dict_unique[time]:
         # new_peptide = ''.join([aa+'['+time+']' for aa in peptide])
-        peplist = [aa for aa in peptide]
-        peplist.insert(0,'(')
-        peplist.append(')')
-        peplist.append('['+time+']')
+        peplist = [aa+'['+time+']' for aa in peptide]
+        # peplist.insert(0,'(')
+        # peplist.append(')')
+        # peplist.append('['+time+']')
         print (''.join(peplist))
