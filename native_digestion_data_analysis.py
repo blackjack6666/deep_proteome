@@ -290,16 +290,24 @@ for i in range(len(columns)):
 from tsv_reader import pep_mass_dist
 from calculations_and_plot import protein_mass
 import pickle
-insilico_pep_dict = pickle.load(open('D:/data/native_protein_digestion/inslico_digest_human_fasta.p','rb'))
-peptide_set = {pep for v in insilico_pep_dict.values() for pep in v}
-# peptide_set = peptide_counting('D:/data/deep_proteome/20200915_tryp_37C_240min/peptide.tsv')
+# insilico_pep_dict = pickle.load(open('D:/data/native_protein_digestion/inslico_digest_human_fasta.p','rb'))
+# peptide_set = {pep for v in insilico_pep_dict.values() for pep in v}
+peptide_set = peptide_counting('D:/data/deep_proteome/20200915_tryp_37C_0240min/peptide.tsv')
+protein_set = protein_reader('D:/data/deep_proteome/20200915_tryp_37C_0240min/protein.tsv')
+total_prt_dict = fasta_reader('D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta')
 
 print (len(peptide_set))
 mass_list = [protein_mass(each) for each in peptide_set]
-sns.kdeplot(mass_list,linewidth=2, alpha=.5)
+protein_mass_list = [protein_mass(total_prt_dict[each]) for each in protein_set if each in total_prt_dict]
+fig,ax = plt.subplots(1,1)
+sns.kdeplot(ax=ax,x=mass_list,linewidth=2, alpha=.5,log_scale=True)
+sns.kdeplot(ax=ax,x=protein_mass_list,linewidth=2,alpha=.5,log_scale=True)
 plt.axvline(x=3500, color='k', linestyle='--')
 plt.xlabel('Mass in Da')
 plt.ylabel('frequency')
+plt.text(350, 2.0,'Peptide',color='k',fontsize='15')
+plt.text(70000,1.2,'Protein',color='k',fontsize='15')
+plt.text(3300,-0.15,'3.5kDa',color='k')
 plt.show()
 # pep_mass_dist(pep_path_list,plot='kde')
 """
@@ -525,6 +533,7 @@ for tp in df_control.itertuples():
 df_spearman.to_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx')
 
 """
+"""
 df_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_corr_pval_nofill.xlsx',index_col=0)
 df_spearman_cov_dist = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx',index_col=0)
 df_spearman = df_spearman.dropna()
@@ -540,12 +549,11 @@ df_spearman_cov_dist['spearman correlation'] = [each+np.random.uniform(-0.05,0.0
 # # plt.xlim([-1,0])
 # plt.show()
 
-proteins_kr = df_spearman.loc[(df_spearman['spearman correlation']<0)&(df_spearman['p value']<0.05)]
-proteins_distance = df_spearman_cov_dist.loc[(df_spearman_cov_dist['spearman correlation']<0)&(df_spearman_cov_dist['p value']<0.05)]
+proteins_kr = df_spearman.loc[(df_spearman['spearman correlation']>0.5)&(df_spearman['p value']<0.05)].index
+proteins_distance = df_spearman_cov_dist.loc[(df_spearman_cov_dist['spearman correlation']>0.5)&(df_spearman_cov_dist['p value']<0.05)].index
 
 
-
-# print ([each for each in proteins_kr if each in proteins_distance])
-
+print ([each for each in proteins_kr if each in proteins_distance])
+print (df_spearman_cov_dist.loc['P60660',:])
 ### analysis of dimethylation dataset
-
+"""
