@@ -533,14 +533,14 @@ for tp in df_control.itertuples():
 df_spearman.to_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx')
 
 """
-"""
+
 df_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_corr_pval_nofill.xlsx',index_col=0)
 df_spearman_cov_dist = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx',index_col=0)
 df_spearman = df_spearman.dropna()
 df_spearman_cov_dist = df_spearman_cov_dist.dropna()
 # df_spearman['-log10p'] = -np.log10(df_spearman['p value'])
 df_spearman_cov_dist['-log10p'] = [-np.log10(each+np.random.uniform(-0.05,0.05)) for each in df_spearman_cov_dist['p value']]
-df_spearman_cov_dist['spearman correlation'] = [each+np.random.uniform(-0.05,0.05) for each in df_spearman_cov_dist['spearman correlation']]
+# df_spearman_cov_dist['spearman correlation'] = [each+np.random.uniform(-0.05,0.05) for each in df_spearman_cov_dist['spearman correlation']]
 
 ## scatter plot showing spearman correlation and -log10 pval
 # df_spearman_cov_dist.plot.scatter(x='spearman correlation',y='-log10p',c='-log10p', colormap='viridis', s=8)
@@ -549,11 +549,55 @@ df_spearman_cov_dist['spearman correlation'] = [each+np.random.uniform(-0.05,0.0
 # # plt.xlim([-1,0])
 # plt.show()
 
-proteins_kr = df_spearman.loc[(df_spearman['spearman correlation']>0.5)&(df_spearman['p value']<0.05)].index
-proteins_distance = df_spearman_cov_dist.loc[(df_spearman_cov_dist['spearman correlation']>0.5)&(df_spearman_cov_dist['p value']<0.05)].index
+proteins_kr = df_spearman.loc[(df_spearman['spearman correlation']<0)&(df_spearman['p value']<0.05)].index
+# proteins_distance = df_spearman_cov_dist.loc[(df_spearman_cov_dist['spearman correlation']<-0.99)&(df_spearman_cov_dist['p value']<0.05)].index
 
+# print (len(proteins_distance))
+# print ([each for each in proteins_kr if each in proteins_distance])
+# print (df_spearman_cov_dist.loc['P60660',:])
 
-print ([each for each in proteins_kr if each in proteins_distance])
-print (df_spearman_cov_dist.loc['P60660',:])
-### analysis of dimethylation dataset
-"""
+### compare significant proteins with humap2.0 db
+
+humap_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/humap2.0_mapped.xlsx',index_col=0)
+# humap_df = humap_df[humap_df['confidence']==1]
+protein_ave_p_dict = {}
+for prot in proteins_kr:
+    try:
+        min_pval = np.min([tp[-1]*tp[1] for tp in humap_df.itertuples() if prot in tp[4].split(" ")])
+        if min_pval != np.nan:
+            protein_ave_p_dict[prot] = -np.log10(min_pval)
+    except ValueError:
+        continue
+
+protein_kr_positive = df_spearman.loc[(df_spearman['spearman correlation']>0)&(df_spearman['p value']<0.05)].index
+# protein_distance_positive = df_spearman_cov_dist.loc[(df_spearman_cov_dist['spearman correlation']>0.99)&(df_spearman_cov_dist['p value']<0.05)].index
+protein_ave_p_dict_positive = {}
+for prot in protein_kr_positive:
+    try:
+        min_pval = np.min([tp[-1]*tp[1] for tp in humap_df.itertuples() if prot in tp[4].split(" ")])
+        if min_pval != np.nan:
+            protein_ave_p_dict_positive[prot] = -np.log10(min_pval)
+    except ValueError:
+        continue
+
+neg_pval, pos_pval = [v for v in protein_ave_p_dict.values()], [v for v in protein_ave_p_dict_positive.values()]
+
+# filtered_neg, filtered_pos = np.where(neg_pval>=np.quantile(neg_pval,0.75)), np.where(pos_pval>=np.quantile(pos_pval,0.75))
+
+df_plot = pd.DataFrame(dict(direct=['neg']*len(neg_pval)+['pos']*len(pos_pval),
+                            log10p=neg_pval+pos_pval))
+
+import seaborn as sns
+from statannot import add_stat_annotation
+fig,ax = plt.subplots(1,1)
+sns.kdeplot(data=df_plot,x='log10p',hue='direct',
+            fill=True, common_norm=False, palette="Set2",
+            alpha=.5, linewidth=0,
+            )
+# sns.boxplot(data=df_plot,x='direct',y='log10p',ax=ax)
+# add_stat_annotation(ax, data=df_plot,x='direct',y='log10p',box_pairs=[("neg", "pos")],
+#                     test='Mann-Whitney-gt', text_format='star',loc='inside', verbose=2)
+plt.show()
+
+# print (len(proteins_kr),len(protein_kr_positive))
+# print (len(protein_ave_p_dict),len(protein_ave_p_dict_positive))
