@@ -557,7 +557,7 @@ proteins_kr = df_spearman.loc[(df_spearman['spearman correlation']<0)&(df_spearm
 # print (df_spearman_cov_dist.loc['P60660',:])
 
 ### compare significant proteins with humap2.0 db
-
+"""
 humap_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/humap2.0_mapped.xlsx',index_col=0)
 # humap_df = humap_df[humap_df['confidence']==1]
 protein_ave_p_dict = {}
@@ -601,3 +601,4 @@ plt.show()
 
 # print (len(proteins_kr),len(protein_kr_positive))
 # print (len(protein_ave_p_dict),len(protein_ave_p_dict_positive))
+"""
