@@ -614,27 +614,53 @@ plt.show()
 ### clustering
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.model_selection import ParameterGrid
 
 df_control = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density.xlsx',index_col=0)
 pca = PCA(2)
 
 df_pca = pca.fit_transform(df_control.fillna(df_control.mean()))  # fill na with extreme values
 print (df_pca.shape)
+print('Explained variation per principal component: {}'.format(pca.explained_variance_ratio_))
 
-kmeans = KMeans(n_clusters=5)
+### decide number of cluster
+# candidate values for our number of cluster
+parameters = [2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40]
+# instantiating ParameterGrid, pass number of clusters as input
+parameter_grid = ParameterGrid({'n_clusters': parameters})
+best_score = -1
+kmeans_model = KMeans()     # instantiating KMeans model
+silhouette_scores = []
+# evaluation based on silhouette_score
+for p in parameter_grid:
+    kmeans_model.set_params(**p)    # set current hyper parameter
+    kmeans_model.fit(df_pca)          # fit model on wine dataset, this will find clusters based on parameter p
+    ss = silhouette_score(df_pca, kmeans_model.labels_)   # calculate silhouette_score
+    silhouette_scores += [ss]       # store all the scores
+    print('Parameter:', p, 'Score', ss)
+    # check p which has the best score
+    if ss > best_score:
+        best_score = ss
+        best_grid = p
+print (best_score, best_grid)
+
+
+kmeans = KMeans(n_clusters=best_grid['n_clusters'])
 
 # predict the labels of clusters.
 label = kmeans.fit_predict(df_pca)
 
 u_labels = np.unique(label)
+
 # plotting the results:
 
-# for i in u_labels:
-#     plt.scatter(df_pca[label == i, 0], df_pca[label == i, 1], label=i)
-# plt.legend()
-# plt.show()
+for i in u_labels:
+    plt.scatter(df_pca[label == i, 0], df_pca[label == i, 1], label=i)
+plt.legend()
+plt.show()
 
-df_control['label'] = label
-for each in u_labels:
-    print (each)
-    print ('\n'.join(df_control[df_control['label']==each].index.tolist()))
+# df_control['label'] = label
+# for each in u_labels:
+#     print (each)
+#     print ('\n'.join(df_control[df_control['label']==each].index.tolist()))
