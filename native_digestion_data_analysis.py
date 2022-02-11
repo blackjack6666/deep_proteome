@@ -298,16 +298,18 @@ total_prt_dict = fasta_reader('D:/data/proteome_fasta/uniprot-proteome_UP0000056
 
 print (len(peptide_set))
 mass_list = [protein_mass(each) for each in peptide_set]
-protein_mass_list = [protein_mass(total_prt_dict[each]) for each in protein_set if each in total_prt_dict]
+# protein_mass_list = [protein_mass(total_prt_dict[each]) for each in protein_set if each in total_prt_dict]
+protein_mass_list = [protein_mass(protein_dict[each]) for each in protein_dict]
 fig,ax = plt.subplots(1,1)
 sns.kdeplot(ax=ax,x=mass_list,linewidth=2, alpha=.5,log_scale=True)
 sns.kdeplot(ax=ax,x=protein_mass_list,linewidth=2,alpha=.5,log_scale=True)
 plt.axvline(x=3500, color='k', linestyle='--')
-plt.xlabel('Mass in Da')
+plt.xlabel('Mass in Da', fontsize=15)
+plt.xticks(fontsize=20)
 plt.ylabel('frequency')
-plt.text(350, 2.0,'Peptide',color='k',fontsize='15')
-plt.text(70000,1.2,'Protein',color='k',fontsize='15')
-plt.text(3300,-0.15,'3.5kDa',color='k')
+plt.text(200, 2.0,'Peptide\nin HEK std',color='k',fontsize='15')
+plt.text(70000,1.2,'Protein in human db',color='k',fontsize='15')
+plt.text(2000,-0.2,'3.5k',color='k',fontsize=20)
 plt.show()
 # pep_mass_dist(pep_path_list,plot='kde')
 """
@@ -350,15 +352,17 @@ print(mk_result)
 # x = range(1,len(new_columns)+1)
 
 # df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
-
+# df_plot = df_plot.dropna()
 # sns.regplot(x='time',y='cov_KR_dens',data=df_plot,color='k')
 # sns.boxplot(x='time',y='cov_KR_dens',data=df_plot,linewidth=2.5)
+
 # sns.kdeplot(data=df_plot, x="cov_plddt", hue="time",legend=False)
 # add_stat_annotation(axs,data=df_plot, x='time',y='cov_KR_dens',box_pairs=[(1,2)],test='Wilcoxon',
 #                     text_format='star',loc='inside', verbose=2)
 # plt.xlim([0,8])
 # axs.set_xticks(range(1,8))
 # axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
+# axs.tick_params(axis='y', labelsize=16)
 # plt.legend(title='Time', loc='upper right', labels=list(df.columns))
 # plt.show()
 
@@ -370,8 +374,8 @@ for tp in df.itertuples(index=False):
 axs.set_xticks(x)
 axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
 plt.show()
-
 """
+
 #heatmap
 """
 df = pd.read_excel('D:/data/native_protein_digestion/10282021/h20_cov_dist_centroid_mean_nadrop.xlsx',index_col=0)
@@ -534,22 +538,26 @@ df_spearman.to_excel('D:/data/native_protein_digestion/12072021/control/spearman
 
 """
 
-df_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_corr_pval_nofill.xlsx',index_col=0)
-df_spearman_cov_dist = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx',index_col=0)
-df_spearman = df_spearman.dropna()
-df_spearman_cov_dist = df_spearman_cov_dist.dropna()
-# df_spearman['-log10p'] = -np.log10(df_spearman['p value'])
-df_spearman_cov_dist['-log10p'] = [-np.log10(each+np.random.uniform(-0.05,0.05)) for each in df_spearman_cov_dist['p value']]
-# df_spearman_cov_dist['spearman correlation'] = [each+np.random.uniform(-0.05,0.05) for each in df_spearman_cov_dist['spearman correlation']]
-
-## scatter plot showing spearman correlation and -log10 pval
-# df_spearman_cov_dist.plot.scatter(x='spearman correlation',y='-log10p',c='-log10p', colormap='viridis', s=8)
+# df_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_corr_pval_nofill.xlsx',index_col=0)
+# df_spearman_cov_dist = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx',index_col=0)
+# df_spearman = df_spearman.dropna()
+# df_spearman = df_spearman.loc[df_spearman['spearman correlation']!=0]
+#
+# df_spearman_cov_dist = df_spearman_cov_dist.dropna()
+# df_spearman_cov_dist = df_spearman_cov_dist.loc[(df_spearman_cov_dist!=0).any(1)]
+# print (df_spearman_cov_dist.shape)
+# # df_spearman['-log10p'] = -np.log10(df_spearman['p value'])
+# df_spearman['-log10p'] = [-np.log10(each)+np.random.uniform(-0.0875,0.0875) for each in df_spearman['p value']]
+# df_spearman['spearman correlation'] = [each+np.random.uniform(-0.05,0.05) for each in df_spearman['spearman correlation']]
+#
+# # scatter plot showing spearman correlation and -log10 pval
+# df_spearman.plot.scatter(x='spearman correlation',y='-log10p',c='-log10p', colormap='viridis', s=8)
 # plt.axhline(y=-np.log10(0.05), color="black", linestyle="--")
 # plt.axvline(x=0, color="black", linestyle="--")
 # # plt.xlim([-1,0])
 # plt.show()
 
-proteins_kr = df_spearman.loc[(df_spearman['spearman correlation']<0)&(df_spearman['p value']<0.05)].index
+# proteins_kr = df_spearman.loc[(df_spearman['spearman correlation']<0)&(df_spearman['p value']<0.05)].index
 # proteins_distance = df_spearman_cov_dist.loc[(df_spearman_cov_dist['spearman correlation']<-0.99)&(df_spearman_cov_dist['p value']<0.05)].index
 
 # print (len(proteins_distance))
@@ -602,3 +610,31 @@ plt.show()
 # print (len(proteins_kr),len(protein_kr_positive))
 # print (len(protein_ave_p_dict),len(protein_ave_p_dict_positive))
 """
+
+### clustering
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+
+df_control = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density.xlsx',index_col=0)
+pca = PCA(2)
+
+df_pca = pca.fit_transform(df_control.fillna(df_control.mean()))  # fill na with extreme values
+print (df_pca.shape)
+
+kmeans = KMeans(n_clusters=5)
+
+# predict the labels of clusters.
+label = kmeans.fit_predict(df_pca)
+
+u_labels = np.unique(label)
+# plotting the results:
+
+# for i in u_labels:
+#     plt.scatter(df_pca[label == i, 0], df_pca[label == i, 1], label=i)
+# plt.legend()
+# plt.show()
+
+df_control['label'] = label
+for each in u_labels:
+    print (each)
+    print ('\n'.join(df_control[df_control['label']==each].index.tolist()))
