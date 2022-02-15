@@ -319,7 +319,7 @@ plt.show()
 import pymannkendall as mk
 fig,axs = plt.subplots(1,1, figsize=(10,8))
 
-df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx',index_col=0)
+df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/KRtocenter_dist_unique.xlsx',index_col=0)
 # df = df.T.ffill().bfill()
 # print (df)
 # df = df.dropna()
@@ -351,8 +351,8 @@ print(mk_result)
 #     print (each, df[each].mean())
 # x = range(1,len(new_columns)+1)
 
-# df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
-# df_plot = df_plot.dropna()
+df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
+df_plot = df_plot.dropna()
 # sns.regplot(x='time',y='cov_KR_dens',data=df_plot,color='k')
 # sns.boxplot(x='time',y='cov_KR_dens',data=df_plot,linewidth=2.5)
 
@@ -370,7 +370,8 @@ print(mk_result)
 ## line plot
 x = range(1,len(df.columns)+1)
 for tp in df.itertuples(index=False):
-    axs.plot(x,[i for i in tp],linestyle='-',alpha=0.8)
+    axs.plot(x,[i for i in tp],linestyle='-',alpha=0.6)
+sns.regplot(ax=axs,data=df_plot,x='time',y='cov_KR_dens',scatter=False,color='k')
 axs.set_xticks(x)
 axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
 plt.show()
@@ -612,6 +613,7 @@ plt.show()
 """
 
 ### clustering
+"""
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
@@ -664,3 +666,25 @@ plt.show()
 # for each in u_labels:
 #     print (each)
 #     print ('\n'.join(df_control[df_control['label']==each].index.tolist()))
+"""
+
+### linear regression analysis, calcuate the slope and R-square
+"""
+from scipy.stats import linregress
+df_dist = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density.xlsx',index_col=0)
+df_out = pd.DataFrame(columns=['slope','r_square','p_val'])
+for tp in df_dist.itertuples():
+    prot, kr_densities = tp[0], np.array(tp[1:])
+    cleaned_kr_densities = kr_densities[np.isfinite(kr_densities)]
+    if len(cleaned_kr_densities) == 1 or len(cleaned_kr_densities) == 0:
+        slope, r_squre, p_val = np.nan, np.nan, np.nan
+    elif len(cleaned_kr_densities) == 2:
+        slope, r_squre, p_val = np.nan, np.nan, np.nan
+    else:
+        x = range(0,len(cleaned_kr_densities))
+        result = linregress(x,cleaned_kr_densities)
+        slope, r_squre, p_val = result.slope, np.square(result.rvalue), result.pvalue
+    df_out.at[prot,:] = slope, r_squre, p_val
+
+df_out.to_excel('D:/data/native_protein_digestion/12072021/control/KR_atoms_linear_reg.xlsx')
+"""
