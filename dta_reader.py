@@ -82,6 +82,8 @@ if __name__=='__main__':
     import matplotlib.pyplot as plt
     import pickle as ppp
     import seaborn as sns
+    import numpy as np
+    import pandas as pd
 
     # fasta_path = 'D:/data/proteome_fasta/uniprot-proteome_UP000005640.fasta'
     # protein_dict = fasta_reader2(fasta_path)
@@ -96,10 +98,22 @@ if __name__=='__main__':
     # cov_list = [v for v in prot_cov_dict.values()]
 
     # ppp.dump(prot_cov_dict, open('bioplex_protein_coverage_dict.p','wb'))
-    prot_cov_dict = ppp.load(open('bioplex_protein_coverage_dict.p', 'rb'))
-    cov_list = [v for v in prot_cov_dict.values()]
-    fig, ax = plt.subplots(1,1)
-    sns.distplot(cov_list, color='black', ax=ax)
-    plt.xlabel('sequence coverage')
-    plt.ylabel('density')
+    # prot_cov_dict = ppp.load(open('bioplex_protein_coverage_dict.p', 'rb'))
+    # cov_list = np.array([v for v in prot_cov_dict.values()][:83500])
+    # sort_array = -np.sort(-cov_list)
+    # reshape = sort_array.reshape((250,334))
+
+    matrisome_cov_csv = 'D:/data/Naba_deep_matrisome/matrisome coverage_norepeat.xlsx'
+    df_mat = pd.read_excel(matrisome_cov_csv, index_col=0)
+
+    cov_array = df_mat['cov'].to_numpy()*100
+    sort = -np.sort(-cov_array)
+    reshape = sort.reshape((34,49))
+    sns.heatmap(data=reshape,cmap="viridis")
     plt.show()
+    # fig, ax = plt.subplots(1,1)
+    # sns.distplot(cov_list, color='black', ax=ax)
+    # plt.xlabel('sequence coverage')
+    # plt.ylabel('density')
+    # plt.show()
+

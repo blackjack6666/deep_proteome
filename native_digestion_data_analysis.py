@@ -538,29 +538,44 @@ for tp in df_control.itertuples():
 df_spearman.to_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx')
 
 """
+### process plddt data
+"""
+import pickle
+plddt_dict = pickle.load(open('D:/data/alphafold_pdb/pLDDT_human_dict.pkl','rb'))
+plddt_70percent_dict = {} # get percentage of residues with >70 plddt
+for each in plddt_dict:
+    plddt_array = np.array(list(set(plddt_dict[each])))
+    # percent70_ratio = len(np.where(plddt_array>=70)[0])/len(plddt_array)*100
+    median_plddt = np.median(plddt_array)
+    plddt_70percent_dict[each] = median_plddt
+print ('done plddt')
 
-# df_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_corr_pval_nofill.xlsx',index_col=0)
-# df_spearman_cov_dist = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx',index_col=0)
-# df_spearman = df_spearman.dropna()
-# df_spearman = df_spearman.loc[df_spearman['spearman correlation']!=0]
-#
-# df_spearman_cov_dist = df_spearman_cov_dist.dropna()
-# df_spearman_cov_dist = df_spearman_cov_dist.loc[(df_spearman_cov_dist!=0).any(1)]
-# print (df_spearman_cov_dist.shape)
-# # df_spearman['-log10p'] = -np.log10(df_spearman['p value'])
-# df_spearman['-log10p'] = [-np.log10(each)+np.random.uniform(-0.0875,0.0875) for each in df_spearman['p value']]
-# df_spearman['spearman correlation'] = [each+np.random.uniform(-0.05,0.05) for each in df_spearman['spearman correlation']]
-#
-# # scatter plot showing spearman correlation and -log10 pval
-# df_spearman.plot.scatter(x='spearman correlation',y='-log10p',c='-log10p', colormap='viridis', s=8)
-# plt.axhline(y=-np.log10(0.05), color="black", linestyle="--")
-# plt.axvline(x=0, color="black", linestyle="--")
-# # plt.xlim([-1,0])
-# plt.show()
+df_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_corr_pval_nofill.xlsx',index_col=0)
+df_spearman_cov_dist = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx',index_col=0)
 
+df_spearman = df_spearman.dropna()
+df_spearman = df_spearman.loc[df_spearman['spearman correlation']!=0]
+
+df_spearman_cov_dist = df_spearman_cov_dist.dropna()
+df_spearman_cov_dist = df_spearman_cov_dist.loc[(df_spearman_cov_dist!=0).any(1)]
+df_spearman['plddt'] = [plddt_70percent_dict[each] for each in df_spearman.index]
+df_spearman_cov_dist['plddt'] = [plddt_70percent_dict[each] for each in df_spearman_cov_dist.index]
+
+print (df_spearman_cov_dist.shape)
+# df_spearman['-log10p'] = -np.log10(df_spearman['p value'])
+df_spearman['-log10p'] = [-np.log10(each)+np.random.uniform(-0.0875,0.0875) for each in df_spearman['p value']]
+df_spearman['spearman correlation'] = [each+np.random.uniform(-0.05,0.05) for each in df_spearman['spearman correlation']]
+
+# scatter plot showing spearman correlation and -log10 pval
+df_spearman.plot.scatter(x='spearman correlation',y='-log10p',c='plddt', colormap='viridis', s=5,alpha=0.5)
+plt.axhline(y=-np.log10(0.05), color="black", linestyle="--")
+plt.axvline(x=0, color="black", linestyle="--")
+# plt.xlim([-1,0])
+plt.show()
+"""
 # proteins_kr = df_spearman.loc[(df_spearman['spearman correlation']<0)&(df_spearman['p value']<0.05)].index
 # proteins_distance = df_spearman_cov_dist.loc[(df_spearman_cov_dist['spearman correlation']<-0.99)&(df_spearman_cov_dist['p value']<0.05)].index
-
+#
 # print (len(proteins_distance))
 # print ([each for each in proteins_kr if each in proteins_distance])
 # print (df_spearman_cov_dist.loc['P60660',:])
@@ -688,3 +703,7 @@ for tp in df_dist.itertuples():
 
 df_out.to_excel('D:/data/native_protein_digestion/12072021/control/KR_atoms_linear_reg.xlsx')
 """
+df_kr_linear_reg = pd.read_excel('D:/data/native_protein_digestion/12072021/control/dist_linear_reg.xlsx', index_col=0)
+df_kr_filtered = df_kr_linear_reg.loc[(df_kr_linear_reg['slope']<0)&(df_kr_linear_reg['r_square']>0.8)&
+                                      (df_kr_linear_reg['p_val']<0.05)]
+print (df_kr_filtered.sort_values('r_square').index.tolist()[-10:])
