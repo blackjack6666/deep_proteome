@@ -36,6 +36,6 @@ def fasta_reverse_generator(fasta_file_in, fasta_file_out):
 if __name__=='__main__':
     from glob import glob
 
-    fasta_file_in = 'D:/data/native_protein_digestion/dimethylation/GAPDH/GAPDH.txt'
+    fasta_file_in = 'C:/Users/gao lab computer/Downloads/uniprot-proteome_UP000008854.fasta'
 
-    fasta_reverse_generator(fasta_file_in,fasta_file_in.replace('.txt','_rev.fasta'))
+    fasta_reverse_generator(fasta_file_in,fasta_file_in.replace('.fasta','_rev.fasta'))

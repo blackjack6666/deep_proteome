@@ -99,8 +99,8 @@ if __name__=='__main__':
 
     # ppp.dump(prot_cov_dict, open('bioplex_protein_coverage_dict.p','wb'))
     # prot_cov_dict = ppp.load(open('bioplex_protein_coverage_dict.p', 'rb'))
-    # cov_list = np.array([v for v in prot_cov_dict.values()][:83500])
-    # sort_array = -np.sort(-cov_list)
+    # cov_list = np.array([v for v in prot_cov_dict.values()])
+    # sort = -np.sort(-cov_list)
     # reshape = sort_array.reshape((250,334))
 
     matrisome_cov_csv = 'D:/data/Naba_deep_matrisome/matrisome coverage_norepeat.xlsx'
@@ -108,9 +108,19 @@ if __name__=='__main__':
 
     cov_array = df_mat['cov'].to_numpy()*100
     sort = -np.sort(-cov_array)
-    reshape = sort.reshape((34,49))
-    sns.heatmap(data=reshape,cmap="viridis")
+    fig, ax = plt.subplots()
+    ax.plot(range(len(sort)),sort, '-', color='#fcba03')
+    ax.fill_between(range(len(sort)),sort, color='#fcba03',alpha=0.3)
+    ax.fill_between(range(len(sort)), sort, [100]*len(sort), color='grey')
+    ax.set_xlim(0,len(sort))
+    ax.set_ylim(0,100)
+    ax.tick_params(axis='both', which='major', labelsize=15)
     plt.show()
+
+    # reshape = sort.reshape((49,34))
+    # pd.DataFrame(reshape).to_excel('D:/data/bioplex/matrisomedb_coverage.xlsx')
+    # sns.heatmap(data=reshape,cmap="viridis")
+    # plt.show()
     # fig, ax = plt.subplots(1,1)
     # sns.distplot(cov_list, color='black', ax=ax)
     # plt.xlabel('sequence coverage')
