@@ -15,6 +15,8 @@ import pickle as ppp
 import matplotlib
 from glob import glob
 
+### get a summary table
+"""
 folders = glob('F:/sned1_biotinalytion/03112022/seach_result/*/')
 print (folders)
 file_list = [each.split('\\')[-2] for each in folders]
@@ -44,3 +46,45 @@ for prot in total_protein_set:
             else:
                 df_info.at[prot,file+'_'+i]=0
 df_info.to_excel('F:/sned1_biotinalytion/03112022/seach_result/summary.xlsx')
+"""
+### compare public data for ECM non fractionation and 15 fractionation
+matrisome_nonrepeat = 'D:/data/Naba_deep_matrisome/matrisome coverage_norepeat.xlsx'
+matrisome_protein_list = pd.read_excel(matrisome_nonrepeat,index_col=1).index.tolist()
+
+ecm_15frac_df = pd.read_csv('F:/proposal/public_data/ECM_15frac/protein.tsv',sep='\t',index_col=['Protein ID'])
+ecm_15_df_filtered = ecm_15frac_df[ecm_15frac_df.index.isin(matrisome_protein_list)]
+ecm_15_fra_protein = ecm_15_df_filtered.index.tolist()
+
+ecm_nonfrac_df = pd.read_csv('F:/proposal/public_data/ECM_nonfrac/protein.tsv',sep='\t',index_col=['Protein ID'])
+ecm_nonfrac_df_filtered = ecm_nonfrac_df[ecm_nonfrac_df.index.isin(matrisome_protein_list)]
+ecm_nonfrac_protein_list = ecm_nonfrac_df_filtered.index.tolist()
+
+total_ecm_list = set(ecm_15_fra_protein+ecm_nonfrac_protein_list)
+
+df_plot = pd.DataFrame(columns=['coverage_in_nonfrac','coverage_in_15frac'], index=list(total_ecm_list))
+
+for each in total_ecm_list:
+    df_plot.loc[each,'coverage_in_nonfrac'] = ecm_nonfrac_df_filtered.loc[each,'Percent Coverage'] if each in ecm_nonfrac_protein_list else 0
+    df_plot.loc[each,'coverage_in_15frac'] = ecm_15_df_filtered.loc[each,'Percent Coverage'] if each in ecm_15_fra_protein else 0
+
+df_plot_sort = df_plot.sort_values(by=['coverage_in_nonfrac'])
+print (df_plot_sort.columns)
+fig,ax = plt.subplots()
+x = range(df_plot_sort.shape[0])
+y_nonfrac = df_plot_sort['coverage_in_nonfrac'].tolist()
+y_15frac = df_plot_sort['coverage_in_15frac'].tolist()
+
+# ax.set_ylim(0,100)
+# ax.scatter(x,y_nonfrac,c='blue',s=10,label='non fractionation')
+# ax.scatter(x,y_15frac,c='red',s=10,label='15 fractionations')
+# ax.set_xlabel('ECM protein groups',fontsize=15)
+# ax.set_ylabel('Sequence coverage %',fontsize=15)
+# ax.legend()
+df_new_plot = pd.DataFrame()
+df_new_plot['sample_type'] = ['coverage_in_nonfrac']*df_plot_sort.shape[0]+['coverage_in_15frac']*df_plot_sort.shape[0]
+df_new_plot['coverage'] = df_plot_sort['coverage_in_nonfrac'].tolist()+df_plot_sort['coverage_in_15frac'].tolist()
+print (df_new_plot)
+
+custom_palette = {'coverage_in_nonfrac':'blue','coverage_in_15frac':'red'}
+sns.boxplot(data=df_new_plot,x='sample_type',y='coverage',linewidth=2.5,palette=custom_palette)
+plt.show()

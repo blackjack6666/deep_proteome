@@ -27,19 +27,19 @@ protein_dict = fasta_reader(fasta_path)
 # print (pep_path_list)
 
 ### get raw summary report
-"""
+
 protein_info_dict = protein_info_from_fasta(fasta_path)
 
-total_protein_set = protein_reader('D:/data/native_protein_digestion/11052021/search_result/combined_protein.tsv')
+total_protein_set = protein_reader('D:/data/native_protein_digestion/12072021/control/combined_protein.tsv')
 
-base_path = 'D:/data/native_protein_digestion/11052021/search_result/'
-folders = [base_path+folder for folder in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, folder))]
-
+base_path = 'D:/data/native_protein_digestion/12072021/control/'
+# folders = [base_path+folder for folder in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, folder))]
+folders = glob(base_path+'*/')
 print (folders)
-psm_path_list = [each+'/psm.tsv' for each in folders]
-pep_path_list = [each+'/peptide.tsv' for each in folders]
-
-file_list = [each.split('\\')[-2] for each in glob(base_path+'*/')]
+psm_path_list = [each+'psm.tsv' for each in folders]
+pep_path_list = [each+'peptide.tsv' for each in folders]
+#
+file_list = [each.split('\\')[-2] for each in folders]
 
 file_protein_cov_dict, file_id_pep_dict,file_unique_id_pep_dict, file_prot_spec_dict,file_unique_id_pep_count_dict,file_id_pep_count_dict  = dash_dataframe(pep_path_list,psm_path_list,protein_dict,psm_path_list,psm_path_list,psm_path_list)
 file_protein_info_dict = {file:protein_info_dict for file in file_list}
@@ -62,8 +62,8 @@ for prot in total_protein_set:
                 df_info.at[prot,file+'_'+i]=j[file][prot]
             else:
                 df_info.at[prot,file+'_'+i]=0
-df_info.to_excel('D:/data/native_protein_digestion/11052021/raw_result.xlsx')
-"""
+df_info.to_excel('D:/data/native_protein_digestion/12072021/control/summary.xlsx')
+
 ### aggregate coverage from dialysis cassette digestion
 
 # df = pd.read_excel('D:/data/native_protein_digestion/11052021/raw_result.xlsx',index_col=0)  # manually delete
@@ -703,7 +703,7 @@ for tp in df_dist.itertuples():
 
 df_out.to_excel('D:/data/native_protein_digestion/12072021/control/KR_atoms_linear_reg.xlsx')
 """
-df_kr_linear_reg = pd.read_excel('D:/data/native_protein_digestion/12072021/control/dist_linear_reg.xlsx', index_col=0)
-df_kr_filtered = df_kr_linear_reg.loc[(df_kr_linear_reg['slope']<0)&(df_kr_linear_reg['r_square']>0.8)&
-                                      (df_kr_linear_reg['p_val']<0.05)]
-print (df_kr_filtered.sort_values('r_square').index.tolist()[-10:])
+# df_kr_linear_reg = pd.read_excel('D:/data/native_protein_digestion/12072021/control/dist_linear_reg.xlsx', index_col=0)
+# df_kr_filtered = df_kr_linear_reg.loc[(df_kr_linear_reg['slope']<0)&(df_kr_linear_reg['r_square']>0.8)&
+#                                       (df_kr_linear_reg['p_val']<0.05)]
+# print (df_kr_filtered.sort_values('r_square').index.tolist()[-10:])
