@@ -27,7 +27,7 @@ protein_dict = fasta_reader(fasta_path)
 # print (pep_path_list)
 
 ### get raw summary report
-
+"""
 protein_info_dict = protein_info_from_fasta(fasta_path)
 
 total_protein_set = protein_reader('D:/data/native_protein_digestion/12072021/control/combined_protein.tsv')
@@ -63,13 +63,13 @@ for prot in total_protein_set:
             else:
                 df_info.at[prot,file+'_'+i]=0
 df_info.to_excel('D:/data/native_protein_digestion/12072021/control/summary.xlsx')
-
-### aggregate coverage from dialysis cassette digestion
-
-# df = pd.read_excel('D:/data/native_protein_digestion/11052021/raw_result.xlsx',index_col=0)  # manually delete
-# base_path = 'D:/data/native_protein_digestion/11052021/search_result/'
-# time_points = [each.split('\\')[-2] for each in glob(base_path+'*/')]
 """
+### aggregate coverage from dialysis cassette digestion
+"""
+df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/summary.xlsx',index_col=0)  # manually delete
+base_path = 'D:/data/native_protein_digestion/12072021/control/'
+time_points = [each.split('\\')[-2] for each in glob(base_path+'*/')]
+
 df_aggregated = pd.DataFrame()
 protein_aggre_peptide_dict = {}
 for each in df.index:
@@ -115,7 +115,7 @@ for each in df.index:
         df_aggregated.at[each, time + '_aggre_coverage'] = aggregated_cov
         # df_aggregated.at[each, sample + '_' + time + '_aggre_unique_pep_count'] = aggregated_unique_pep_count
 
-df_aggregated.to_excel('D:/data/native_protein_digestion/11182021/search_result_XS/aggre_cov.xlsx')
+df_aggregated.to_excel('D:/data/native_protein_digestion/12072021/control/aggre_cov.xlsx')
 """
 
 ### get unique coverage at each time point (calculated by mapping peptides only showed at current time point, filter
@@ -315,11 +315,11 @@ plt.show()
 """
 
 ### covered distance analysis
-"""
+
 import pymannkendall as mk
 fig,axs = plt.subplots(1,1, figsize=(10,8))
 
-df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/KRtocenter_dist_unique.xlsx',index_col=0)
+df = pd.read_excel('F:/native_digestion/chymotrypsin_4_16/search/distance.xlsx',index_col=0)
 # df = df.T.ffill().bfill()
 # print (df)
 # df = df.dropna()
@@ -368,14 +368,19 @@ df_plot = df_plot.dropna()
 
 #
 ## line plot
+
 x = range(1,len(df.columns)+1)
-for tp in df.itertuples(index=False):
-    axs.plot(x,[i for i in tp],linestyle='-',alpha=0.6)
-sns.regplot(ax=axs,data=df_plot,x='time',y='cov_KR_dens',scatter=False,color='k')
+y_upper,y_lower = df.quantile(0.95).tolist(), df.quantile(0.05).tolist()
+print (y_upper,y_lower)
+# for tp in df.itertuples(index=False):
+#     axs.plot(x,[i for i in tp],linestyle='-',alpha=0.6)
+# sns.regplot(ax=axs,data=df_plot,x='time',y='cov_KR_dens',scatter=False,color='k')
+axs.plot(x,df.median().tolist(),linestyle='-',color='k',linewidth=4)
+axs.fill_between(x,y_lower,y_upper,alpha=0.3,edgecolor='k', facecolor='k')
 axs.set_xticks(x)
 axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
 plt.show()
-"""
+
 
 #heatmap
 """
@@ -518,7 +523,7 @@ df_fill.to_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov
 
 ### spearman correlation analysis of cleaved K/R densities between control and heat shock
 """
-df_control = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx',index_col=0)
+df_control = pd.read_excel('F:/native_digestion/chymotrypsin_4_16/search/cov_chymo_density.xlsx',index_col=0)
 # df_heatshock = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock/cov_KR_density_heatshock.xlsx',index_col=0)
 from scipy.stats import spearmanr
 
@@ -535,9 +540,9 @@ for tp in df_control.itertuples():
     except:
         df_spearman.at[prot, 'spearman correlation'] = 0
         df_spearman.at[prot,'p value'] = 0
-df_spearman.to_excel('D:/data/native_protein_digestion/12072021/control/spearman_cov_dist_nofill.xlsx')
-
+df_spearman.to_excel('F:/native_digestion/chymotrypsin_4_16/search/spearman_atom_density.xlsx')
 """
+
 ### process plddt data
 """
 import pickle
@@ -686,7 +691,7 @@ plt.show()
 ### linear regression analysis, calcuate the slope and R-square
 """
 from scipy.stats import linregress
-df_dist = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density.xlsx',index_col=0)
+df_dist = pd.read_excel('F:/native_digestion/chymotrypsin_4_16/search/cov_chymo_density.xlsx',index_col=0)
 df_out = pd.DataFrame(columns=['slope','r_square','p_val'])
 for tp in df_dist.itertuples():
     prot, kr_densities = tp[0], np.array(tp[1:])
@@ -701,9 +706,43 @@ for tp in df_dist.itertuples():
         slope, r_squre, p_val = result.slope, np.square(result.rvalue), result.pvalue
     df_out.at[prot,:] = slope, r_squre, p_val
 
-df_out.to_excel('D:/data/native_protein_digestion/12072021/control/KR_atoms_linear_reg.xlsx')
+df_out.to_excel('F:/native_digestion/chymotrypsin_4_16/search/atom_density_linear_regression.xlsx')
 """
 # df_kr_linear_reg = pd.read_excel('D:/data/native_protein_digestion/12072021/control/dist_linear_reg.xlsx', index_col=0)
 # df_kr_filtered = df_kr_linear_reg.loc[(df_kr_linear_reg['slope']<0)&(df_kr_linear_reg['r_square']>0.8)&
 #                                       (df_kr_linear_reg['p_val']<0.05)]
 # print (df_kr_filtered.sort_values('r_square').index.tolist()[-10:])
+
+### aggregated coverage plot
+"""
+df_plot = pd.read_excel('D:/data/native_protein_digestion/12072021/control/aggre_cov.xlsx',index_col=0)
+df_spearman_corr = pd.read_excel('D:/data/native_protein_digestion/12072021/control/spearman_corr_pval_nofill.xlsx',index_col=0)
+
+df_plot['spearman_density'] = [df_spearman_corr.at[each,'spearman correlation']
+                               if each in df_spearman_corr.index else 0 for each in df_plot.index]
+
+# df_plot['spearman_log10p_val'] = [-np.log10(df_spearman_corr.at[each,'p value'])
+#                                if each in df_spearman_corr.index else 0 for each in df_plot.index]
+sns.scatterplot(data=df_plot,x='MW_kDa',y='1740min_aggre_coverage',hue='spearman_density',
+                alpha=0.6,palette='viridis')
+plt.show()
+"""
+
+### compare between trypsin and chymotrypsin linear regression
+"""
+from scipy.stats import pearsonr
+df_trypsin = pd.read_excel('D:/data/native_protein_digestion/12072021/control/KR_atoms_linear_reg.xlsx', index_col=0)
+df_chymotrypsin = pd.read_excel('F:/native_digestion/chymotrypsin_4_16/search/atom_density_linear_regression.xlsx',index_col=0)
+overlaped_proteins = [each for each in df_trypsin.index.tolist() if each in df_chymotrypsin.index.tolist()]
+df_plot = pd.DataFrame()
+for each in overlaped_proteins:
+    df_plot.at[each,'tryp_linear_slope'] = df_trypsin.at[each, 'slope']
+    df_plot.at[each,'chymo_linear_slope'] = df_chymotrypsin.at[each, 'slope']
+df_plot = df_plot.dropna()
+# print (df_plot)
+sns.regplot(data=df_plot,x='tryp_linear_slope', y='chymo_linear_slope')
+r, p = pearsonr(df_plot['tryp_linear_slope'],df_plot['chymo_linear_slope'])
+print (f'r:{r},p:{p}')
+# sns.scatterplot(data=df_plot,x='tryp_linear_slope', y='chymo_linear_slope')
+plt.show()
+"""
