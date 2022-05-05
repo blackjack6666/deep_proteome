@@ -319,12 +319,12 @@ plt.show()
 import pymannkendall as mk
 fig,axs = plt.subplots(1,1, figsize=(10,8))
 
-df = pd.read_excel('F:/native_digestion/chymotrypsin_4_16/search/distance.xlsx',index_col=0)
+df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa.xlsx',index_col=0)
 # df = df.T.ffill().bfill()
 # print (df)
 # df = df.dropna()
-# print(df.mean())
-mk_result = mk.original_test(df.median().tolist())
+print(df.median().tolist())
+mk_result = mk.original_test(df.median().tolist()[:-2])
 # df = df.fillna(df.median())
 print(mk_result)
 # df = df.T
@@ -354,7 +354,7 @@ print(mk_result)
 df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
 df_plot = df_plot.dropna()
 # sns.regplot(x='time',y='cov_KR_dens',data=df_plot,color='k')
-# sns.boxplot(x='time',y='cov_KR_dens',data=df_plot,linewidth=2.5)
+sns.boxplot(x='time',y='cov_KR_dens',data=df_plot,linewidth=2.5)
 
 # sns.kdeplot(data=df_plot, x="cov_plddt", hue="time",legend=False)
 # add_stat_annotation(axs,data=df_plot, x='time',y='cov_KR_dens',box_pairs=[(1,2)],test='Wilcoxon',
@@ -362,24 +362,24 @@ df_plot = df_plot.dropna()
 # plt.xlim([0,8])
 # axs.set_xticks(range(1,8))
 # axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
-# axs.tick_params(axis='y', labelsize=16)
+axs.tick_params(axis='y', labelsize=16)
 # plt.legend(title='Time', loc='upper right', labels=list(df.columns))
-# plt.show()
+plt.show()
 
 #
 ## line plot
 
-x = range(1,len(df.columns)+1)
-y_upper,y_lower = df.quantile(0.95).tolist(), df.quantile(0.05).tolist()
-print (y_upper,y_lower)
-# for tp in df.itertuples(index=False):
-#     axs.plot(x,[i for i in tp],linestyle='-',alpha=0.6)
-# sns.regplot(ax=axs,data=df_plot,x='time',y='cov_KR_dens',scatter=False,color='k')
-axs.plot(x,df.median().tolist(),linestyle='-',color='k',linewidth=4)
-axs.fill_between(x,y_lower,y_upper,alpha=0.3,edgecolor='k', facecolor='k')
-axs.set_xticks(x)
-axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
-plt.show()
+# x = range(1,len(df.columns)+1)
+# y_upper,y_lower = df.quantile(0.95).tolist(), df.quantile(0.05).tolist()
+# print (y_upper,y_lower)
+# # for tp in df.itertuples(index=False):
+# #     axs.plot(x,[i for i in tp],linestyle='-',alpha=0.6)
+# # sns.regplot(ax=axs,data=df_plot,x='time',y='cov_KR_dens',scatter=False,color='k')
+# axs.plot(x,df.median().tolist(),linestyle='-',color='k',linewidth=4)
+# axs.fill_between(x,y_lower,y_upper,alpha=0.3,edgecolor='k', facecolor='k')
+# axs.set_xticks(x)
+# axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
+# plt.show()
 
 
 #heatmap
@@ -694,7 +694,7 @@ from scipy.stats import linregress
 df_dist = pd.read_excel('F:/native_digestion/chymotrypsin_4_16/search/cov_chymo_density.xlsx',index_col=0)
 df_out = pd.DataFrame(columns=['slope','r_square','p_val'])
 for tp in df_dist.itertuples():
-    prot, kr_densities = tp[0], np.array(tp[1:])
+    prot, kr_densities = tp[0], np.array(tp[1:-2])
     cleaned_kr_densities = kr_densities[np.isfinite(kr_densities)]
     if len(cleaned_kr_densities) == 1 or len(cleaned_kr_densities) == 0:
         slope, r_squre, p_val = np.nan, np.nan, np.nan
@@ -706,8 +706,9 @@ for tp in df_dist.itertuples():
         slope, r_squre, p_val = result.slope, np.square(result.rvalue), result.pvalue
     df_out.at[prot,:] = slope, r_squre, p_val
 
-df_out.to_excel('F:/native_digestion/chymotrypsin_4_16/search/atom_density_linear_regression.xlsx')
+df_out.to_excel('F:/native_digestion/chymotrypsin_4_16/search/atom_den_5_1200min_linear_reg.xlsx')
 """
+
 # df_kr_linear_reg = pd.read_excel('D:/data/native_protein_digestion/12072021/control/dist_linear_reg.xlsx', index_col=0)
 # df_kr_filtered = df_kr_linear_reg.loc[(df_kr_linear_reg['slope']<0)&(df_kr_linear_reg['r_square']>0.8)&
 #                                       (df_kr_linear_reg['p_val']<0.05)]
@@ -732,7 +733,7 @@ plt.show()
 """
 from scipy.stats import pearsonr
 df_trypsin = pd.read_excel('D:/data/native_protein_digestion/12072021/control/KR_atoms_linear_reg.xlsx', index_col=0)
-df_chymotrypsin = pd.read_excel('F:/native_digestion/chymotrypsin_4_16/search/atom_density_linear_regression.xlsx',index_col=0)
+df_chymotrypsin = pd.read_excel('F:/native_digestion/chymotrypsin_4_16/search/atom_den_5_1200min_linear_reg.xlsx',index_col=0)
 overlaped_proteins = [each for each in df_trypsin.index.tolist() if each in df_chymotrypsin.index.tolist()]
 df_plot = pd.DataFrame()
 for each in overlaped_proteins:
