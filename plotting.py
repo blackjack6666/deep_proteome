@@ -55,3 +55,33 @@ def volcano_plot(df,lfc,pv,
                                  sign_line=True,
                                  show=True)
 
+
+def extract_clustered_table(res, data):
+    """
+    input
+    =====
+    res:     <sns.matrix.ClusterGrid>  the clustermap object
+    data:    <pd.DataFrame>            input table
+
+    output
+    ======
+    returns: <pd.DataFrame>            reordered input table
+    """
+
+    # if sns.clustermap is run with row_cluster=False:
+    if res.dendrogram_row is None:
+        print("Apparently, rows were not clustered.")
+        return -1
+
+    if res.dendrogram_col is not None:
+        # reordering index and columns
+        new_cols = data.columns[res.dendrogram_col.reordered_ind]
+        new_ind = data.index[res.dendrogram_row.reordered_ind]
+
+        return data.loc[new_ind, new_cols]
+
+    else:
+        # reordering the index
+        new_ind = data.index[res.dendrogram_row.reordered_ind]
+
+        return data.loc[new_ind, :]

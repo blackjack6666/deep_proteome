@@ -315,7 +315,7 @@ plt.show()
 """
 
 ### covered distance analysis
-
+"""
 import pymannkendall as mk
 fig,axs = plt.subplots(1,1, figsize=(10,8))
 
@@ -380,16 +380,26 @@ plt.show()
 # axs.set_xticks(x)
 # axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
 # plt.show()
-
+"""
 
 #heatmap
 """
-df = pd.read_excel('D:/data/native_protein_digestion/10282021/h20_cov_dist_centroid_mean_nadrop.xlsx',index_col=0)
-df_new = df.iloc[:,:4]
-g = sns.clustermap(data=df_new,cbar_kws={'label': 'distance to protein centroid','shrink': 0.5},
-               cmap="viridis",yticklabels=False)
+from plotting import extract_clustered_table
+df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A.xlsx',index_col=0)
+# df_new = df.iloc[:,:4]
+df_new = df.fillna(0).iloc[:,:5]
+g = sns.clustermap(data=df_new,cbar_kws={'label': 'number of proximal atoms','shrink': 0.2 }, col_cluster=False,
+               cmap="viridis", yticklabels=False)
+clustered_table = extract_clustered_table(g,df_new)
+clustered_table.to_excel('D:/data/native_protein_digestion/12072021/control/clustermap_reorder_KR_density.xlsx')
+# x0, _y0, _w, _h = g.cbar_pos
+# g.ax_cbar.set_position([x0, 0.9, g.ax_row_dendrogram.get_position().width, 0.02])
+# g.ax_cbar.tick_params(axis='x', length=10)
+# for spine in g.ax_cbar.spines:
+#
+#     g.ax_cbar.spines[spine].set_linewidth(2)
 # g.set_xticklabels(labels=list(df_new.columns), ha='right',fontsize=10,rotation = 45)
-plt.show()
+# plt.show()
 """
 ### violin plot
 """
@@ -523,24 +533,25 @@ df_fill.to_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov
 
 ### spearman correlation analysis of cleaved K/R densities between control and heat shock
 """
-df_control = pd.read_excel('F:/native_digestion/chymotrypsin_4_16/search/cov_chymo_density.xlsx',index_col=0)
+
+df_control = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density.xlsx',index_col=0)
 # df_heatshock = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock/cov_KR_density_heatshock.xlsx',index_col=0)
 from scipy.stats import spearmanr
 
-df_control_median = df_control.median().tolist()
+df_control_median = df_control.median().tolist()[:5]
 # df_control_fill = df_control.fillna(df_control.median())
 
 df_spearman = pd.DataFrame(index=df_control.index, columns=['spearman correlation', 'p value'])
 for tp in df_control.itertuples():
-    prot, kr_densities = tp[0], tp[1:]
+    prot, kr_densities = tp[0], tp[1:6]
     try:
         corr, p_val = spearmanr(kr_densities,df_control_median,nan_policy='omit')
         df_spearman.at[prot,'spearman correlation'] = corr
         df_spearman.at[prot,'p value'] = p_val
-    except:
+    except: # incase spearman couldn't perform for low number of data points
         df_spearman.at[prot, 'spearman correlation'] = 0
         df_spearman.at[prot,'p value'] = 0
-df_spearman.to_excel('F:/native_digestion/chymotrypsin_4_16/search/spearman_atom_density.xlsx')
+df_spearman.to_excel('D:/data/native_protein_digestion/12072021/control/atom_spearman_10_240min.xlsx')
 """
 
 ### process plddt data
