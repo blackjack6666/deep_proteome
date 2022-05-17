@@ -280,7 +280,6 @@ def myplot(x, y, s, bins=1000):
     return heatmap.T, extent
 
 
-
 def combined_proteintsv_map(combined_protein_tsv):
     """
     map spectra count from combined protein tsv file to each file
@@ -289,7 +288,8 @@ def combined_proteintsv_map(combined_protein_tsv):
     """
     info_dict = {}
     import pandas as pd
-    df = pd.read_csv(combined_protein_tsv,sep='\t')
+    df = pd.read_csv(combined_protein_tsv,sep='\t',index_col=False)
+    # print (df.head)
     protein_list = df['Protein ID']
 
     for each_column in df.columns:

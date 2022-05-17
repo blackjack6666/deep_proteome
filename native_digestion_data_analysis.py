@@ -532,18 +532,17 @@ df_fill.to_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov
 """
 
 ### spearman correlation analysis of cleaved K/R densities between control and heat shock
-"""
 
-df_control = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density.xlsx',index_col=0)
+df_control = pd.read_excel('F:/native_digestion/chymotrypsin_4_16/search/cov_chymo_density.xlsx',index_col=0)
 # df_heatshock = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock/cov_KR_density_heatshock.xlsx',index_col=0)
 from scipy.stats import spearmanr
 
-df_control_median = df_control.median().tolist()[:5]
+df_control_median = df_control.median().tolist()[:8]
 # df_control_fill = df_control.fillna(df_control.median())
 
 df_spearman = pd.DataFrame(index=df_control.index, columns=['spearman correlation', 'p value'])
 for tp in df_control.itertuples():
-    prot, kr_densities = tp[0], tp[1:6]
+    prot, kr_densities = tp[0], tp[1:9]
     try:
         corr, p_val = spearmanr(kr_densities,df_control_median,nan_policy='omit')
         df_spearman.at[prot,'spearman correlation'] = corr
@@ -551,8 +550,7 @@ for tp in df_control.itertuples():
     except: # incase spearman couldn't perform for low number of data points
         df_spearman.at[prot, 'spearman correlation'] = 0
         df_spearman.at[prot,'p value'] = 0
-df_spearman.to_excel('D:/data/native_protein_digestion/12072021/control/atom_spearman_10_240min.xlsx')
-"""
+df_spearman.to_excel('F:/native_digestion/chymotrypsin_4_16/search/spearman_atom_dens_5_240min.xlsx')
 
 ### process plddt data
 """
