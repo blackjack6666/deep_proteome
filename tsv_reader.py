@@ -123,11 +123,10 @@ def psm_ptm_reader(psm_tsv_file_list,gene_set,mod=0.9840):
     return ptm_psm_dict,total_psm
 
 
-def protein_tsv_reader(protein_tsv_file):
-
+def protein_tsv_reader(protein_tsv_file, protein_column=1):
     with open(protein_tsv_file, 'r') as file_open:
         next(file_open)
-        return [line.split("\t")[3] for line in file_open]
+        return [line.split("\t")[protein_column] for line in file_open]
 
 
 def protein_reader(protein_tsv):
@@ -454,12 +453,13 @@ def get_unique_peptide(list_of_peptsv:list):
     :param list_of_peptide:
     :return:
     """
-
     unique_peptide_dict = {}
     peptide_list = []
     for idx, val in enumerate(list_of_peptsv):
-
-        file_name = val.split("/")[-2]
+        if '\\' in val:
+            file_name = val.split('\\')[-2]
+        else:
+            file_name = val.split("/")[-2]
         print (file_name)
         unique_peptide_list = [each for each in peptide_counting(val) if each not in peptide_list]
 
@@ -478,13 +478,13 @@ def map_k_r(psm_list, protein_dict):
     :param regex_dict: {regex:HEX color}
     :return:
     """
-
+    import numpy as np
     import time
     import multiprocessing_naive_algorithym
     from aho_corasick import automaton_matching,automaton_trie
 
     id_kr_mapp_dict = {}
-
+    id_kr_index_dict = {}
     # aho mapping
     id_list, seq_list = multiprocessing_naive_algorithym.extract_UNID_and_seq(protein_dict)
     seq_line = multiprocessing_naive_algorithym.creat_total_seq_line(seq_list, sep="|")
@@ -500,11 +500,11 @@ def map_k_r(psm_list, protein_dict):
     time_start = time.time()
     for i in range(len(separtor_pos_array)-1):
         zero_line_slice = zero_line[separtor_pos_array[i]+1:separtor_pos_array[i+1]]
-        if np.count_nonzero(zero_line_slice) != 0:
-            id_kr_mapp_dict[id_list[i]] = zero_line_slice
+        # if np.count_nonzero(zero_line_slice) != 0:
+        id_kr_mapp_dict[id_list[i]] = zero_line_slice
+        id_kr_index_dict[id_list[i]] = np.nonzero(zero_line_slice)[0]
 
-
-    return id_kr_mapp_dict
+    return id_kr_mapp_dict, id_kr_index_dict
 
 
 def kr_calculate(id_kr_mapp_dict,protein_dict):

@@ -5,6 +5,9 @@ from scipy.stats import pearsonr, mannwhitneyu, kruskal
 import numpy as np
 import pickle
 from glob import glob
+from tsv_reader import protein_tsv_reader, get_unique_peptide, map_k_r
+from protein_coverage import fasta_reader
+import os
 
 ### combine full and paritial uniprot-PDB mapping csv file
 """
@@ -119,13 +122,16 @@ venn_diagram_gen(ven_dict,'proteins with spearman < 0')
 """
 
 ### correlate sasa, density and distance
-from scipy.stats import pearsonr
+"""
+from scipy.stats import pearsonr, wilcoxon
+
 df_sasa = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa.xlsx',index_col=0)
 df_density = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A.xlsx', index_col=0)
 df_distance = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx', index_col=0)
 
 df_corr = pd.DataFrame(index=df_sasa.index,columns=df_sasa.columns)
 x, y = [], []
+result_dict = {}
 for ind in df_sasa.index:
     sasa_vals = df_sasa.loc[ind,:].values
     sasa_clean = sasa_vals[np.isfinite(sasa_vals)]
@@ -137,21 +143,73 @@ for ind in df_sasa.index:
         x.append(pearsonr(sasa_clean,density_clean))
         y.append(pearsonr(sasa_clean,dist_clean))
 
-significant_x_y = [(val[0],y[ind][0]) for ind,val in enumerate(x) if val[1]<0.05 and y[ind][1]<0.05]
-non_signi_x_y = [(val[0],y[ind][0]) for ind,val in enumerate(x) if val[1]>=0.05 or y[ind][1]>=0.05]
-x_, y_ = zip(*significant_x_y)
-nonsig_x, nonsig_y = zip(*non_signi_x_y)
-plt.scatter(x=x_,y=y_,s=8,alpha=0.6, c='red', label='p val < 0.05')
-plt.scatter(x=nonsig_x,y=nonsig_y,s=8,alpha=0.3, c='grey',label='p val >= 0.05' )
-plt.xlabel('Pearson corr between sasa and atom density')
-plt.ylabel('Pearson corr between sasa and center distance')
-plt.axhline(0,-1,1,c='k',linestyle='--')
-plt.axvline(0,-1,1,c='k',linestyle='--')
-plt.xlim(-1.1,1.1)
-plt.ylim(-1.1,1.1)
-plt.legend(loc='upper right',framealpha=0.5)
-plt.show()
+# significant_x_y = [(val[0],y[ind][0]) for ind,val in enumerate(x) if val[1]<0.05 and y[ind][1]<0.05]
+# non_signi_x_y = [(val[0],y[ind][0]) for ind,val in enumerate(x) if val[1]>=0.05 or y[ind][1]>=0.05]
+# x_, y_ = zip(*significant_x_y)
+# nonsig_x, nonsig_y = zip(*non_signi_x_y)
+# plt.scatter(x=x_,y=y_,s=8,alpha=0.6, c='red', label='p val < 0.05')
+# plt.scatter(x=nonsig_x,y=nonsig_y,s=8,alpha=0.3, c='grey',label='p val >= 0.05' )
+# plt.xlabel('Pearson corr between sasa and atom density')
+# plt.ylabel('Pearson corr between sasa and center distance')
+# plt.axhline(0,-1,1,c='k',linestyle='--')
+# plt.axvline(0,-1,1,c='k',linestyle='--')
+# plt.xlim(-1.1,1.1)
+# plt.ylim(-1.1,1.1)
+# plt.legend(loc='upper right',framealpha=0.5)
+# plt.show()
 
 # df_plot = pd.DataFrame(dict(pearson=[each[0] for each in x]+[each[0] for each in y],x_or_y=['x']*len(x)+['y']*len(y)))
 # sns.violinplot(x='x_or_y',y='pearson',data=df_plot)
 # plt.show()
+"""
+
+### implement amino acid exposure data from structuremap (full exposure, value is number of neiboring amino acids)
+# https://github.com/MannLabs/structuremap_analysis/blob/master/data_analysis_structuremap.ipynb
+"""
+fasta_file = 'D:/data/pats/human_fasta/uniprot-proteome_UP000005640_sp_tr.fasta'
+protein_dict = fasta_reader(fasta_file)
+
+# df_full_exp = pd.read_csv('D:/data/alphafold_pdb/full_sphere_exposure.csv') 
+
+## split big csv into chunks and save individually for higher reading speed
+
+# pd_dicts = {key: df_full_exp.loc[value] for key, value in df_full_exp.groupby("protein_id").groups.items()}
+# for k in pd_dicts:
+#     print (k)
+#     pd_dicts[k].to_csv(os.path.join('D:/data/alphafold_pdb/full_sphere_expo_split/',k+'.csv'))
+# print (df_full_exp.head)
+
+protein_tsv = 'D:/data/native_protein_digestion/12072021/control/combined_protein.tsv'
+protein_list = protein_tsv_reader(protein_tsv, protein_column=3)
+sub_protein_dict = {prot:protein_dict[prot] for prot in protein_list}
+
+base_path = 'D:/data/native_protein_digestion/12072021/control/'
+folders = [base_path + folder for folder in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, folder))]
+time_points = [each.split('/')[-1] for each in folders]
+pep_path_list = [each + '/peptide.tsv' for each in folders]
+psm_path_list = [each + '/psm.tsv' for each in folders]
+unique_peptide_dict = get_unique_peptide(pep_path_list)
+
+df_native_exposure = pd.DataFrame(index=protein_list,columns=time_points)
+
+for pep_tsv in pep_path_list:
+    print (pep_tsv)
+    peptide_list = unique_peptide_dict[pep_tsv.split('/')[-2]]
+    freq_array_dict, freq_array_index_dict = map_k_r(peptide_list,sub_protein_dict)
+
+    for prot in protein_list:
+        print (prot)
+        try:
+            df_expo = pd.read_csv('D:/data/alphafold_pdb/full_sphere_expo_split/'+prot+'.csv')
+
+            freq_index = freq_array_index_dict[prot]
+            if len(freq_index)!=0: # has at least one peptide matched
+                total_expo = sum([df_expo.at[each,'nAA_24_180_pae'] for each in freq_index])
+                ave_expo = total_expo/len(freq_index)
+                df_native_exposure.at[prot,pep_tsv.split('/')[-2]] = ave_expo
+            else:
+                df_native_exposure.at[prot,pep_tsv.split('/')[-2]] = np.nan
+        except FileNotFoundError:
+            df_native_exposure.at[prot, pep_tsv.split('/')[-2]] = np.nan
+df_native_exposure.to_excel('D:/data/native_protein_digestion/12072021/control/aa_exposure_structuremap.xlsx')
+"""
