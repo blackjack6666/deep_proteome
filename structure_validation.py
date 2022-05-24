@@ -212,4 +212,43 @@ for pep_tsv in pep_path_list:
         except FileNotFoundError:
             df_native_exposure.at[prot, pep_tsv.split('/')[-2]] = np.nan
 df_native_exposure.to_excel('D:/data/native_protein_digestion/12072021/control/aa_exposure_structuremap.xlsx')
+
 """
+
+### correlation
+from matplotlib.collections import PatchCollection
+
+df_sasa = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa.xlsx',index_col=0)
+df_density = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A.xlsx', index_col=0)
+df_distance = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx', index_col=0)
+df_atom_exposure = pd.read_excel('D:/data/native_protein_digestion/12072021/control/aa_exposure_structuremap.xlsx',index_col=0)
+
+df_atom_exposure_filter = pd.DataFrame(columns=df_distance.columns)
+for tp in df_distance.itertuples():
+    prot_id, values = tp[0], tp[1:]
+    if sum(~np.isnan(values)) >=3: # filter out those with less than 3 data points
+        df_atom_exposure_filter.loc[prot_id,:] = values
+
+
+# df_corr = pd.DataFrame(columns=['pearson_corr', 'p_val'])
+# for ind in df_sasa.index:
+#     for ind2 in df_sasa.index:
+#         if ind!=ind2:
+#             sasa_vals = df_sasa.loc[ind,:].values
+#             sasa_clean = sasa_vals[np.isfinite(sasa_vals)]
+#             density_vals = df_density.loc[ind,:].values
+#             density_clean = density_vals[np.isfinite(density_vals)]
+#         # dist_vals = df_distance.loc[ind,:].values
+#         # dist_clean = dist_vals[np.isfinite(dist_vals)]
+#         # atom_exposure = df_atom_exposure.loc[ind,:].values
+#         # atom_exposure_clean = atom_exposure[np.isfinite(atom_exposure)]
+#             if all([len(sasa_clean)>=3, len(density_clean)>=3, len(dist_clean)>=3, len(atom_exposure_clean)>=3]):
+#                 df_corr.loc[ind,:] = pearsonr(sasa_clean,density_clean)
+#
+# df_corr['-log10p'] = -np.log10(df_corr.p_val.astype(np.float64))
+fig,ax = plt.subplots(figsize=(12,10))
+# df_atom_exposure_filter = df_atom_exposure_filter.astype(float)
+df_corr = df_atom_exposure_filter.T.corr()
+print (df_corr)
+# sns.heatmap(df_corr,ax=ax,xticklabels=[], yticklabels=[],cmap='viridis',cbar_kws={"shrink": 0.5})
+# plt.show()
