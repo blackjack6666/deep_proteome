@@ -315,11 +315,11 @@ plt.show()
 """
 
 ### covered distance analysis
-"""
+
 import pymannkendall as mk
 fig,axs = plt.subplots(1,1, figsize=(10,8))
 
-df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa.xlsx',index_col=0)
+df = pd.read_excel('F:/native_digestion/trypsin_lysc_5_25/search/cov_KR_density_15A.xlsx',index_col=0)
 # df = df.T.ffill().bfill()
 # print (df)
 # df = df.dropna()
@@ -351,10 +351,10 @@ print(mk_result)
 #     print (each, df[each].mean())
 # x = range(1,len(new_columns)+1)
 
-df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
-df_plot = df_plot.dropna()
+# df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
+# df_plot = df_plot.dropna()
 # sns.regplot(x='time',y='cov_KR_dens',data=df_plot,color='k')
-sns.boxplot(x='time',y='cov_KR_dens',data=df_plot,linewidth=2.5)
+# sns.boxplot(x='time',y='cov_KR_dens',data=df_plot,linewidth=2.5)
 
 # sns.kdeplot(data=df_plot, x="cov_plddt", hue="time",legend=False)
 # add_stat_annotation(axs,data=df_plot, x='time',y='cov_KR_dens',box_pairs=[(1,2)],test='Wilcoxon',
@@ -362,25 +362,25 @@ sns.boxplot(x='time',y='cov_KR_dens',data=df_plot,linewidth=2.5)
 # plt.xlim([0,8])
 # axs.set_xticks(range(1,8))
 # axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
-axs.tick_params(axis='y', labelsize=16)
+# axs.tick_params(axis='y', labelsize=16)
 # plt.legend(title='Time', loc='upper right', labels=list(df.columns))
-plt.show()
+# plt.show()
 
 #
 ## line plot
 
-# x = range(1,len(df.columns)+1)
-# y_upper,y_lower = df.quantile(0.95).tolist(), df.quantile(0.05).tolist()
-# print (y_upper,y_lower)
-# # for tp in df.itertuples(index=False):
-# #     axs.plot(x,[i for i in tp],linestyle='-',alpha=0.6)
-# # sns.regplot(ax=axs,data=df_plot,x='time',y='cov_KR_dens',scatter=False,color='k')
-# axs.plot(x,df.median().tolist(),linestyle='-',color='k',linewidth=4)
-# axs.fill_between(x,y_lower,y_upper,alpha=0.3,edgecolor='k', facecolor='k')
-# axs.set_xticks(x)
-# axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
-# plt.show()
-"""
+x = range(1,len(df.columns)+1)
+y_upper,y_lower = df.quantile(0.95).tolist(), df.quantile(0.05).tolist()
+print (y_upper,y_lower)
+# for tp in df.itertuples(index=False):
+#     axs.plot(x,[i for i in tp],linestyle='-',alpha=0.6)
+# sns.regplot(ax=axs,data=df_plot,x='time',y='cov_KR_dens',scatter=False,color='k')
+axs.plot(x,df.median().tolist(),linestyle='-',color='k',linewidth=4)
+axs.fill_between(x,y_lower,y_upper,alpha=0.3,edgecolor='k', facecolor='k')
+axs.set_xticks(x)
+axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
+plt.show()
+
 
 #heatmap
 """
@@ -532,7 +532,7 @@ df_fill.to_excel('D:/data/native_protein_digestion/11182021/search_result_XS/cov
 """
 
 ### spearman correlation analysis of cleaved K/R densities between control and heat shock
-
+"""
 df_control = pd.read_excel('F:/native_digestion/chymotrypsin_4_16/search/cov_chymo_density.xlsx',index_col=0)
 # df_heatshock = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock/cov_KR_density_heatshock.xlsx',index_col=0)
 from scipy.stats import spearmanr
@@ -551,7 +551,7 @@ for tp in df_control.itertuples():
         df_spearman.at[prot, 'spearman correlation'] = 0
         df_spearman.at[prot,'p value'] = 0
 df_spearman.to_excel('F:/native_digestion/chymotrypsin_4_16/search/spearman_atom_dens_5_240min.xlsx')
-
+"""
 ### process plddt data
 """
 import pickle

@@ -8,6 +8,10 @@ from glob import glob
 from tsv_reader import protein_tsv_reader, get_unique_peptide, map_k_r
 from protein_coverage import fasta_reader
 import os
+import umap
+import hdbscan
+import sklearn.cluster as cluster
+from sklearn.metrics import adjusted_rand_score, adjusted_mutual_info_score
 
 ### combine full and paritial uniprot-PDB mapping csv file
 """
@@ -218,11 +222,11 @@ df_native_exposure.to_excel('D:/data/native_protein_digestion/12072021/control/a
 ### correlation
 from matplotlib.collections import PatchCollection
 
-df_sasa = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa.xlsx',index_col=0)
-df_density = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A.xlsx', index_col=0)
-df_distance = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx', index_col=0)
-df_atom_exposure = pd.read_excel('D:/data/native_protein_digestion/12072021/control/aa_exposure_structuremap.xlsx',index_col=0)
-
+# df_sasa = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa.xlsx',index_col=0)
+# df_density = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A.xlsx', index_col=0)
+# df_distance = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx', index_col=0)
+# df_atom_exposure = pd.read_excel('D:/data/native_protein_digestion/12072021/control/aa_exposure_structuremap.xlsx',index_col=0)
+"""
 df_atom_exposure_filter = pd.DataFrame(columns=df_distance.columns)
 for tp in df_distance.itertuples():
     prot_id, values = tp[0], tp[1:]
@@ -252,3 +256,77 @@ df_corr = df_atom_exposure_filter.T.corr()
 print (df_corr)
 # sns.heatmap(df_corr,ax=ax,xticklabels=[], yticklabels=[],cmap='viridis',cbar_kws={"shrink": 0.5})
 # plt.show()
+"""
+### umap clustering
+"""
+sasa_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa_spearman_10_240min.xlsx')['spearman correlation'].values
+denstiy_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/atom_spearman_10_240min.xlsx')['spearman correlation'].values
+distance_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/dist_spearman_10_240min.xlsx')['spearman correlation'].values
+aver_spearman = np.sum([sasa_spearman,denstiy_spearman,distance_spearman],axis=0)/3
+bool_spearman = np.where(aver_spearman<0,1,0)
+
+
+df_plot = pd.concat([df_sasa,df_distance,df_density],axis=1)
+df_plot_fill = df_plot.fillna(0)
+# df_plot_fill = df_plot.dropna()
+# print (df_plot_fill.head)
+
+## umap visualization/dimension reduction
+clusterable_embedding = umap.UMAP(
+    n_neighbors=30,
+    min_dist=0.0,
+    n_components=2,
+    random_state=42,
+).fit_transform(df_plot_fill)
+
+plt.scatter(clusterable_embedding[:, 0], clusterable_embedding[:, 1],c=bool_spearman, cmap='Spectral',
+             s=0.3,alpha=0.5)
+plt.show()
+
+## HDBSCAN clustering
+# labels = hdbscan.HDBSCAN(
+#     min_samples=5,
+#     min_cluster_size=30,
+# ).fit_predict(clusterable_embedding)
+#
+# clustered = (labels >= 0)
+#
+# plt.scatter(clusterable_embedding[~clustered, 0],
+#             clusterable_embedding[~clustered, 1],
+#             color=(0.5, 0.5, 0.5),
+#             s=0.3,
+#             alpha=0.5)
+# plt.scatter(clusterable_embedding[clustered, 0],
+#             clusterable_embedding[clustered, 1],
+#             c=labels[clustered],
+#             s=0.3,
+#             cmap='Spectral')
+#
+# plt.show()
+"""
+### protein fragments length analysis in native digestion
+
+df_cleav_index = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cleavage_index_4_24.xlsx',index_col=0)
+selected_cols = df_cleav_index.columns[1:-2]
+df_new = pd.DataFrame(index=df_cleav_index.index,columns=selected_cols)
+
+# print (selected_cols)
+for ind in df_cleav_index.index:
+    seq_len = len(df_cleav_index.at[ind,'sequence'])
+    for each_col in selected_cols:
+        cells = df_cleav_index.loc[ind, '0010min':each_col].tolist()  # multiple columns
+
+        cleav_array = ''.join([each for each in cells]).replace('[',' ').replace(']',' ').replace('\n','')
+        np_array = np.append(np.fromstring(cleav_array,dtype=int, sep=' '),seq_len)
+        unique_sort_array = np.sort(np.unique(np_array))
+        substract_array = np.insert(unique_sort_array, 0, 0)[:-1]
+        # print (unique_sort_array,substract_array)
+
+        frag_ratio = np.subtract(unique_sort_array,substract_array)/seq_len # normalized by length of protein
+        max_ind = np.argmax(frag_ratio)
+        max_idx_first, max_idx_latter = substract_array[max_ind],unique_sort_array[max_ind]
+        print (max_idx_first,max_idx_latter)
+        # df_new.at[ind,each_col] = np.max(frag_ratio)
+        df_new.at[ind,each_col] = (max_idx_first,max_idx_latter)
+# df_new.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length.xlsx')
+df_new.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_index.xlsx')
