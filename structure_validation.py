@@ -12,6 +12,7 @@ import umap
 import hdbscan
 import sklearn.cluster as cluster
 from sklearn.metrics import adjusted_rand_score, adjusted_mutual_info_score
+from sklearn.decomposition import PCA
 
 ### combine full and paritial uniprot-PDB mapping csv file
 """
@@ -222,10 +223,10 @@ df_native_exposure.to_excel('D:/data/native_protein_digestion/12072021/control/a
 ### correlation
 from matplotlib.collections import PatchCollection
 
-# df_sasa = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa.xlsx',index_col=0)
-# df_density = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A.xlsx', index_col=0)
-# df_distance = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx', index_col=0)
-# df_atom_exposure = pd.read_excel('D:/data/native_protein_digestion/12072021/control/aa_exposure_structuremap.xlsx',index_col=0)
+df_sasa = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa.xlsx',index_col=0)
+df_density = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A.xlsx', index_col=0)
+df_distance = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx', index_col=0)
+df_atom_exposure = pd.read_excel('D:/data/native_protein_digestion/12072021/control/aa_exposure_structuremap.xlsx',index_col=0)
 """
 df_atom_exposure_filter = pd.DataFrame(columns=df_distance.columns)
 for tp in df_distance.itertuples():
@@ -258,12 +259,23 @@ print (df_corr)
 # plt.show()
 """
 ### umap clustering
-"""
-sasa_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa_spearman_10_240min.xlsx')['spearman correlation'].values
-denstiy_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/atom_spearman_10_240min.xlsx')['spearman correlation'].values
-distance_spearman = pd.read_excel('D:/data/native_protein_digestion/12072021/control/dist_spearman_10_240min.xlsx')['spearman correlation'].values
+
+sasa_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa_spearman_10_240min.xlsx')
+denstiy_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/atom_spearman_10_240min.xlsx')
+distance_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/dist_spearman_10_240min.xlsx')
+sasa_spearman,denstiy_spearman,distance_spearman = sasa_spearman_df['spearman correlation'].values, \
+                                                   denstiy_spearman_df['spearman correlation'].values, \
+                                                   distance_spearman_df['spearman correlation'].values
+sasa_pval, density_pval, distance_pval = sasa_spearman_df['p value'].values, \
+                                         denstiy_spearman_df['p value'].values, \
+                                         distance_spearman_df['p value'].values
+
+
 aver_spearman = np.sum([sasa_spearman,denstiy_spearman,distance_spearman],axis=0)/3
-bool_spearman = np.where(aver_spearman<0,1,0)
+min_pval = np.min([sasa_pval,density_pval,distance_pval],axis=0)
+bool_spearman_negative = np.where((aver_spearman<0)&(min_pval<0.05),1,0)  # get average spearman <0 one of the pval<0.05
+bool_spearman_positive = np.where((aver_spearman>0)&(min_pval<0.05),-1,0)
+color_column = np.sum([bool_spearman_negative,bool_spearman_positive],axis=0)
 
 
 df_plot = pd.concat([df_sasa,df_distance,df_density],axis=1)
@@ -271,22 +283,31 @@ df_plot_fill = df_plot.fillna(0)
 # df_plot_fill = df_plot.dropna()
 # print (df_plot_fill.head)
 
-## umap visualization/dimension reduction
-clusterable_embedding = umap.UMAP(
-    n_neighbors=30,
-    min_dist=0.0,
-    n_components=2,
-    random_state=42,
-).fit_transform(df_plot_fill)
+## PCA filter out noisy data
+pca = PCA(df_plot_fill.shape[1])
 
-plt.scatter(clusterable_embedding[:, 0], clusterable_embedding[:, 1],c=bool_spearman, cmap='Spectral',
-             s=0.3,alpha=0.5)
-plt.show()
+df_pca = pca.fit_transform(df_plot_fill)  # fill na with extreme values
+print (df_pca.shape)
+print('Explained variation per principal component: {}'.format(pca.explained_variance_ratio_))
+## variance explained by PC1 is too low, not a good idea to use PCA eigenvalues
+
+## umap visualization/dimension reduction
+# clusterable_embedding = umap.UMAP(
+#     n_neighbors=30,
+#     min_dist=0.0,
+#     n_components=2,
+#     random_state=42,
+# ).fit_transform(df_plot_fill)
+
+# differentiate colors by bool_spearman condition
+# plt.scatter(clusterable_embedding[:, 0], clusterable_embedding[:, 1],c=color_column, cmap='plasma',
+#              s=0.3,alpha=0.8)
+# plt.show()
 
 ## HDBSCAN clustering
 # labels = hdbscan.HDBSCAN(
-#     min_samples=5,
-#     min_cluster_size=30,
+#     min_samples=10,
+#     min_cluster_size=60,
 # ).fit_predict(clusterable_embedding)
 #
 # clustered = (labels >= 0)
@@ -303,9 +324,9 @@ plt.show()
 #             cmap='Spectral')
 #
 # plt.show()
-"""
-### protein fragments length analysis in native digestion
 
+### protein fragments length analysis in native digestion
+"""
 df_cleav_index = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cleavage_index_4_24.xlsx',index_col=0)
 selected_cols = df_cleav_index.columns[1:-2]
 df_new = pd.DataFrame(index=df_cleav_index.index,columns=selected_cols)
@@ -330,3 +351,4 @@ for ind in df_cleav_index.index:
         df_new.at[ind,each_col] = (max_idx_first,max_idx_latter)
 # df_new.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length.xlsx')
 df_new.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_index.xlsx')
+"""
