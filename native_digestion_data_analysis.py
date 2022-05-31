@@ -315,11 +315,18 @@ plt.show()
 """
 
 ### covered distance analysis
+"""
+df_blast_identity = pd.read_csv('C:/tools/seqmappdb/demo_data/full_parital_combined.csv')
+quantile95 = np.quantile(df_blast_identity['identity_against_uniprot'], 0.95)
+high_conf_id = df_blast_identity[df_blast_identity['identity_against_uniprot']>quantile95].uniprot.tolist()
+high_conf_id = [each.lstrip('>') for each in high_conf_id]
 
 import pymannkendall as mk
 fig,axs = plt.subplots(1,1, figsize=(10,8))
 
-df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length.xlsx',index_col=0)
+df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A.xlsx',index_col=0)
+# high_conf_id = [each for each in df.index if each in high_conf_id]
+# df = df.loc[high_conf_id]
 # df = df.T.ffill().bfill()
 # print (df)
 # df = df.dropna()
@@ -351,7 +358,7 @@ print(mk_result)
 #     print (each, df[each].mean())
 # x = range(1,len(new_columns)+1)
 
-df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
+# df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
 # df_plot = df_plot.dropna()
 # sns.regplot(x='time',y='cov_KR_dens',data=df_plot,color='k')
 # sns.boxplot(x='time',y='cov_KR_dens',data=df_plot,linewidth=2.5)
@@ -369,19 +376,19 @@ df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], c
 #
 ## line plot
 
-x = range(1,len(df.columns)+1)
+# x = range(1,len(df.columns)+1)
 # y_upper,y_lower = df.quantile(0.95).tolist(), df.quantile(0.05).tolist()
 # print (y_upper,y_lower)
-for tp in df.itertuples(index=False):
-    axs.plot(x,[i for i in tp],linestyle='-',alpha=0.6)
-sns.regplot(ax=axs,data=df_plot,x='time',y='cov_KR_dens',scatter=False,color='k')
+# for tp in df.itertuples(index=False):
+#     axs.plot(x,[i for i in tp],linestyle='-',alpha=0.6)
+# sns.regplot(ax=axs,data=df_plot,x='time',y='cov_KR_dens',scatter=False,color='k')
 # axs.plot(x,df.median().tolist(),linestyle='-',color='k',linewidth=4)
 # axs.fill_between(x,y_lower,y_upper,alpha=0.3,edgecolor='k', facecolor='k')
-axs.set_xticks(x)
-axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
-plt.show()
+# axs.set_xticks(x)
+# axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
+# plt.show()
 
-
+"""
 #heatmap
 """
 from plotting import extract_clustered_table

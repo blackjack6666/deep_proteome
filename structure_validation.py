@@ -259,7 +259,7 @@ print (df_corr)
 # plt.show()
 """
 ### umap clustering
-
+"""
 sasa_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa_spearman_10_240min.xlsx')
 denstiy_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/atom_spearman_10_240min.xlsx')
 distance_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/dist_spearman_10_240min.xlsx')
@@ -324,7 +324,7 @@ print('Explained variation per principal component: {}'.format(pca.explained_var
 #             cmap='Spectral')
 #
 # plt.show()
-
+"""
 ### protein fragments length analysis in native digestion
 """
 df_cleav_index = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cleavage_index_4_24.xlsx',index_col=0)
@@ -352,3 +352,19 @@ for ind in df_cleav_index.index:
 # df_new.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length.xlsx')
 df_new.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_index.xlsx')
 """
+
+### filter by blast identity
+# df_blast_identity = pd.read_csv('C:/tools/seqmappdb/demo_data/full_parital_combined.csv')
+# quantile95 = np.quantile(df_blast_identity['identity_against_uniprot'], 0.95)
+#
+# filtered_df = df_blast_identity[df_blast_identity['identity_against_uniprot']>quantile95]
+
+
+### text cloud
+from collections import Counter
+with open('D:/data/ASMS/New Text Document.txt','r') as f_o:
+    text_list = f_o.readline().split(' ')
+
+counted = Counter(text_list)
+df = pd.DataFrame({'Weight':[v for v in counted.values()], 'Word':[k for k in counted.keys()]})
+df.to_csv('D:/data/ASMS/background.csv')
