@@ -118,7 +118,7 @@ ecm_class_color_dict = {"Collagens": '#0584B7', 'ECM-affiliated Proteins':'#F451
                         "ECM Glycoproteins":"#133463", "Proteoglycans":"#59D8E6"}
 
 ### NSAF analysis
-
+"""
 from collections import defaultdict
 fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta'
 protein_dict = fasta_reader(fasta_path)
@@ -151,7 +151,7 @@ total_protein_list = df_DF.index
 #         df.at[protein,clm] = (df_DF.at[protein,old_clm]/len(protein_dict[protein]))/column_total_nsaf_dict[old_clm]
 #
 # df.to_excel('D:/data/Naba_deep_matrisome/BCDF_combined/NSAF_bg_all_proteins.xlsx')
-
+"""
 
 ### aggregated NSAF analysis
 """
@@ -205,7 +205,7 @@ plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/GFP
 plt.show()
 """
 ### peptide index mapping from tsv
-
+"""
 from multiprocessing_naive_algorithym import map_peptide_index
 from glob import glob
 import os
@@ -233,4 +233,16 @@ with pd.ExcelWriter('D:/data/Naba_deep_matrisome/PSM_info_DF_XS.xlsx') as writer
                                    spec_count = spec_count_list),index=pep_list)
             df.to_excel(writer,sheet_name=each_file.split('/')[-2])
             print(each_file)
+"""
+### get total spec count from summary excel
+excel_path = 'D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F.xlsx'
+df = pd.read_excel(excel_path,index_col=0)
 
+ecm_excel_path = 'D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_ecm_aggregated_D_F.xlsx'
+df_ecm = pd.read_excel(ecm_excel_path, index_col=0)
+
+df_mask = df.loc[df_ecm.index,:]
+# print (df_mask)
+columns = [each for each in df_mask.columns if 'total_spec' in each and '_seq_' in each]
+for col in columns:
+    print (col, df_mask[col].sum())

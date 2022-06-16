@@ -14,6 +14,9 @@ import sklearn.cluster as cluster
 from sklearn.metrics import adjusted_rand_score, adjusted_mutual_info_score
 from sklearn.decomposition import PCA
 
+
+fasta_file = 'D:/data/pats/human_fasta/uniprot-proteome_UP000005640_sp_tr.fasta'
+protein_dict = fasta_reader(fasta_file)
 ### combine full and paritial uniprot-PDB mapping csv file
 """
 header_names = ['uniprot',
@@ -171,8 +174,7 @@ for ind in df_sasa.index:
 ### implement amino acid exposure data from structuremap (full exposure, value is number of neiboring amino acids)
 # https://github.com/MannLabs/structuremap_analysis/blob/master/data_analysis_structuremap.ipynb
 """
-fasta_file = 'D:/data/pats/human_fasta/uniprot-proteome_UP000005640_sp_tr.fasta'
-protein_dict = fasta_reader(fasta_file)
+
 
 # df_full_exp = pd.read_csv('D:/data/alphafold_pdb/full_sphere_exposure.csv') 
 
@@ -310,7 +312,7 @@ print('Explained variation per principal component: {}'.format(pca.explained_var
 #     min_cluster_size=60,
 # ).fit_predict(clusterable_embedding)
 #
-# clustered = (labels >= 0)
+# clustered = (labels >= 0)  # label = -1 for noise data
 #
 # plt.scatter(clusterable_embedding[~clustered, 0],
 #             clusterable_embedding[~clustered, 1],
@@ -360,11 +362,3 @@ df_new.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max
 # filtered_df = df_blast_identity[df_blast_identity['identity_against_uniprot']>quantile95]
 
 
-### text cloud
-from collections import Counter
-with open('D:/data/ASMS/New Text Document.txt','r') as f_o:
-    text_list = f_o.readline().split(' ')
-
-counted = Counter(text_list)
-df = pd.DataFrame({'Weight':[v for v in counted.values()], 'Word':[k for k in counted.keys()]})
-df.to_csv('D:/data/ASMS/background.csv')

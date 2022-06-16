@@ -315,16 +315,17 @@ plt.show()
 """
 
 ### covered distance analysis
-"""
-df_blast_identity = pd.read_csv('C:/tools/seqmappdb/demo_data/full_parital_combined.csv')
-quantile95 = np.quantile(df_blast_identity['identity_against_uniprot'], 0.95)
-high_conf_id = df_blast_identity[df_blast_identity['identity_against_uniprot']>quantile95].uniprot.tolist()
-high_conf_id = [each.lstrip('>') for each in high_conf_id]
+
+# df_blast_identity = pd.read_csv('C:/tools/seqmappdb/demo_data/full_parital_combined.csv')
+# quantile95 = np.quantile(df_blast_identity['identity_against_uniprot'], 0.95)
+# high_conf_id = df_blast_identity[df_blast_identity['identity_against_uniprot']>quantile95].uniprot.tolist()
+# high_conf_id = [each.lstrip('>') for each in high_conf_id]
 
 import pymannkendall as mk
-fig,axs = plt.subplots(1,1, figsize=(10,8))
+from scipy.stats import linregress
+fig,axs = plt.subplots(1,1, figsize=(8,8))
 
-df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A.xlsx',index_col=0)
+df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length.xlsx',index_col=0)
 # high_conf_id = [each for each in df.index if each in high_conf_id]
 # df = df.loc[high_conf_id]
 # df = df.T.ffill().bfill()
@@ -336,6 +337,20 @@ mk_result = mk.original_test(df.median().tolist())
 print(mk_result)
 # df = df.T
 
+x = range(df.shape[1])
+y = []
+for tp in df.itertuples(index=True):
+    slope = linregress(x,tp[1:])[0]
+    y.append(slope)
+    if slope < -0.175:
+        print (tp[0])
+
+
+plt.scatter(range(df.shape[0]),y)
+plt.show()
+df['slope'] = y
+df['length'] = [len(protein_dict[idx]) for idx in df.index]
+df.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length_slope.xlsx')
 
 # columns = list(df.columns)
 #
@@ -388,7 +403,6 @@ print(mk_result)
 # axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
 # plt.show()
 
-"""
 #heatmap
 """
 from plotting import extract_clustered_table
