@@ -362,3 +362,29 @@ df_new.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max
 # filtered_df = df_blast_identity[df_blast_identity['identity_against_uniprot']>quantile95]
 
 
+### protein leftover fragment first derivative
+# df_fragment = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length_slope.xlsx', index_col=0)
+# df_fragment = df_fragment.iloc[:,:-2]
+# fig,ax = plt.subplots(figsize=(5,10))
+# time_points = [10,30,60,120,240,1320,1740]
+#
+# slope_all = []
+# x = list(range(6))
+# for tp in df_fragment.itertuples(index=False):
+#     slope = [(tp[i]-tp[i+1])/(time_points[i+1]-time_points[i]) for i in range(len(tp)-1)]
+#     slope_all += slope
+
+#     ax.plot(x,slope,linestyle='-',alpha=0.6)
+# plt.show()
+
+# df_plot = pd.DataFrame(dict(x=x*df_fragment.shape[0],y=slope_all))
+# sns.boxplot(data=df_plot,x='x',y='y')
+
+## cluster map
+# g = sns.clustermap(data=df_fragment,cmap='viridis',yticklabels=False,xticklabels=True,figsize=(5,10))
+# plt.setp(g.ax_heatmap.xaxis.get_majorticklabels(), rotation=45)
+# plt.show()
+
+df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length_slope.xlsx', index_col=0)
+sns.regplot(data=df,x='1740min',y='length',scatter_kws={"s": 15,'color':'k'})
+plt.show()
