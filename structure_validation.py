@@ -15,7 +15,7 @@ from sklearn.metrics import adjusted_rand_score, adjusted_mutual_info_score
 from sklearn.decomposition import PCA
 
 
-fasta_file = 'D:/data/pats/human_fasta/uniprot-proteome_UP000005640_sp_tr.fasta'
+fasta_file = 'D:/data/pats/human_fasta/uniprot-proteome_UP000005640_sp_tr_isoforms.fasta'
 protein_dict = fasta_reader(fasta_file)
 ### combine full and paritial uniprot-PDB mapping csv file
 """
@@ -224,11 +224,11 @@ df_native_exposure.to_excel('D:/data/native_protein_digestion/12072021/control/a
 
 ### correlation
 from matplotlib.collections import PatchCollection
-
-df_sasa = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa.xlsx',index_col=0)
-df_density = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A.xlsx', index_col=0)
-df_distance = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx', index_col=0)
-df_atom_exposure = pd.read_excel('D:/data/native_protein_digestion/12072021/control/aa_exposure_structuremap.xlsx',index_col=0)
+""""""
+df_sasa = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa_clean_fill.xlsx',index_col=0)
+df_density = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A_clean_fill.xlsx', index_col=0)
+df_distance = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique_clean_fill.xlsx', index_col=0)
+# df_atom_exposure = pd.read_excel('D:/data/native_protein_digestion/12072021/control/aa_exposure_structuremap.xlsx',index_col=0)
 """
 df_atom_exposure_filter = pd.DataFrame(columns=df_distance.columns)
 for tp in df_distance.itertuples():
@@ -261,72 +261,96 @@ print (df_corr)
 # plt.show()
 """
 ### umap clustering
-"""
-sasa_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa_spearman_10_240min.xlsx')
-denstiy_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/atom_spearman_10_240min.xlsx')
-distance_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/dist_spearman_10_240min.xlsx')
-sasa_spearman,denstiy_spearman,distance_spearman = sasa_spearman_df['spearman correlation'].values, \
-                                                   denstiy_spearman_df['spearman correlation'].values, \
-                                                   distance_spearman_df['spearman correlation'].values
-sasa_pval, density_pval, distance_pval = sasa_spearman_df['p value'].values, \
-                                         denstiy_spearman_df['p value'].values, \
-                                         distance_spearman_df['p value'].values
 
+sasa_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa_spearman_10_240min.xlsx',index_col=0)
+denstiy_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/atom_spearman_10_240min.xlsx',index_col=0)
+distance_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/dist_spearman_10_240min.xlsx',index_col=0)
+# sasa_spearman,denstiy_spearman,distance_spearman = sasa_spearman_df['spearman correlation'].values, \
+#                                                    denstiy_spearman_df['spearman correlation'].values, \
+#                                                    distance_spearman_df['spearman correlation'].values
+# sasa_pval, density_pval, distance_pval = sasa_spearman_df['p value'].values, \
+#                                          denstiy_spearman_df['p value'].values, \
+#                                          distance_spearman_df['p value'].values
 
-aver_spearman = np.sum([sasa_spearman,denstiy_spearman,distance_spearman],axis=0)/3
-min_pval = np.min([sasa_pval,density_pval,distance_pval],axis=0)
-bool_spearman_negative = np.where((aver_spearman<0)&(min_pval<0.05),1,0)  # get average spearman <0 one of the pval<0.05
-bool_spearman_positive = np.where((aver_spearman>0)&(min_pval<0.05),-1,0)
-color_column = np.sum([bool_spearman_negative,bool_spearman_positive],axis=0)
-
+#
+## get color column on UMAP
+# aver_spearman = np.sum([sasa_spearman,denstiy_spearman,distance_spearman],axis=0)/3
+# min_pval = np.min([sasa_pval,density_pval,distance_pval],axis=0)
 
 df_plot = pd.concat([df_sasa,df_distance,df_density],axis=1)
-df_plot_fill = df_plot.fillna(0)
-# df_plot_fill = df_plot.dropna()
+clean_index = df_plot.index
+spearman_average = np.array([sum([sasa_spearman_df.at[each,'spearman correlation'],
+                         denstiy_spearman_df.at[each,'spearman correlation'],
+                         distance_spearman_df.at[each,'spearman correlation']])/3 for each in clean_index])
+p_val_min = np.array([min([sasa_spearman_df.at[each,'p value'],
+                         denstiy_spearman_df.at[each,'p value'],
+                         distance_spearman_df.at[each,'p value']]) for each in clean_index])
+bool_spearman_negative = np.where((spearman_average<0)&(p_val_min<0.05),1,0)  # get average spearman <0 one of the pval<0.05
+# bool_spearman_positive = np.where((spearman_average>0)&(p_val_min<0.05),-1,0)
+# color_column = np.sum([bool_spearman_negative,bool_spearman_positive],axis=0)
+
+# df_plot_fill = df_plot.fillna(0)
+# # df_plot_fill = df_plot.dropna()
 # print (df_plot_fill.head)
 
-## PCA filter out noisy data
-pca = PCA(df_plot_fill.shape[1])
+## umap visualization/dimension reduction
+# df_pepfrag = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length.xlsx',index_col=0)
+df_disorder = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_disorder.xlsx', index_col=0)
+# disorder_ratio = df_disorder['disorder_ratio'].to_numpy()
+# color_column1 = np.where((disorder_ratio!=0)&(disorder_ratio<50), -1, 0)
+# color_column2 = np.where((disorder_ratio!=0)&(disorder_ratio>=50), 1, 0)
+# color_column3 = np.where(disorder_ratio==0,2,0)
+# color_column = np.sum([color_column1,color_column2,color_column3],axis=0)
+#
+clusterable_embedding = umap.UMAP(
+    n_neighbors=30,
+    min_dist=0.0,
+    n_components=2,
+    random_state=42,
+).fit_transform(df_plot)
+# plt.scatter(clusterable_embedding[:, 0], clusterable_embedding[:, 1],
+#              s=1.5,alpha=0.8)
+#
+## condition filtering
+# print (df_sasa.index.to_numpy()[np.where(clusterable_embedding[:,1]<0)[0]])
+## differentiate colors
+# sc = plt.scatter(clusterable_embedding[:, 0], clusterable_embedding[:, 1],c=bool_spearman_negative, cmap='cool',
+#              s=5,alpha=0.8)
+# plt.colorbar(sc)
+# plt.show()
 
-df_pca = pca.fit_transform(df_plot_fill)  # fill na with extreme values
-print (df_pca.shape)
-print('Explained variation per principal component: {}'.format(pca.explained_variance_ratio_))
+## PCA filter out noisy data
+# pca = PCA(df_pepfrag.shape[1])
+#
+# df_pca = pca.fit_transform(df_pepfrag)  # fill na with extreme values
+# print (df_pca.shape)
+# print('Explained variation per principal component: {}'.format(pca.explained_variance_ratio_))
+# plt.scatter(df_pca[:,0],df_pca[:,1],s=2, c=disorder_ratio,cmap='cool')
+# plt.show()
+
 ## variance explained by PC1 is too low, not a good idea to use PCA eigenvalues
 
-## umap visualization/dimension reduction
-# clusterable_embedding = umap.UMAP(
-#     n_neighbors=30,
-#     min_dist=0.0,
-#     n_components=2,
-#     random_state=42,
-# ).fit_transform(df_plot_fill)
-
-# differentiate colors by bool_spearman condition
-# plt.scatter(clusterable_embedding[:, 0], clusterable_embedding[:, 1],c=color_column, cmap='plasma',
-#              s=0.3,alpha=0.8)
-# plt.show()
-
 ## HDBSCAN clustering
-# labels = hdbscan.HDBSCAN(
-#     min_samples=10,
-#     min_cluster_size=60,
-# ).fit_predict(clusterable_embedding)
-#
-# clustered = (labels >= 0)  # label = -1 for noise data
-#
-# plt.scatter(clusterable_embedding[~clustered, 0],
-#             clusterable_embedding[~clustered, 1],
-#             color=(0.5, 0.5, 0.5),
-#             s=0.3,
-#             alpha=0.5)
-# plt.scatter(clusterable_embedding[clustered, 0],
-#             clusterable_embedding[clustered, 1],
-#             c=labels[clustered],
-#             s=0.3,
-#             cmap='Spectral')
-#
-# plt.show()
-"""
+labels = hdbscan.HDBSCAN(
+    min_samples=10,
+    min_cluster_size=30,
+).fit_predict(clusterable_embedding)
+print (labels)
+clustered = (labels >= 0)  # label = -1 for noise data
+
+plt.scatter(clusterable_embedding[~clustered, 0],
+            clusterable_embedding[~clustered, 1],
+            color=(0.5, 0.5, 0.5),
+            s=5,
+            alpha=0.6)
+plt.scatter(clusterable_embedding[clustered, 0],
+            clusterable_embedding[clustered, 1],
+            c=labels[clustered],
+            s=5,
+            cmap='Spectral')
+
+plt.show()
+
 ### protein fragments length analysis in native digestion
 """
 df_cleav_index = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cleavage_index_4_24.xlsx',index_col=0)
@@ -385,6 +409,34 @@ df_new.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max
 # plt.setp(g.ax_heatmap.xaxis.get_majorticklabels(), rotation=45)
 # plt.show()
 
-df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length_slope.xlsx', index_col=0)
-sns.regplot(data=df,x='1740min',y='length',scatter_kws={"s": 15,'color':'k'})
-plt.show()
+# df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length_slope.xlsx', index_col=0)
+# sns.regplot(data=df,x='1740min',y='length',scatter_kws={"s": 15,'color':'k'})
+# plt.show()
+
+### DisProt DB analysis (protein disordered structure ratio)
+"""
+from collections import defaultdict
+
+df_disorder = pd.read_csv('D:/data/native_protein_digestion/12072021/control/DisProt release_2022_03 with_ambiguous_evidences (1).tsv',
+                          delimiter='\t', index_col=0)
+df_disorder = df_disorder[df_disorder['organism'] =='Homo sapiens']
+protein_disoder_dict = defaultdict(set)
+for each_tp in df_disorder.itertuples():
+    protein_disoder_dict[each_tp.Index].add((each_tp.start,each_tp.end))
+
+
+protein_disoder_ratio_dict = {}
+
+for prot in protein_disoder_dict:
+    if prot in protein_dict:
+        protein_len = len(protein_dict[prot])
+        zeroline = np.zeros(protein_len)
+        for tp in protein_disoder_dict[prot]:
+            zeroline[tp[0]-1:tp[1]]+=1
+        percent = np.count_nonzero(zeroline)/protein_len*100
+        protein_disoder_ratio_dict[prot] = percent
+
+df_max_pep = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length_slope.xlsx',index_col=0)
+df_max_pep['disorder_ratio'] = [protein_disoder_ratio_dict[each] if each in protein_disoder_ratio_dict else 0 for each in df_max_pep.index]
+df_max_pep.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_disorder.xlsx')
+"""
