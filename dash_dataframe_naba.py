@@ -41,7 +41,7 @@ def dash_dataframe(pep_path_list, psm_path_list, protein_dict, ecm_prot_list, ec
     file_unique_id_pep_dict = {}
     file_unique_id_pep_count_dict = {}
     for pep_tsv, psm_tsv in zip(pep_path_list, psm_path_list):
-        file_name = pep_tsv.split('\\')[-2]
+        file_name = pep_tsv.split('/')[-2]
         # protein_list=protein_tsv_reader(pep_tsv.replace("peptide","protein"))
         print(file_name)
         pep_list = peptide_counting(pep_tsv)

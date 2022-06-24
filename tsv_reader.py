@@ -130,12 +130,12 @@ def protein_tsv_reader(protein_tsv_file, protein_column=1):
 
 
 def protein_reader(protein_tsv):
-    df = pd.read_csv(protein_tsv, sep="\t")
+    df = pd.read_csv(protein_tsv, sep="\t", index_col=False)
     df_indis = df.dropna(subset=['Indistinguishable Proteins'])
     indis_protein_list = [prot.split('|')[1] for each in df_indis['Indistinguishable Proteins'].tolist() for prot in
                           each.split(", ")]
     protein_list = df.dropna(subset=['Protein ID'])['Protein ID'].tolist()
-
+    # print (df)
     return set(indis_protein_list + protein_list)
 
 def protein_tsv_reader_no_contam(protein_tsv_file):
@@ -159,8 +159,9 @@ def psm_reader(psm_path,fragpipe_ver=13.0):
             next(f)
         for line in f:
             line_split = line.split('\t')
+            # pep seq and retention index might differ in different Fragpipe version
             pep_seq = line_split[2] if fragpipe_ver==13.0 else line_split[1]
-            retention_time = float(line_split[5])/60  if fragpipe_ver==13.0 else float(line_split[4])/60 # in minute
+            retention_time = float(line_split[8])/60  if fragpipe_ver==13.0 else float(line_split[4])/60 # in minute
             pep_spec_count_dict[pep_seq]+=1
             ret_pep_dict[retention_time] = pep_seq
     return pep_spec_count_dict, ret_pep_dict

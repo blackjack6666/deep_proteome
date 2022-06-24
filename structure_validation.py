@@ -175,7 +175,6 @@ for ind in df_sasa.index:
 # https://github.com/MannLabs/structuremap_analysis/blob/master/data_analysis_structuremap.ipynb
 """
 
-
 # df_full_exp = pd.read_csv('D:/data/alphafold_pdb/full_sphere_exposure.csv') 
 
 ## split big csv into chunks and save individually for higher reading speed
@@ -277,7 +276,10 @@ distance_spearman_df = pd.read_excel('D:/data/native_protein_digestion/12072021/
 # aver_spearman = np.sum([sasa_spearman,denstiy_spearman,distance_spearman],axis=0)/3
 # min_pval = np.min([sasa_pval,density_pval,distance_pval],axis=0)
 
+## concat multiple dataframes together
 df_plot = pd.concat([df_sasa,df_distance,df_density],axis=1)
+df_plot = (df_plot-df_plot.mean())/df_plot.std() # normalize
+
 clean_index = df_plot.index
 spearman_average = np.array([sum([sasa_spearman_df.at[each,'spearman correlation'],
                          denstiy_spearman_df.at[each,'spearman correlation'],
@@ -295,19 +297,19 @@ bool_spearman_negative = np.where((spearman_average<0)&(p_val_min<0.05),1,0)  # 
 
 ## umap visualization/dimension reduction
 # df_pepfrag = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length.xlsx',index_col=0)
-df_disorder = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_disorder.xlsx', index_col=0)
+# df_disorder = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_disorder.xlsx', index_col=0)
 # disorder_ratio = df_disorder['disorder_ratio'].to_numpy()
 # color_column1 = np.where((disorder_ratio!=0)&(disorder_ratio<50), -1, 0)
 # color_column2 = np.where((disorder_ratio!=0)&(disorder_ratio>=50), 1, 0)
 # color_column3 = np.where(disorder_ratio==0,2,0)
 # color_column = np.sum([color_column1,color_column2,color_column3],axis=0)
 #
-clusterable_embedding = umap.UMAP(
-    n_neighbors=30,
-    min_dist=0.0,
-    n_components=2,
-    random_state=42,
-).fit_transform(df_plot)
+# clusterable_embedding = umap.UMAP(
+#     n_neighbors=30,
+#     min_dist=0.0,
+#     n_components=2,
+#     random_state=42,
+# ).fit_transform(df_plot)
 # plt.scatter(clusterable_embedding[:, 0], clusterable_embedding[:, 1],
 #              s=1.5,alpha=0.8)
 #
@@ -320,36 +322,38 @@ clusterable_embedding = umap.UMAP(
 # plt.show()
 
 ## PCA filter out noisy data
-# pca = PCA(df_pepfrag.shape[1])
+# pca = PCA(df_plot.shape[1])
 #
-# df_pca = pca.fit_transform(df_pepfrag)  # fill na with extreme values
+# df_pca = pca.fit_transform(df_plot)  # fill na with extreme values
 # print (df_pca.shape)
 # print('Explained variation per principal component: {}'.format(pca.explained_variance_ratio_))
-# plt.scatter(df_pca[:,0],df_pca[:,1],s=2, c=disorder_ratio,cmap='cool')
+# fig = plt.figure()
+# ax = fig.add_subplot(projection='3d')
+# ax.scatter(df_pca[:,0],df_pca[:,1],df_pca[:,2])
 # plt.show()
 
 ## variance explained by PC1 is too low, not a good idea to use PCA eigenvalues
 
 ## HDBSCAN clustering
-labels = hdbscan.HDBSCAN(
-    min_samples=10,
-    min_cluster_size=30,
-).fit_predict(clusterable_embedding)
-print (labels)
-clustered = (labels >= 0)  # label = -1 for noise data
-
-plt.scatter(clusterable_embedding[~clustered, 0],
-            clusterable_embedding[~clustered, 1],
-            color=(0.5, 0.5, 0.5),
-            s=5,
-            alpha=0.6)
-plt.scatter(clusterable_embedding[clustered, 0],
-            clusterable_embedding[clustered, 1],
-            c=labels[clustered],
-            s=5,
-            cmap='Spectral')
-
-plt.show()
+# labels = hdbscan.HDBSCAN(
+#     min_samples=20,
+#     min_cluster_size=200, # 50
+# ).fit_predict(clusterable_embedding)
+# print (labels)
+# clustered = (labels >= 0)  # label = -1 for noise data
+#
+# plt.scatter(clusterable_embedding[~clustered, 0],
+#             clusterable_embedding[~clustered, 1],
+#             color=(0.5, 0.5, 0.5),
+#             s=3,
+#             alpha=0.6)
+# plt.scatter(clusterable_embedding[clustered, 0],
+#             clusterable_embedding[clustered, 1],
+#             c=labels[clustered],
+#             s=3,
+#             cmap='Spectral')
+#
+# plt.show()
 
 ### protein fragments length analysis in native digestion
 """
