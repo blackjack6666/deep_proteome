@@ -212,7 +212,7 @@ def aa_frequency(filename):
 
 
 if __name__ == "__main__":
-    fasta_file_input = 'D:/data/Naba_deep_matrisome/mouse_ecm_costom_proteome_db.fasta'
-    fasta_file_out = 'D:/data/Naba_deep_matrisome/mouse_ecm_costom_proteome_db_rev.fasta'
+    fasta_file_input = 'F:/alanine_tailing/20220709/gfp_truncation_alanines.fasta'
+    fasta_file_out = 'F:/alanine_tailing/20220709/gfp_truncation_alanines_rev.fasta'
     fasta_reverse_generator(fasta_file_input,fasta_file_out)
 

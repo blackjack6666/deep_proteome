@@ -36,13 +36,13 @@ protein_info_dict = protein_info_from_fasta(fasta_path)
 #
 # total_protein_list = [prot for each in combined_protein_file_list for prot in protein_reader(each)]
 # total_protein_set = set(total_protein_list)
-total_protein_set = protein_reader('D:/data/Naba_deep_matrisome/06242022/GFP_search_result/combined_protein.tsv')
+total_protein_set = protein_reader('D:/data/Naba_deep_matrisome/06272022/combined_protein.tsv')
 
 protein_mass_dict = protein_mass_calculator(total_protein_set,protein_dict)
 
 # base_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
 # folders = [base_path+each+folder for each in ['KOB/','KOC/', 'SNEDB/', 'SNEDC/'] for folder in os.listdir(base_path+each) if '.' not in folder]
-base_path = 'D:/data/Naba_deep_matrisome/06242022/GFP_search_result/'
+base_path = 'D:/data/Naba_deep_matrisome/06272022/'
 folders = [base_path+folder for folder in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, folder))]
 
 print (folders)
@@ -91,7 +91,7 @@ for prot in total_protein_set:
                 df_info.at[prot,file+'_'+i]=j[file][prot]
             else:
                 df_info.at[prot,file+'_'+i]=0
-df_info.to_excel('D:/data/Naba_deep_matrisome/06242022/GFP_search_result/summary_GFP_20220624.xlsx')
+df_info.to_excel('D:/data/Naba_deep_matrisome/06272022/summary_GFP_20220627.xlsx')
 
 # with ExcelWriter('D:/data/Naba_deep_matrisome/05142021_secondsearch/SNEDC/mat_protein_spec_SNEDC.xlsx') as writer:
 #     for file in file_protein_spec_dict:

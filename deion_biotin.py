@@ -7,7 +7,7 @@ import numpy as np
 from tsv_reader import combined_proteintsv_map,venn_diagram_gen
 
 
-combined_tsv = 'F:/deion_biotin/05152022/search/combined_protein.tsv'
+combined_tsv = 'F:/deion_biotin/06272022_trypsin/combined_protein.tsv'
 # df = pd.read_csv(combined_tsv,delimiter='\t', header=0, index_col=False,usecols=['Protein ID','Gene',
 #                                                     'Fluc_TMV_1 Spectral Count',
 #                                                     'Fluc_TMV_2 Spectral Count',
@@ -60,6 +60,7 @@ for column in df_filter.columns:
 ### venn_diagram
 info_dict = combined_proteintsv_map(combined_tsv)
 print ([k for k in info_dict.keys()])
-venn_dict = {'Hoil_ctrl_1':[k for k in info_dict['Hoil_ctrl_1'].keys()],
-             'Hoil_ctrl_2':[k for k in info_dict['Hoil_ctrl_2'].keys()]}
-venn_diagram_gen(venn_dict,'protein IDs from Hoil_ctrl')
+# venn_dict = {'Tryp_Fluc_ctrl':[k for k in info_dict['Tryp_Fluc_ctrl'].keys()],
+#              'Tryp_Hoil_ctrl':[k for k in info_dict['Tryp_Hoil_ctrl'].keys()]}
+print ([k for k in info_dict['Tryp_Hoil_ctrl'] if k not in info_dict['Tryp_Fluc_ctrl']])
+# venn_diagram_gen(venn_dict,'protein IDs between Fluc control and Hoil ctrl')
