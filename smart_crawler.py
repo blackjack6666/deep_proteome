@@ -155,9 +155,13 @@ def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str):
     from bokeh.transform import factor_cmap
     from bokeh.plotting import figure
     from bokeh.io import save, output_file, show
+    from math import pi
+
 
     freq_array = prot_freq_dict[protein_entry]
     domain_dict = domain_pos_dict[protein_entry]
+
+    # a dataframe to store data
     df = pd.DataFrame(columns=['pos_start_end', 'sum_spec_count', 'domain_name'])
     idx = 0
     for each_domain in domain_dict:
@@ -175,16 +179,32 @@ def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str):
     # source = ColumnDataSource(group)
     # print (','.join(source.column_names))
 
-    factors = [(domain, pos)for domain, pos in zip(df.domain_name, df.pos_start_end)]
-    y = df.sum_spec_count
-    p = figure(x_range=FactorRange(*factors), plot_height=400,plot_width=1000)
-    p.vbar(x=factors, top=y, width=0.5, alpha=0.5)
+    # plotting with bokeh, embed into html later
+    # color map for each domain, hex color randomly generated
+    color_map = {each:color_generator() for each in df.domain_name.unique()}
+
+    factors = [(domain, pos)for domain, pos in zip(df.domain_name, df.pos_start_end)]  # x axis
+    y = df.sum_spec_count  # y axis
+
+    p = figure(x_range=FactorRange(*factors), plot_height=400, plot_width=len(factors)*40,
+               y_axis_label="normalized total spec count",
+               title=f'{protein_entry} domain coverage')
+    p.vbar(x=factors, top=y, width=0.5, alpha=0.5,color=[color_map[tp[0]] for tp in factors])
     p.y_range.start = 0
-    p.x_range.range_padding = 0.1
+    p.x_range.range_padding = 0.05
     p.xgrid.grid_line_color = None
-    p.xaxis.major_label_orientation = "vertical"
+    # p.xaxis.axis_label = 'whatever'
+    p.xaxis.major_label_text_font_size = "10pt"
+    p.xaxis.group_text_font_size = "15pt"
+    # p.xaxis.major_label_text_font = 'Arial'
+    p.xaxis.major_label_orientation = pi/2
     show(p)
 
+
+def color_generator():
+    import random
+    r = lambda: random.randint(0,255)
+    return '#%02X%02X%02X' % (r(),r(),r())
 
 if __name__=='__main__':
     prot_list = ['Q8TER0','E9PWQ3','P11276']
@@ -194,6 +214,6 @@ if __name__=='__main__':
     protein_dict = fasta_reader('D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta')
     protein_freq_dict = peptide_map(psm_dict,protein_dict)
 
-    plot_domain_coverage2(protein_freq_dict,info_dict,'Q8TER0')
+    plot_domain_coverage2(protein_freq_dict,info_dict,'P11276')
 
     # main('https://smart.embl.de/smart/show_motifs.pl?ID=Q8TER0')
