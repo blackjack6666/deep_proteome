@@ -28,8 +28,7 @@ fasta_path = 'D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_hum
 protein_dict = fasta_reader(fasta_path)
 
 ### combine B and C sample and output a single spreadsheet
-
-
+"""
 protein_info_dict = protein_info_from_fasta(fasta_path)
 # folder_path = 'D:/data/Naba_deep_matrisome/05142021_secondsearch/'
 # combined_protein_file_list = [folder_path+each+'/combined_protein.tsv' for each in ['KOB','KOC', 'SNEDB', 'SNEDC']]
@@ -92,7 +91,7 @@ for prot in total_protein_set:
             else:
                 df_info.at[prot,file+'_'+i]=0
 df_info.to_excel('D:/data/Naba_deep_matrisome/06272022/summary_GFP_20220627.xlsx')
-
+"""
 # with ExcelWriter('D:/data/Naba_deep_matrisome/05142021_secondsearch/SNEDC/mat_protein_spec_SNEDC.xlsx') as writer:
 #     for file in file_protein_spec_dict:
 #         if file != 'Summarized':
@@ -500,3 +499,26 @@ plt.tight_layout()
 plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/test.png', dpi=300)
 plt.show()
 """
+
+### nasf from combined protein tsv file
+combined_df = pd.read_csv('F:/sned1_biotinalytion/07072022/search/combined_protein.tsv',delimiter='\t',index_col=0)
+nsaf_df = pd.DataFrame(columns=['Protein ID','Gene', 'Protein Length','Description','ColI_FullReaction nsaf',
+                                'ColI_NoBiotin nsaf','ColI_NoPrimary nsaf','FN_FullReaction nsaf',
+                                'FN_NoBiotin nsaf','FN_NoPrimary nsaf'])
+
+protein_list, protein_length_list = combined_df['Protein ID'].tolist(), combined_df['Protein Length'].tolist()
+columns = [each for each in combined_df.columns if 'Total Spectral Count' in each]
+for clm in columns:
+        if clm.split(' ')[0]+' nsaf' in nsaf_df.columns:
+                print(clm.split(' ')[0])
+                spec_count_list = combined_df[clm].tolist()
+                total_nsaf = sum([val/protein_length_list[idx] for idx,val in enumerate(spec_count_list)])
+                nsaf_df[clm.split(' ')[0]+' nsaf'] = [val/protein_length_list[idx]/total_nsaf
+                                                      for idx,val in enumerate(spec_count_list)]
+
+nsaf_df['Protein ID'] = combined_df['Protein ID'].tolist()
+nsaf_df['Gene'] = combined_df['Gene'].tolist()
+nsaf_df['Protein Length'] = combined_df['Protein Length'].tolist()
+nsaf_df['Description'] = combined_df['Description'].tolist()
+
+nsaf_df.to_excel('F:/sned1_biotinalytion/07072022/search/nsaf.xlsx')

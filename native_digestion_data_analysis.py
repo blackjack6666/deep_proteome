@@ -325,7 +325,7 @@ import pymannkendall as mk
 from scipy.stats import linregress
 fig,axs = plt.subplots(1,1, figsize=(8,8))
 
-df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length.xlsx',index_col=0)
+df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx',index_col=0)
 # high_conf_id = [each for each in df.index if each in high_conf_id]
 # df = df.loc[high_conf_id]
 # df = df.T.ffill().bfill()
@@ -337,20 +337,20 @@ mk_result = mk.original_test(df.median().tolist())
 print(mk_result)
 # df = df.T
 
-x = range(df.shape[1])
-y = []
-for tp in df.itertuples(index=True):
-    slope = linregress(x,tp[1:])[0]
-    y.append(slope)
-    if slope < -0.175:
-        print (tp[0])
-
-
-plt.scatter(range(df.shape[0]),y)
-plt.show()
-df['slope'] = y
-df['length'] = [len(protein_dict[idx]) for idx in df.index]
-df.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length_slope.xlsx')
+# x = range(df.shape[1])
+# y = []
+# for tp in df.itertuples(index=True):
+#     slope = linregress(x,tp[1:])[0]
+#     y.append(slope)
+#     if slope < -0.175:
+#         print (tp[0])
+#
+#
+# plt.scatter(range(df.shape[0]),y)
+# plt.show()
+# df['slope'] = y
+# df['length'] = [len(protein_dict[idx]) for idx in df.index]
+# df.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_peptide_relative_length_slope.xlsx')
 
 # columns = list(df.columns)
 #
@@ -373,10 +373,10 @@ df.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_pep
 #     print (each, df[each].mean())
 # x = range(1,len(new_columns)+1)
 
-# df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
+df_plot = pd.DataFrame(dict(time=list(range(1,len(df.columns)+1))*df.shape[0], cov_KR_dens=df.to_numpy().flatten()))
 # df_plot = df_plot.dropna()
 # sns.regplot(x='time',y='cov_KR_dens',data=df_plot,color='k')
-# sns.boxplot(x='time',y='cov_KR_dens',data=df_plot,linewidth=2.5)
+sns.boxplot(x='time',y='cov_KR_dens',data=df_plot,linewidth=2.5)
 
 # sns.kdeplot(data=df_plot, x="cov_plddt", hue="time",legend=False)
 # add_stat_annotation(axs,data=df_plot, x='time',y='cov_KR_dens',box_pairs=[(1,2)],test='Wilcoxon',
@@ -386,7 +386,7 @@ df.to_excel('D:/data/native_protein_digestion/12072021/control/digestion_max_pep
 # axs.set_xticklabels(list(df.columns), fontsize=12,ha="center", rotation=45)
 # axs.tick_params(axis='y', labelsize=16)
 # plt.legend(title='Time', loc='upper right', labels=list(df.columns))
-# plt.show()
+plt.show()
 
 #
 ## line plot

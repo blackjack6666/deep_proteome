@@ -85,3 +85,29 @@ def extract_clustered_table(res, data):
         new_ind = data.index[res.dendrogram_row.reordered_ind]
 
         return data.loc[new_ind, :]
+
+
+def text_cloud(text_file,stop_words=None,out_put_png=None):
+    from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+    import matplotlib.pyplot as plt
+    with open(text_file,'r',encoding="utf8") as f_o:
+        f_string = f_o.read()
+    wordcloud = WordCloud(stopwords=stop_words, background_color="white").generate(f_string)
+
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis("off")
+    plt.show()
+
+    if out_put_png:
+        wordcloud.to_file(out_put_png)
+
+
+if __name__=='__main__':
+    from nltk.corpus import stopwords
+    import nltk
+    # nltk.download('stopwords')
+
+    test_file = 'F:/matrisomedb2.0/test.txt'
+    stopWords = set(stopwords.words('english'))
+
+    text_cloud(test_file,stop_words=stopWords)
