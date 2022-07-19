@@ -63,6 +63,11 @@ def main(url):
     #     storage_file.write(json.dumps(result))
 
 
+def my_replace(match_obj):
+    match_obj = match_obj.group()
+    return match_obj[0]  # gives back the first element of matched object as string
+
+
 def peptide_map(psm_dict,protein_dict):
     """
     map peptides to proteome and return freq array dict
@@ -84,6 +89,65 @@ def peptide_map(psm_dict,protein_dict):
         prot_freq_dict[id_list[i]] = zeroline[sep_pos_array[i] + 1:sep_pos_array[i + 1]]
 
     return prot_freq_dict
+
+
+def ptm_map(psm_list,protein_dict):
+    """
+    map psms with ptm to protein sequence
+    :param psm_list: a list of PSMs with PTM, P[100]EPTIDE
+    :param protein_dict:
+    :return:
+    """
+    peptide_psm_dict = defaultdict(set)  # {'PEPTIDE':{'P[100]EPTIDE','PEPTIDE'}}
+    regex_pat = '\w{1}\[\d+\.?\d+\]'  # universal ptm pattern
+
+    regex_set = set()
+
+    id_ptm_idx_dict = {}  # {protein_id:{ptm1:nonzero_index_array,ptm2:nonzero_index_array,...}}
+    peptide_psm_dict = defaultdict(list)  # append all psm into a dictionary, {peptide:[psm1,psm2,...]}
+    for each in psm_list:
+        each_reg_sub = re.sub(regex_pat, my_replace, each)
+        peptide_psm_dict[each_reg_sub].append(each)
+        match = re.findall(regex_pat, each)
+        if match:
+            for ptm in match:
+                regex_set.add(ptm.replace('[','\[').replace(']','\]').replace('.','\.'))
+
+
+
+    # aho mapping
+    id_list, seq_list = extract_UNID_and_seq(protein_dict)
+    seq_line = creat_total_seq_line(seq_list, sep="|")
+    ptm_index_line_dict = {each:zero_line_for_seq(seq_line) for each in regex_set}
+    separtor_pos_array = separator_pos(seq_line)
+    aho_result = automaton_matching(automaton_trie([pep for pep in peptide_psm_dict]), seq_line)
+
+    # ptm mapping
+    for tp in aho_result:
+        matched_pep = tp[2]  # without ptm site
+        for psm in peptide_psm_dict[matched_pep]:
+            for ptm in regex_set:  # check each ptm, mask other ptms
+                new_psm = re.sub('\[\d+\.?\d+\]', '', psm.replace(ptm.replace('\\', ''), '*')).\
+                    replace('*', ptm.replace('\\', ''))
+                ptm_mod = set(re.findall(ptm, new_psm))
+                if ptm_mod:
+                    for ele in ptm_mod:
+                        ### count multiple ptms in a peptide seq
+                        num_of_mod = len(
+                            re.findall(ele.replace('[', '\[').replace(']', '\]').replace('.', '\.'), new_psm))
+
+                        PTM_index = [m.start() for m in
+                                     re.finditer(ele.replace('[', '\[').replace(']', '\]').replace('.', '\.'), new_psm)]
+                        PTM_index_clean = [ind - num * (len(ele) - 1) for ind, num in zip(PTM_index, range(num_of_mod))]
+                        for indx in PTM_index_clean:
+                            ptm_index_line_dict[ptm][tp[0] + indx] += 1
+
+    for i in range(len(separtor_pos_array) - 1):
+        id_ptm_idx_dict[id_list[i]] = {ptm:
+            np.nonzero(ptm_index_line_dict[ptm][separtor_pos_array[i] + 1:separtor_pos_array[i + 1]])[0]
+            for ptm in regex_set}
+
+    return id_ptm_idx_dict
 
 
 def plot_domain_coverage(prot_freq_dict,domain_pos_dict, protein_entry:str):
@@ -184,12 +248,23 @@ def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str):
     color_map = {each:color_generator() for each in df.domain_name.unique()}
 
     factors = [(domain, pos)for domain, pos in zip(df.domain_name, df.pos_start_end)]  # x axis
-    y = df.sum_spec_count  # y axis
 
-    p = figure(x_range=FactorRange(*factors), plot_height=400, plot_width=len(factors)*40,
+    y = df.sum_spec_count  # y axis
+    colors = [color_map[tp[0]] for tp in factors] # color legend
+    source = ColumnDataSource(data=dict(x=factors,y=y,color=colors,pos=df.pos_start_end,domain=df.domain_name))
+
+    # hover tools
+    TOOLTIPS = [
+        ("domain", "@domain"),
+        ("start end position", "@pos"),
+        ("normalized coverage", "$y"),
+    ]
+
+    p = figure(x_range=FactorRange(*factors), plot_height=400, plot_width=len(factors)*40, tooltips=TOOLTIPS,
                y_axis_label="normalized total spec count",
                title=f'{protein_entry} domain coverage')
-    p.vbar(x=factors, top=y, width=0.5, alpha=0.5,color=[color_map[tp[0]] for tp in factors])
+    # p.vbar(x=factors, top=y, width=0.5, alpha=0.5,color=[color_map[tp[0]] for tp in factors])
+    p.vbar(x='x',top='y',color='color',source=source)
     p.y_range.start = 0
     p.x_range.range_padding = 0.05
     p.xgrid.grid_line_color = None
@@ -206,7 +281,9 @@ def color_generator():
     r = lambda: random.randint(0,255)
     return '#%02X%02X%02X' % (r(),r(),r())
 
+
 if __name__=='__main__':
+    from tsv_reader import modified_peptide_from_psm
     prot_list = ['Q8TER0','E9PWQ3','P11276']
     info_dict = get_smart_info(prot_list)
     psm_tsv = 'D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_1080D/psm.tsv'
@@ -217,3 +294,5 @@ if __name__=='__main__':
     plot_domain_coverage2(protein_freq_dict,info_dict,'P11276')
 
     # main('https://smart.embl.de/smart/show_motifs.pl?ID=Q8TER0')
+    # psm_list = modified_peptide_from_psm(psm_tsv)
+    # print (ptm_map(psm_list,protein_dict)['P10493']['Q\\[111\\]'])
