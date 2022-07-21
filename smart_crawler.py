@@ -255,7 +255,7 @@ def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str):
         ("normalized coverage", "@y"),
     ]
 
-    p = figure(x_range=FactorRange(*factors), plot_height=400, plot_width=len(factors)*40, tooltips=TOOLTIPS,
+    p = figure(x_range=FactorRange(*factors), plot_height=400, plot_width=len(factors)*35, tooltips=TOOLTIPS,
                y_axis_label="normalized total spec count",
                title=f'{protein_entry} domain coverage')
     # p.vbar(x=factors, top=y, width=0.5, alpha=0.5,color=[color_map[tp[0]] for tp in factors])
@@ -371,6 +371,7 @@ def combine_bokeh(domain_bokeh_return, ptm_bokeh_return,html_out='test.html'):
 
 if __name__=='__main__':
     from tsv_reader import modified_peptide_from_psm
+
     # SMART web crawler to extract domain info
     prot_list = ['Q8TER0','E9PWQ3','P11276']
     info_dict = get_smart_info(prot_list)
@@ -380,13 +381,15 @@ if __name__=='__main__':
     psm_dict = psm_reader(psm_tsv)[0]
     protein_dict = fasta_reader('D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta')
     protein_freq_dict = peptide_map(psm_dict,protein_dict)
+
     # domain coverage
-    domain_coverage_bokeh = plot_domain_coverage2(protein_freq_dict,info_dict,'Q8TER0')
+    domain_coverage_bokeh = plot_domain_coverage2(protein_freq_dict,info_dict,'E9PWQ3')
 
     # main('https://smart.embl.de/smart/show_motifs.pl?ID=Q8TER0')
+    # ptm mapping
     psm_list = modified_peptide_from_psm(psm_tsv)
     ptm_map_result = ptm_map(psm_list,protein_dict)
+    ptm_domain_bokeh = ptm_domain_htmap(ptm_map_result,info_dict,'E9PWQ3')
 
-    ptm_domain_bokeh = ptm_domain_htmap(ptm_map_result,info_dict,'Q8TER0')
     # combine domain coverage and ptm heatmaps in one html
-    combine_bokeh(domain_coverage_bokeh,ptm_domain_bokeh,html_out='F:/matrisomedb2.0/bokeh_test_Q8TER0.html')
+    combine_bokeh(domain_coverage_bokeh,ptm_domain_bokeh,html_out='F:/matrisomedb2.0/bokeh_test_E9PWQ3.html')
