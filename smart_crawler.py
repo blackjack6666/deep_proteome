@@ -15,7 +15,7 @@ from aho_corasick import automaton_trie,automaton_matching
 from protein_coverage import fasta_reader
 from tsv_reader import psm_reader
 from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter
-from bokeh.palettes import Spectral7
+from bokeh.palettes import Spectral7, Viridis, Plasma
 from bokeh.transform import factor_cmap
 from bokeh.plotting import figure
 from bokeh.io import save, output_file, show
@@ -31,6 +31,7 @@ def get_smart_info(protein_list:list):
     :param protein_list: a list of protein uniprot IDs
     :return:
     """
+    time_start = time.time()
     info_dict = {}
     for prot in protein_list:
         domain_dict = defaultdict(set)
@@ -45,6 +46,7 @@ def get_smart_info(protein_list:list):
             # print (each, split_dict[each]['n'], split_dict[each]['st'], split_dict[each]['en'])
             domain_dict[split_dict[each]['n']].add((int(split_dict[each]['st']),int(split_dict[each]['en'])))
         info_dict[prot] = domain_dict
+    print (f'crawler takes {time.time()-time_start}')
     return info_dict
 
 
@@ -208,12 +210,13 @@ def plot_domain_coverage(prot_freq_dict,domain_pos_dict, protein_entry:str):
     return df
 
 
-def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str):
+def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str, mode='sum'):
     """
     same as plot_domain_coverage, but group by domain name
     :param prot_freq_dict:
     :param domain_pos_dict:
     :param protein_entry:
+    :param mode: plot mode, default is sum, could be 'coverage'
     :return:
     """
     time_start = time.time()
@@ -221,17 +224,20 @@ def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str):
     domain_dict = domain_pos_dict[protein_entry]
 
     # a dataframe to store data, might not be needed
-    df = pd.DataFrame(columns=['pos_start_end', 'sum_spec_count', 'domain_name'])
+    df = pd.DataFrame(columns=['pos_start_end', 'sum_spec_count', 'domain_name','coverage'])
     idx = 0
     for each_domain in domain_dict:
         for each_tp in domain_dict[each_domain]:
             start, end = each_tp[0], each_tp[1]
+            # spec count sum for each domain entry, average by length, or coverage in 100
             sum_spec_count = np.sum(freq_array[start - 1:end]) / (
-                        end - start)  # spec count sum for each domain entry, average by length
+                        end - start)
+            coverage = np.count_nonzero(freq_array[start - 1:end])/(end-start+1)
             start_end = str(start) + '_' + str(end)
             df.at[idx, 'pos_start_end'] = start_end
             df.at[idx, 'sum_spec_count'] = sum_spec_count
             df.at[idx, 'domain_name'] = each_domain
+            df.at[idx, 'coverage'] = coverage
             idx += 1
 
     # group = df.groupby(('domain_name'))
@@ -246,20 +252,29 @@ def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str):
 
     y = df.sum_spec_count  # y axis
     colors = [color_map[tp[0]] for tp in factors] # color legend
-    source = ColumnDataSource(data=dict(x=factors,y=y,color=colors,pos=df.pos_start_end,domain=df.domain_name))
+    source = ColumnDataSource(data=dict(x=factors,
+                                        y=y,
+                                        color=colors,
+                                        pos=df.pos_start_end,
+                                        domain=df.domain_name,
+                                        cov=df.coverage))
 
     # hover tools
     TOOLTIPS = [
         ("domain", "@domain"),
         ("start end position", "@pos"),
-        ("normalized coverage", "@y"),
+        ("normalized spec count", "@y"),
+        ("sequence coverage", "@cov")
     ]
+    y_axis_label = "domain coverage"
 
     p = figure(x_range=FactorRange(*factors), plot_height=400, plot_width=len(factors)*35, tooltips=TOOLTIPS,
-               y_axis_label="normalized total spec count",
+               y_axis_label=y_axis_label,
                title=f'{protein_entry} domain coverage')
-    # p.vbar(x=factors, top=y, width=0.5, alpha=0.5,color=[color_map[tp[0]] for tp in factors])
-    p.vbar(x='x',top='y',color='color',source=source)
+    # bar chart and line plot on the same figure
+    p.vbar(x='x',top='y',color='color',source=source,legend_label='normalized spec count')
+    p.line(x='x',y='cov',source=source, line_color='red',line_dash='dotdash',line_dash_offset=1,legend_label='sequence coverage',
+           line_width=2)
     p.y_range.start = 0
     p.x_range.range_padding = 0.05
     p.xgrid.grid_line_color = None
@@ -304,8 +319,8 @@ def ptm_domain_htmap(ptm_map_result,domain_pos_dict,protein_entry:str):
     df_stack = pd.DataFrame(df.stack(),columns=['value']).reset_index() # domain and PTMs for each row
 
     # plotting
-    colors = ["#75968f", "#a5bab7", "#c9d9d3", "#e2e2e2", "#dfccce", "#ddb7b1", "#cc7878", "#933b41", "#550b1d"]
-    mapper = LinearColorMapper(palette=colors, low=df_stack.value.min(), high=df_stack.value.max())
+    # colors = ["#75968f", "#a5bab7", "#c9d9d3", "#e2e2e2", "#dfccce", "#ddb7b1", "#cc7878", "#933b41", "#550b1d"]
+    mapper = LinearColorMapper(palette=Plasma[5], low=df_stack.value.min(), high=df_stack.value.max())
 
     p = figure(x_range=x, y_range=y, plot_height=400, plot_width=len(x)*30,
                tooltips=[('domain position and PTM', '@domain_position @PTMs'), ('PTM occurrence', '@value')],
@@ -325,7 +340,7 @@ def ptm_domain_htmap(ptm_map_result,domain_pos_dict,protein_entry:str):
     p.xaxis.major_label_orientation = pi / 3
 
     color_bar = ColorBar(color_mapper=mapper, major_label_text_font_size="7px",
-                         ticker=BasicTicker(desired_num_ticks=len(colors)),
+                         ticker=BasicTicker(desired_num_ticks=len(Plasma[5])),
                          formatter=PrintfTickFormatter(format="%d"),
                          label_standoff=6, border_line_color=None)
     p.add_layout(color_bar, 'right')
@@ -341,7 +356,7 @@ def color_generator():
     return '#%02X%02X%02X' % (r(),r(),r())
 
 
-def combine_bokeh(domain_bokeh_return, ptm_bokeh_return,html_out='test.html'):
+def combine_bokeh(domain_bokeh_return, ptm_bokeh_return, html_out='test.html', UniportID=''):
     """
     generate the domain coverage bar graph and ptm domain heatmap in the same html
     :param domain_bokeh_return: script, div from plot_domain_coverage2
@@ -351,6 +366,7 @@ def combine_bokeh(domain_bokeh_return, ptm_bokeh_return,html_out='test.html'):
     # load bokeh js scripts and divs
     coverage_script, coverage_div = domain_bokeh_return
     ptm_script, ptm_div = ptm_bokeh_return
+    smart_url = 'https://smart.embl.de/smart/show_motifs.pl?ID='+UniportID
 
     # print (coverage_script,coverage_div)
     # read html template
@@ -363,13 +379,14 @@ def combine_bokeh(domain_bokeh_return, ptm_bokeh_return,html_out='test.html'):
         replace('<!-- COPY/PASTE ptm SCRIPT HERE -->',ptm_script).replace('<!-- INSERT domain DIVS HERE -->',coverage_div)\
         .replace('<!-- INSERT ptm DIVS HERE -->',ptm_div)
 
+    new_html = new_html.replace('<!-- UniprotID -->',UniportID).replace('<!-- SMART URL -->',smart_url)
     with open(html_out, 'w',newline='\n') as f_w:
         f_w.write(new_html)
 
     return new_html
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     from tsv_reader import modified_peptide_from_psm
 
     # SMART web crawler to extract domain info
@@ -392,4 +409,9 @@ if __name__=='__main__':
     ptm_domain_bokeh = ptm_domain_htmap(ptm_map_result,info_dict,'E9PWQ3')
 
     # combine domain coverage and ptm heatmaps in one html
-    combine_bokeh(domain_coverage_bokeh,ptm_domain_bokeh,html_out='F:/matrisomedb2.0/bokeh_test_E9PWQ3.html')
+    combine_bokeh(domain_coverage_bokeh,
+                  ptm_domain_bokeh,
+                  html_out='F:/matrisomedb2.0/bokeh_test_E9PWQ3.html',
+                  UniportID='E9PWQ3')
+
+

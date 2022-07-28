@@ -36,6 +36,6 @@ def fasta_reverse_generator(fasta_file_in, fasta_file_out):
 if __name__=='__main__':
     from glob import glob
 
-    fasta_file_in = 'F:/deion_biotin/uniprot-proteome_UP000000589.fasta'
+    fasta_file_in = 'D:/data/proteome_fasta/Drosophila.fasta'
 
-    fasta_reverse_generator(fasta_file_in,fasta_file_in.replace('.fasta','_avidin_luciferase_rev.fasta'))
+    fasta_reverse_generator(fasta_file_in,fasta_file_in.replace('.fasta','_rev.fasta'))
