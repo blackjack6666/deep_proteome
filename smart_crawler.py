@@ -13,7 +13,7 @@ from collections import defaultdict
 from multiprocessing_naive_algorithym import *
 from aho_corasick import automaton_trie,automaton_matching
 from protein_coverage import fasta_reader
-from tsv_reader import psm_reader
+from tsv_reader import psm_reader, protein_info_from_fasta
 from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter
 from bokeh.palettes import Spectral7, Viridis, Plasma
 from bokeh.transform import factor_cmap
@@ -215,6 +215,7 @@ def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str, mod
     same as plot_domain_coverage, but group by domain name
     :param prot_freq_dict:
     :param domain_pos_dict:
+    :param protein_info_dict:
     :param protein_entry:
     :param mode: plot mode, default is sum, could be 'coverage'
     :return:
@@ -270,7 +271,7 @@ def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str, mod
 
     p = figure(x_range=FactorRange(*factors), plot_height=400, plot_width=len(factors)*35, tooltips=TOOLTIPS,
                y_axis_label=y_axis_label,
-               title=f'{protein_entry} domain coverage')
+               title='Domain coverage')
     # bar chart and line plot on the same figure
     p.vbar(x='x',top='y',color='color',source=source,legend_label='normalized spec count')
     p.line(x='x',y='cov',source=source, line_color='red',line_dash='dotdash',line_dash_offset=1,legend_label='sequence coverage',
@@ -289,11 +290,12 @@ def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str, mod
     return components(p)
 
 
-def ptm_domain_htmap(ptm_map_result,domain_pos_dict,protein_entry:str):
+def ptm_domain_htmap(ptm_map_result, domain_pos_dict, protein_entry:str):
     """
     use bokeh to generate a heatmap showing ptm coverage by domains
     :param ptm_map_result: return from ptm_map, two returned values
     :param domain_pos_dict: return from get_smart_info, SMART web crawler
+    :param protein_info_dict: {uniprotid:(gene,description,cls)}
     :param protein_entry: target Uniprot ID
     :return:
     """
@@ -325,7 +327,7 @@ def ptm_domain_htmap(ptm_map_result,domain_pos_dict,protein_entry:str):
     p = figure(x_range=x, y_range=y, plot_height=400, plot_width=len(x)*30,
                tooltips=[('domain position and PTM', '@domain_position @PTMs'), ('PTM occurrence', '@value')],
                y_axis_label="PTMs",
-               title=f'{protein_entry} PTM heatmap')
+               title='PTM heatmap')
 
     p.rect(x="domain_position", y="PTMs", width=1, height=1,
            source=df_stack,
@@ -356,11 +358,12 @@ def color_generator():
     return '#%02X%02X%02X' % (r(),r(),r())
 
 
-def combine_bokeh(domain_bokeh_return, ptm_bokeh_return, html_out='test.html', UniportID=''):
+def combine_bokeh(domain_bokeh_return, ptm_bokeh_return, protein_info_dict, html_out='test.html', UniportID=''):
     """
     generate the domain coverage bar graph and ptm domain heatmap in the same html
     :param domain_bokeh_return: script, div from plot_domain_coverage2
     :param ptm_bokeh_return: script, div from ptm_domain_htmap
+    :param protein_info_dict: {uniprotid:(gene,description,cls)}
     :return:
     """
     # load bokeh js scripts and divs
@@ -379,7 +382,7 @@ def combine_bokeh(domain_bokeh_return, ptm_bokeh_return, html_out='test.html', U
         replace('<!-- COPY/PASTE ptm SCRIPT HERE -->',ptm_script).replace('<!-- INSERT domain DIVS HERE -->',coverage_div)\
         .replace('<!-- INSERT ptm DIVS HERE -->',ptm_div)
 
-    new_html = new_html.replace('<!-- UniprotID -->',UniportID).replace('<!-- SMART URL -->',smart_url)
+    new_html = new_html.replace('<!-- UniprotID -->',protein_info_dict[UniportID][0]+'  ('+protein_info_dict[UniportID][1]+')').replace('<!-- SMART URL -->',smart_url)
     with open(html_out, 'w',newline='\n') as f_w:
         f_w.write(new_html)
 
@@ -392,6 +395,9 @@ if __name__ == '__main__':
     # SMART web crawler to extract domain info
     prot_list = ['Q8TER0','E9PWQ3','P11276']
     info_dict = get_smart_info(prot_list)
+
+    # protein_info
+    protein_info_dict = protein_info_from_fasta('D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta')
 
     # peptide mapping
     psm_tsv = 'D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_1080D/psm.tsv'
@@ -411,6 +417,7 @@ if __name__ == '__main__':
     # combine domain coverage and ptm heatmaps in one html
     combine_bokeh(domain_coverage_bokeh,
                   ptm_domain_bokeh,
+                  protein_info_dict,
                   html_out='F:/matrisomedb2.0/bokeh_test_E9PWQ3.html',
                   UniportID='E9PWQ3')
 
