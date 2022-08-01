@@ -343,6 +343,7 @@ def plot_prot_combined_tsv(combined_protein_tsv):
     # plt.xticks(rotation=30)
     plt.show()
 
+
 def protein_info_from_combined(combined_protein_tsv):
     """
     get protein name, gene name, entry name, gene name and Description
@@ -362,6 +363,7 @@ def protein_info_from_combined(combined_protein_tsv):
             info_dict[protein_id] = (protein_name,gene_name,description)
     return info_dict
 
+
 def protein_info_from_fasta(fasta_path):
     """
     get protein name, gene name, entry name, and description
@@ -380,6 +382,7 @@ def protein_info_from_fasta(fasta_path):
                 gene_name = line.split('GN=')[1].split(' ')[0].rstrip('\n') if 'GN=' in line else 'N/A'
                 info_dict[protein_id] = (gene_name,description,cls)
     return info_dict
+
 
 def map_psm_file(psm_tsv):
     """
@@ -411,6 +414,7 @@ def pep_xml_info(pepxml_file):
         info_list = [each.split('</spectrum_query>')[0] for each in f_split[1:]]
 
     return head,tail,info_list
+
 
 def pepxml_peptide_getter(pepxml):
     psm_hit_list = []
@@ -527,6 +531,7 @@ def kr_calculate(id_kr_mapp_dict,protein_dict):
         r_sum += kr_count_dict['R']
         id_kr_count_dict[prot] = {'K': kr_count_dict['K'],'R':kr_count_dict['R']}
     return id_kr_count_dict,k_sum,r_sum
+
 
 if __name__=="__main__":
     from glob import glob
