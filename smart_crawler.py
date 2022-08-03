@@ -514,6 +514,7 @@ def combine_bokeh(domain_bokeh_return, ptm_bokeh_return, protein_info_dict, html
 
 def bokeh_to_html(domain_cov_ptm_bokeh, protein_info_dict, html_out='test.html',UniprotID=''):
     # load bokeh js scripts and divs
+    time_start = time.time()
     js_script, div = domain_cov_ptm_bokeh
     smart_url = 'https://smart.embl.de/smart/show_motifs.pl?ID=' + UniprotID
 
@@ -531,7 +532,7 @@ def bokeh_to_html(domain_cov_ptm_bokeh, protein_info_dict, html_out='test.html',
                                     1].rstrip(' ') + ')').replace('<!-- SMART URL -->', smart_url)
     with open(html_out, 'w', newline='\n') as f_w:
         f_w.write(new_html)
-
+    print (f'bokeh to html {time.time()-time_start}s')
     return new_html
 
 
