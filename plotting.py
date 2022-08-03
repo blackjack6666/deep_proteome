@@ -92,8 +92,8 @@ def text_cloud(text_file,stop_words=None,out_put_png=None):
     import matplotlib.pyplot as plt
     with open(text_file,'r',encoding="utf8") as f_o:
         f_string = f_o.read()
-    wordcloud = WordCloud(stopwords=stop_words, background_color="white").generate(f_string)
-
+    wordcloud = WordCloud(stopwords=stop_words, background_color="white").generate(f_string).to_array()
+    print (wordcloud)
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis("off")
     plt.show()

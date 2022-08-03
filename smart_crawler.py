@@ -303,7 +303,7 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     freq_array = prot_freq_dict[protein_entry]
     domain_dict = domain_pos_dict[protein_entry]
 
-    ## prepare data for domain coverage
+    ## extract domain position and calculate coverage, prepare data for domain coverage
     info_list = []
     for each_domain in domain_dict:
         for each_tp in domain_dict[each_domain]:
@@ -326,11 +326,10 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     ## prepare data for PTM labeling
     id_ptm_indx_dict = ptm_map_result[0]
     ptm_index_dict = id_ptm_indx_dict[protein_entry]
-    numpy_zero_array = np.zeros(len(freq_array))
 
     # hovertool
     hover = HoverTool(names=['rec'],tooltips=[('domain', '@domain'), ('start position', '@start'),('end position','@end'),('coverage','@coverage'),])
-
+    # initiate bokeh figure
     p = figure(x_range=(0,len(freq_array)),
                y_range=(0,2),
                tools=['pan', 'box_zoom', 'wheel_zoom', 'save',
@@ -351,7 +350,7 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
            name='rec'
            )
     # reference domains, alpha=1
-    p.rect(x="x", y=0.05, width='w', height=10,
+    p.rect(x="x", y=1, width='w', height=10,
            source=source,
            fill_color='color',
            line_width=2,
@@ -359,34 +358,38 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
            height_units="screen",
            name='rec'
            )
-    # line shows protein length
+    # line shows whole protein length
     p.line(x=[0,len(freq_array)],y=[0.6,0.6],line_width=20,color='#808080',alpha=0.7,name='line')
 
-    # ptm labelling
-    switch = 0
+    # adjusted PTM text coordinates calculation
+    numpy_zero_array = np.zeros((200, len(freq_array))) # mask numpy array for text plotting
+    ptm_x,ptm_y = [], []
+    new_ptm_x, new_ptm_y = [], [] # adjusted text coordinates to prevent overlap
+    ptms = []
     for ptm in ptm_index_dict:
-        idx_list = ptm_index_dict[ptm]
-        for each_idx in idx_list:
-            numpy_zero_array[each_idx] += 1
-            # if np.count_nonzero(numpy_zero_array[each_idx-50:each_idx])+np.count_nonzero(numpy_zero_array[each_idx+1:each_idx+50])==0:
-            if switch == 0:
-                ptm_x, ptm_y = [each_idx+1, each_idx+1+len(freq_array)/80], [0.45, 0.3]
-                text_align = 'left'
-                switch = 1
-            elif switch == 1:
-                ptm_x, ptm_y = [each_idx + 1, each_idx + 1 - len(freq_array)/60], [0.75, 0.9]
-                text_align = 'right'
-                switch = 2
-            else:
-                ptm_x, ptm_y = [each_idx + 1, each_idx + 1 - len(freq_array)/60], [0.45, 0.2]
-                text_align = 'right'
-                switch = 0
-            p.line(x=ptm_x, y=ptm_y, line_width=1, color='black', alpha=0.6)  # connect text with domain box
-            label = Label(x=ptm_x[1], y=ptm_y[1] - 0.12,
-                          text=ptm.replace('\\', '') + '\n' + ptm.split('\\')[0] + str(each_idx + 1),
-                          text_font_size='8px', text_align=text_align, text_font='Tahoma')
-            p.add_layout(label)
+        for each_idx in ptm_index_dict[ptm]:
+            ptms.append(ptm.replace('\\', ''))
+            ptm_x.append(each_idx)
+            ptm_y.append(0.5)
+            x_offset,y_offset = 0,0
+            while True: # keep moving right and down if text are too close
+                nonzero_count = np.count_nonzero(numpy_zero_array[190+y_offset:200+y_offset,each_idx+x_offset:each_idx+50+x_offset])
+                if nonzero_count == 0:
+                    # print (ptm,each_idx,x_offset,y_offset)
+                    new_ptm_x.append(each_idx+x_offset)
+                    new_ptm_y.append((25+y_offset)/200*2)
+                    numpy_zero_array[190+y_offset:200+y_offset,each_idx+x_offset:each_idx+50+x_offset] += 1
+                    break
+                else:
+                    # print ('moving down')
+                    x_offset += 50 # value to move right
+                    y_offset -= 12 # value to move down
 
+    # label ptm and connect to protein domains
+    for x,y,x_,y_,ptm in zip(new_ptm_x,new_ptm_y,ptm_x,ptm_y,ptms):
+        p.line(x=[x_+1,x],y=[y_,y+0.1],line_width=1,color='black',alpha=0.6) # connect domain with text
+        label = Label(x=x,y=y,text=ptm+'\n'+str(x_+1),text_font_size='10px', text_align='center', text_font='Tahoma')
+        p.add_layout(label)
     # dummy glyphs to help draw legend
     legend_gly = [p.line(x=[1, 1], y=[1, 1], line_width=15, color=c, name='dummy_for_legend')
                     for c in [v for v in color_map_dict.values()]]
@@ -404,9 +407,9 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     p.add_layout(color_bar,'right')
     p.xgrid.visible = False
     p.ygrid.visible = False
-    # p.yaxis.visible = False
+    p.yaxis.visible = False
     print (f'{time.time()-time_start} s')
-    show(p)
+    # show(p)
     return components(p)
 
 
@@ -509,6 +512,29 @@ def combine_bokeh(domain_bokeh_return, ptm_bokeh_return, protein_info_dict, html
     return new_html
 
 
+def bokeh_to_html(domain_cov_ptm_bokeh, protein_info_dict, html_out='test.html',UniprotID=''):
+    # load bokeh js scripts and divs
+    js_script, div = domain_cov_ptm_bokeh
+    smart_url = 'https://smart.embl.de/smart/show_motifs.pl?ID=' + UniprotID
+
+    # read html template
+    html_template_f = open('F:/matrisomedb2.0/bokeh_html_template.html')
+    html_template = html_template_f.read()
+    html_template_f.close()
+
+    # write new html with js script and divs
+    new_html = html_template.replace('<!-- COPY/PASTE domain coverage SCRIPT HERE -->', js_script).\
+        replace('<!-- INSERT domain DIVS HERE -->',div)
+
+    new_html = new_html.replace('<!-- UniprotID -->',
+                                protein_info_dict[UniprotID][0] + '  (' + protein_info_dict[UniprotID][
+                                    1].rstrip(' ') + ')').replace('<!-- SMART URL -->', smart_url)
+    with open(html_out, 'w', newline='\n') as f_w:
+        f_w.write(new_html)
+
+    return new_html
+
+
 if __name__ == '__main__':
     from tsv_reader import modified_peptide_from_psm
 
@@ -529,7 +555,14 @@ if __name__ == '__main__':
     psm_list = modified_peptide_from_psm(psm_tsv)
     ptm_map_result = ptm_map(psm_list,protein_dict)
 
-    domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='P11276')
+    # updated 8/3/22
+    bokeh_return = domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='P11276')
+
+    # updated 8/3/22
+    bokeh_to_html(bokeh_return,
+                  protein_info_dict,
+                  html_out='F:/matrisomedb2.0/newbokeh_test_P11276.html',
+                  UniprotID='P11276')
 
     # domain coverage
     # domain_coverage_bokeh = plot_domain_coverage2(protein_freq_dict,info_dict,'E9PWQ3')
