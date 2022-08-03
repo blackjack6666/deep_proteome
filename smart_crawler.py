@@ -14,8 +14,8 @@ from multiprocessing_naive_algorithym import *
 from aho_corasick import automaton_trie,automaton_matching
 from protein_coverage import fasta_reader
 from tsv_reader import psm_reader, protein_info_from_fasta
-from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter
-from bokeh.palettes import Spectral7, Viridis, Plasma
+from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter, Plot, Rect, Legend, LegendItem,SingleIntervalTicker, Label
+from bokeh.palettes import Spectral7, Viridis, Plasma, Blues9
 from bokeh.transform import factor_cmap
 from bokeh.plotting import figure
 from bokeh.io import save, output_file, show
@@ -290,6 +290,126 @@ def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str, mod
     return components(p)
 
 
+def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry:str):
+    """
+    draw rectangular box as protein domains and alpha as coverage on bokeh,
+    and label PTMs.
+    :param protein_freq_dict:
+    :param domain_pos_dict:
+    :param protein_entry:
+    :return:
+    """
+    time_start = time.time()
+    freq_array = prot_freq_dict[protein_entry]
+    domain_dict = domain_pos_dict[protein_entry]
+
+    ## prepare data for domain coverage
+    info_list = []
+    for each_domain in domain_dict:
+        for each_tp in domain_dict[each_domain]:
+            start, end = each_tp[0], each_tp[1]
+            coverage = np.count_nonzero(freq_array[start - 1:end]) / (end - start + 1)
+            info_list.append((start,end,coverage,each_domain))
+
+    start, end, coverage, domain_list = zip(*info_list)
+
+    # x coordinates and widths of rectangular
+    x,width = zip(*[((end_-start_)/2+start_,end_-start_) for end_,start_ in zip(end,start)])
+    # random color to show each domain
+    color_map_dict = {domain:color_generator() for domain in set(domain_list)}
+    color_list = [color_map_dict[each] for each in domain_list]
+
+    source = ColumnDataSource(dict(x=x,w=width,color=color_list,domain=domain_list,
+                                   start=start,end=end,
+                                   coverage=coverage))
+
+    ## prepare data for PTM labeling
+    id_ptm_indx_dict = ptm_map_result[0]
+    ptm_index_dict = id_ptm_indx_dict[protein_entry]
+    numpy_zero_array = np.zeros(len(freq_array))
+
+    # hovertool
+    hover = HoverTool(names=['rec'],tooltips=[('domain', '@domain'), ('start position', '@start'),('end position','@end'),('coverage','@coverage'),])
+
+    p = figure(x_range=(0,len(freq_array)),
+               y_range=(0,2),
+               tools=['pan', 'box_zoom', 'wheel_zoom', 'save',
+                      'reset', hover],
+               plot_height=500, plot_width=1600,
+               toolbar_location='right',
+               title='',
+               x_axis_label='amino acid position')
+
+    # plot domains as rectangular and alpha shows coverage
+    p.rect(x="x", y=0.6, width='w', height=50,
+           source=source,
+           fill_color='color',
+           fill_alpha='coverage',
+           line_width=2,
+           line_color='black',
+           height_units="screen",
+           name='rec'
+           )
+    # reference domains, alpha=1
+    p.rect(x="x", y=0.05, width='w', height=10,
+           source=source,
+           fill_color='color',
+           line_width=2,
+           line_color='black',
+           height_units="screen",
+           name='rec'
+           )
+    # line shows protein length
+    p.line(x=[0,len(freq_array)],y=[0.6,0.6],line_width=20,color='#808080',alpha=0.7,name='line')
+
+    # ptm labelling
+    switch = 0
+    for ptm in ptm_index_dict:
+        idx_list = ptm_index_dict[ptm]
+        for each_idx in idx_list:
+            numpy_zero_array[each_idx] += 1
+            # if np.count_nonzero(numpy_zero_array[each_idx-50:each_idx])+np.count_nonzero(numpy_zero_array[each_idx+1:each_idx+50])==0:
+            if switch == 0:
+                ptm_x, ptm_y = [each_idx+1, each_idx+1+len(freq_array)/80], [0.45, 0.3]
+                text_align = 'left'
+                switch = 1
+            elif switch == 1:
+                ptm_x, ptm_y = [each_idx + 1, each_idx + 1 - len(freq_array)/60], [0.75, 0.9]
+                text_align = 'right'
+                switch = 2
+            else:
+                ptm_x, ptm_y = [each_idx + 1, each_idx + 1 - len(freq_array)/60], [0.45, 0.2]
+                text_align = 'right'
+                switch = 0
+            p.line(x=ptm_x, y=ptm_y, line_width=1, color='black', alpha=0.6)  # connect text with domain box
+            label = Label(x=ptm_x[1], y=ptm_y[1] - 0.12,
+                          text=ptm.replace('\\', '') + '\n' + ptm.split('\\')[0] + str(each_idx + 1),
+                          text_font_size='8px', text_align=text_align, text_font='Tahoma')
+            p.add_layout(label)
+
+    # dummy glyphs to help draw legend
+    legend_gly = [p.line(x=[1, 1], y=[1, 1], line_width=15, color=c, name='dummy_for_legend')
+                    for c in [v for v in color_map_dict.values()]]
+
+    legend = Legend(title='Domains', background_fill_color='white',
+                    border_line_color='black',border_line_width=3,
+                    border_line_alpha=0.7,
+                    items=[LegendItem(label=lab, renderers=[gly])
+                           for lab, gly in zip([d for d in color_map_dict.keys()],legend_gly)])
+    # alpha color bar
+    color_mapper = LinearColorMapper(palette=Blues9[::-1], low=0, high=1)
+    color_bar = ColorBar(color_mapper=color_mapper,location=(0, 0),ticker=SingleIntervalTicker(interval=0.1))
+
+    p.add_layout(legend)
+    p.add_layout(color_bar,'right')
+    p.xgrid.visible = False
+    p.ygrid.visible = False
+    # p.yaxis.visible = False
+    print (f'{time.time()-time_start} s')
+    show(p)
+    return components(p)
+
+
 def ptm_domain_htmap(ptm_map_result, domain_pos_dict, protein_entry:str):
     """
     use bokeh to generate a heatmap showing ptm coverage by domains
@@ -405,20 +525,26 @@ if __name__ == '__main__':
     protein_dict = fasta_reader('D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta')
     protein_freq_dict = peptide_map(psm_dict,protein_dict)
 
-    # domain coverage
-    domain_coverage_bokeh = plot_domain_coverage2(protein_freq_dict,info_dict,'E9PWQ3')
-
-    # main('https://smart.embl.de/smart/show_motifs.pl?ID=Q8TER0')
     # ptm mapping
     psm_list = modified_peptide_from_psm(psm_tsv)
     ptm_map_result = ptm_map(psm_list,protein_dict)
-    ptm_domain_bokeh = ptm_domain_htmap(ptm_map_result,info_dict,'E9PWQ3')
+
+    domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='P11276')
+
+    # domain coverage
+    # domain_coverage_bokeh = plot_domain_coverage2(protein_freq_dict,info_dict,'E9PWQ3')
+
+    # main('https://smart.embl.de/smart/show_motifs.pl?ID=Q8TER0')
+    # ptm mapping
+    # psm_list = modified_peptide_from_psm(psm_tsv)
+    # ptm_map_result = ptm_map(psm_list,protein_dict)
+    # ptm_domain_bokeh = ptm_domain_htmap(ptm_map_result,info_dict,'E9PWQ3')
 
     # combine domain coverage and ptm heatmaps in one html
-    combine_bokeh(domain_coverage_bokeh,
-                  ptm_domain_bokeh,
-                  protein_info_dict,
-                  html_out='F:/matrisomedb2.0/bokeh_test_E9PWQ3.html',
-                  UniportID='E9PWQ3')
+    # combine_bokeh(domain_coverage_bokeh,
+    #               ptm_domain_bokeh,
+    #               protein_info_dict,
+    #               html_out='F:/matrisomedb2.0/bokeh_test_E9PWQ3.html',
+    #               UniportID='E9PWQ3')
 
 
