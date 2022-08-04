@@ -14,14 +14,16 @@ from multiprocessing_naive_algorithym import *
 from aho_corasick import automaton_trie,automaton_matching
 from protein_coverage import fasta_reader
 from tsv_reader import psm_reader, protein_info_from_fasta
-from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter, Plot, Rect, Legend, LegendItem,SingleIntervalTicker, Label
-from bokeh.palettes import Spectral7, Viridis, Plasma, Blues9
+from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter, Plot, Rect, Legend, LegendItem,SingleIntervalTicker, Label, LabelSet
+from bokeh.palettes import Spectral7, Viridis, Plasma, Blues9, Turbo256
 from bokeh.transform import factor_cmap
 from bokeh.plotting import figure
 from bokeh.io import save, output_file, show
 from bokeh.embed import components
 from math import pi
+from subprocess import call
 
+# set pythonhashseed to static to make sure hashfunciton produce same hash value
 
 def get_smart_info(protein_list:list):
     """
@@ -292,8 +294,10 @@ def plot_domain_coverage2(prot_freq_dict,domain_pos_dict, protein_entry:str, mod
 
 def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry:str):
     """
+    -----
     draw rectangular box as protein domains and alpha as coverage on bokeh,
     and label PTMs.
+    -----
     :param protein_freq_dict:
     :param domain_pos_dict:
     :param protein_entry:
@@ -303,7 +307,17 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     freq_array = prot_freq_dict[protein_entry]
     domain_dict = domain_pos_dict[protein_entry]
 
-    ## extract domain position and calculate coverage, prepare data for domain coverage
+    ## coverage every 50aa
+    pos_cov_dict = {}
+    interval=np.arange(0,len(freq_array),50)
+    for i in interval[:-1]:
+        coverage = np.count_nonzero(freq_array[i:i+50])/50
+        pos_cov_dict[i+25] = coverage + 0.8 #  move bar up by 0.5
+    pos_cov_dict[interval[-1]+25] = np.count_nonzero(freq_array[interval[-1]:len(freq_array)])/(len(freq_array)-interval[-1])+0.8
+    source_cov = ColumnDataSource(dict(x=[k for k in pos_cov_dict.keys()],y=[v for v in pos_cov_dict.values()],
+                                       label=['{:.1f}%'.format((v-0.8)*100) for v in pos_cov_dict.values()]))
+
+    ## extract domain position and calculate domain coverage
     info_list = []
     for each_domain in domain_dict:
         for each_tp in domain_dict[each_domain]:
@@ -315,8 +329,8 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
 
     # x coordinates and widths of rectangular
     x,width = zip(*[((end_-start_)/2+start_,end_-start_) for end_,start_ in zip(end,start)])
-    # random color to show each domain
-    color_map_dict = {domain:color_generator() for domain in set(domain_list)}
+    # hash color to show each domain
+    color_map_dict = {domain:hashcolor(domain) for domain in set(domain_list)}
     color_list = [color_map_dict[each] for each in domain_list]
 
     source = ColumnDataSource(dict(x=x,w=width,color=color_list,domain=domain_list,
@@ -326,9 +340,10 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     ## prepare data for PTM labeling
     id_ptm_indx_dict = ptm_map_result[0]
     ptm_index_dict = id_ptm_indx_dict[protein_entry]
+    ptm_index_sort = sorted([(idx,each) for each in ptm_index_dict for idx in ptm_index_dict[each]])
 
-    # hovertool
-    hover = HoverTool(names=['rec'],tooltips=[('domain', '@domain'), ('start position', '@start'),('end position','@end'),('coverage','@coverage'),])
+    # bokeh plot, hovertool
+    hover = HoverTool(names=['rec'],tooltips=[('domain', '@domain'), ('start position', '@start'),('end position','@end'),('domain coverage','@coverage'),])
     # initiate bokeh figure
     p = figure(x_range=(0,len(freq_array)),
                y_range=(0,2),
@@ -350,44 +365,51 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
            name='rec'
            )
     # reference domains, alpha=1
-    p.rect(x="x", y=1, width='w', height=10,
-           source=source,
-           fill_color='color',
-           line_width=2,
-           line_color='black',
-           height_units="screen",
-           name='rec'
-           )
+    # p.rect(x="x", y=1, width='w', height=10,
+    #        source=source,
+    #        fill_color='color',
+    #        line_width=2,
+    #        line_color='black',
+    #        height_units="screen",
+    #        name='rec'
+    #        )
+
+    # coverage bar charts
+    p.vbar(x='x',width=50,top='y',bottom=0.8,source=source_cov,color='#D3D3D3', name='seq cov')
+    cov_label = LabelSet(x='x',y='y',text='label',text_font_size='8px',
+                         x_offset=-13.5, y_offset=0, source=source_cov)
+    p.add_layout(cov_label)
+
     # line shows whole protein length
-    p.line(x=[0,len(freq_array)],y=[0.6,0.6],line_width=20,color='#808080',alpha=0.7,name='line')
+    p.line(x=[0,len(freq_array)],y=[0.6,0.6],line_width=20,color='#808080',alpha=0.9,name='line')
 
     # adjusted PTM text coordinates calculation
     numpy_zero_array = np.zeros((200, len(freq_array))) # mask numpy array for text plotting
     ptm_x,ptm_y = [], []
     new_ptm_x, new_ptm_y = [], [] # adjusted text coordinates to prevent overlap
     ptms = []
-    for ptm in ptm_index_dict:
-        for each_idx in ptm_index_dict[ptm]:
-            ptms.append(ptm.replace('\\', ''))
-            ptm_x.append(each_idx)
-            ptm_y.append(0.5)
-            x_offset,y_offset = 0,0
-            while True: # keep moving right and down if text are too close
-                nonzero_count = np.count_nonzero(numpy_zero_array[190+y_offset:200+y_offset,each_idx+x_offset:each_idx+50+x_offset])
-                if nonzero_count == 0:
-                    # print (ptm,each_idx,x_offset,y_offset)
-                    new_ptm_x.append(each_idx+x_offset)
-                    new_ptm_y.append((25+y_offset)/200*2)
-                    numpy_zero_array[190+y_offset:200+y_offset,each_idx+x_offset:each_idx+50+x_offset] += 1
-                    break
-                else:
-                    # print ('moving down')
-                    x_offset += 50 # value to move right
-                    y_offset -= 12 # value to move down
+    for tp in ptm_index_sort:
+        each_idx, ptm = tp
+        ptms.append(ptm.replace('\\', ''))
+        ptm_x.append(each_idx)
+        ptm_y.append(0.5)
+        x_offset,y_offset = 0,0
+        while True: # keep moving down if text are too close
+            nonzero_count = np.count_nonzero(numpy_zero_array[190+y_offset:200+y_offset,each_idx+x_offset:each_idx+50+x_offset])
+            if nonzero_count == 0:
+                # print (ptm,each_idx,x_offset,y_offset)
+                new_ptm_x.append(each_idx+x_offset)
+                new_ptm_y.append((25+y_offset)/200*2)
+                numpy_zero_array[190+y_offset:200+y_offset,each_idx+x_offset:each_idx+50+x_offset] += 1
+                break
+            else:
+                # print ('moving down')
+                # x_offset += 50 # value to move right
+                y_offset -= 12 # value to move down
 
     # label ptm and connect to protein domains
     for x,y,x_,y_,ptm in zip(new_ptm_x,new_ptm_y,ptm_x,ptm_y,ptms):
-        p.line(x=[x_+1,x],y=[y_,y+0.1],line_width=1,color='black',alpha=0.6) # connect domain with text
+        p.line(x=[x_+1,x+1],y=[y_,y+0.1],line_width=1,color='black',alpha=0.6) # connect domain with text
         label = Label(x=x,y=y,text=ptm+'\n'+str(x_+1),text_font_size='10px', text_align='center', text_font='Tahoma')
         p.add_layout(label)
     # dummy glyphs to help draw legend
@@ -409,7 +431,7 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     p.ygrid.visible = False
     p.yaxis.visible = False
     print (f'{time.time()-time_start} s')
-    # show(p)
+    show(p)
     return components(p)
 
 
@@ -536,6 +558,10 @@ def bokeh_to_html(domain_cov_ptm_bokeh, protein_info_dict, html_out='test.html',
     return new_html
 
 
+def hashcolor(s):
+
+    return Turbo256[hash(s) % 256]
+
 if __name__ == '__main__':
     from tsv_reader import modified_peptide_from_psm
 
@@ -557,13 +583,13 @@ if __name__ == '__main__':
     ptm_map_result = ptm_map(psm_list,protein_dict)
 
     # updated 8/3/22
-    bokeh_return = domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='P11276')
+    bokeh_return = domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='Q8TER0')
 
     # updated 8/3/22
     bokeh_to_html(bokeh_return,
                   protein_info_dict,
-                  html_out='F:/matrisomedb2.0/newbokeh_test_P11276.html',
-                  UniprotID='P11276')
+                  html_out='F:/matrisomedb2.0/newbokeh_test_Q8TER0.html',
+                  UniprotID='Q8TER0')
 
     # domain coverage
     # domain_coverage_bokeh = plot_domain_coverage2(protein_freq_dict,info_dict,'E9PWQ3')
