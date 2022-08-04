@@ -106,15 +106,18 @@ def getdictfromtext(text_file):
     import re
     from collections import defaultdict
     word_freq_dict = defaultdict(int)
-    stop_pattern = 'a|A|the|this|these|those|one|an|The|to|in|for|of|or|by|with|is|on|that|be|from|here|\(|\)'
+    stop_pattern = '^a$|^A$|^the$|this|these|those|one|an|The|to|^in$|for|of|or|by|with|is|on|that|be|from|here|^can$|^cannot$|\(|\)'
 
     with open(text_file,'r',encoding='utf8') as f_o:
-        f_string = f_o.read()
-    for word in f_string.split(" "):
-        if re.match(stop_pattern,word):
-            continue
-        else:
-            word_freq_dict[word] += 1
+        for line in f_o:
+            line = line.replace('\n','').replace('.','').replace(',','').replace(':','').lstrip('').rstrip('')
+            line_split = line.split(" ")
+            for word in line_split:
+                if re.match(stop_pattern,word):
+                    continue
+                else:
+                    word_freq_dict[word] += 1
+
     return word_freq_dict
 
 
@@ -125,12 +128,13 @@ def word_cloud_enrich(total_text_file, single_text_file):
     -----
     :param total_text_file: all files into one text file
     :param single_text_file: individual text file
-    :return:
+    :return: enrichment word frequency dictionary
     """
     enrich_freq_dict = {}
 
     total_wordfreq_dict = getdictfromtext(total_text_file)
     single_wordfreq_dict = getdictfromtext(single_text_file)
+    print (total_wordfreq_dict,single_wordfreq_dict)
 
     sum_total = sum([v for v in total_wordfreq_dict.values()])
     normalized_total = {w:total_wordfreq_dict[w]/sum_total for w in total_wordfreq_dict}
@@ -139,11 +143,20 @@ def word_cloud_enrich(total_text_file, single_text_file):
     normalized_single = {w:single_wordfreq_dict[w]/sum_single for w in single_wordfreq_dict}
 
     for w in normalized_single:
-        if w in normalized_total:
-            enrich_freq_dict[w] = (normalized_single[w]-normalized_total[w])/normalized_total[w]*100
-        else:
-            enrich_freq_dict[w] = normalized_single[w]*100
+        # if w in normalized_total:
+        enrich_freq_dict[w] = (normalized_single[w]-normalized_total[w])/normalized_total[w]*100
+        # else:
+        # enrich_freq_dict[w] = normalized_single[w]*100
     return enrich_freq_dict
+
+
+def textcloud_from_freq(freq_dict,output_png=None):
+    wc = WordCloud(background_color="white").generate_from_frequencies(freq_dict)
+    plt.imshow(wc, interpolation='bilinear')
+    plt.axis('off')
+    plt.show()
+    if output_png:
+        wc.to_file(output_png)
 
 
 if __name__=='__main__':
@@ -154,11 +167,16 @@ if __name__=='__main__':
     # nltk.download('stopwords')
 
     test_file = 'F:/matrisomedb2.0/test.txt'
+    total_test_file = 'F:/matrisomedb2.0/totalabstract_test.txt'
     stopWords = set(stopwords.words('english'))
 
     # text_cloud(test_file,stop_words=stopWords)
-    freq_dict = getdictfromtext(test_file)
-    # wc = WordCloud(background_color="white").generate_from_frequencies(freq_dict)
-    # plt.imshow(wc,interpolation='bilinear')
-    # plt.axis('off')
-    # plt.show()
+
+    # enrichment text cloud
+    # enrich_freq_dict = word_cloud_enrich(total_test_file, test_file)
+    # print(enrich_freq_dict)
+    # textcloud_from_freq(enrich_freq_dict)
+
+    # single text cloud
+    single_freq_dict = getdictfromtext(test_file)
+    textcloud_from_freq(single_freq_dict)
