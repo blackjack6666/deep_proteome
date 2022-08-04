@@ -562,6 +562,7 @@ def hashcolor(s):
 
     return Turbo256[hash(s) % 256]
 
+
 if __name__ == '__main__':
     from tsv_reader import modified_peptide_from_psm
 
