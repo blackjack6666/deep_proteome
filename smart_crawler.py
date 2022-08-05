@@ -25,6 +25,7 @@ from subprocess import call
 
 # set pythonhashseed to static to make sure hashfunciton produce same hash value
 
+
 def get_smart_info(protein_list:list):
     """
     -----
@@ -52,24 +53,37 @@ def get_smart_info(protein_list:list):
     return info_dict
 
 
-def download_page(url):
-    response = requests.get(url)
-    response.raise_for_status()
-    return response.text
+def smart_scrap(protein_list:list):
+    """
+    separate confidently predicted domains and overlapped domains
+    :param protein_list:
+    :return:
+    """
 
+    time_start = time.time()
+    conf_predict_info_dict, overlapped_info_dict = {}, {}
+    for prot in protein_list:
+        time.sleep(1)
+        conf_domain_dict, overlap_domain_dict = defaultdict(set),defaultdict(set)
+        req = Request('https://smart.embl.de/smart/show_motifs.pl?ID=' + prot,
+                      headers={'User-Agent': 'Mozilla/5.0'})
+        webpage = urlopen(req).read().decode('utf-8')
+        conf_web_split = webpage.split('var visible_DS = new kendo.data.DataSource(')[1].split(']')[0]
 
-def main(url):
-    content = download_page(url)
-    soup = BeautifulSoup(content, 'html.parser')
-    result = {}
-    table = soup.find('table', {"class":"k-focusable k-selectable"})
-    print (table)
-    for row in table.find_all('tr'):
-        row_header = row.th.get_text()
-        row_cell = row.td.get_text()
-        result[row_header] = row_cell
-    # with open('book_table.json', 'w') as storage_file:
-    #     storage_file.write(json.dumps(result))
+        for start, end, domain in zip(re.findall('\"st\"\:\"\d+', conf_web_split),
+                                      re.findall('\"en\"\:\"\d+', conf_web_split),
+                                      re.findall('\>\w+\s*\w+\<', conf_web_split)):
+            conf_domain_dict[domain[1:-1]].add((int(start.split('"')[-1]), int(end.split('"')[-1])))
+
+        overlapped_web_split = webpage.split('var hidden_DS = new kendo.data.DataSource(')[1].split(']')[0]
+        for start, end, domain in zip(re.findall('\"st\"\:\"\d+', overlapped_web_split),
+                                      re.findall('\"en\"\:\"\d+', overlapped_web_split),
+                                      re.findall('\>\w+\s*\w+\<', overlapped_web_split)):
+            overlap_domain_dict[domain[1:-1]].add((int(start.split('"')[-1]),int(end.split('"')[-1])))
+        conf_predict_info_dict[prot] = conf_domain_dict
+        overlapped_info_dict[prot] = overlap_domain_dict
+        print (f'{prot} crawl takes {time.time()-time_start}')
+    return conf_predict_info_dict,overlapped_info_dict
 
 
 def my_replace(match_obj):
@@ -306,14 +320,18 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     time_start = time.time()
     freq_array = prot_freq_dict[protein_entry]
     domain_dict = domain_pos_dict[protein_entry]
+    protein_len = len(freq_array)
 
-    ## coverage every 50aa
+    ## coverage every 10 aa
     pos_cov_dict = {}
-    interval=np.arange(0,len(freq_array),50)
+    bin_width = 10
+    bar_shrink_raio = 5 # make bar shorter
+    bar_bottom = 0.8
+    interval=np.arange(0,protein_len,bin_width)
     for i in interval[:-1]:
-        coverage = np.count_nonzero(freq_array[i:i+50])/50
-        pos_cov_dict[i+25] = coverage + 0.8 #  move bar up by 0.5
-    pos_cov_dict[interval[-1]+25] = np.count_nonzero(freq_array[interval[-1]:len(freq_array)])/(len(freq_array)-interval[-1])+0.8
+        coverage = np.count_nonzero(freq_array[i:i+bin_width])/bin_width
+        pos_cov_dict[i+bin_width/2] = coverage/bar_shrink_raio + bar_bottom  # move bar up
+    pos_cov_dict[interval[-1]+bin_width/2] = np.count_nonzero(freq_array[interval[-1]:protein_len])/(protein_len-interval[-1])/bar_shrink_raio+bar_bottom
     source_cov = ColumnDataSource(dict(x=[k for k in pos_cov_dict.keys()],y=[v for v in pos_cov_dict.values()],
                                        label=['{:.1f}%'.format((v-0.8)*100) for v in pos_cov_dict.values()]))
 
@@ -343,9 +361,9 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     ptm_index_sort = sorted([(idx,each) for each in ptm_index_dict for idx in ptm_index_dict[each]])
 
     # bokeh plot, hovertool
-    hover = HoverTool(names=['rec'],tooltips=[('domain', '@domain'), ('start position', '@start'),('end position','@end'),('domain coverage','@coverage'),])
+    hover = HoverTool(names=['rec'],tooltips=[('domain', '@domain'), ('start position', '@start'),('end position','@end'),('domain coverage','@coverage{:.1%}'),])
     # initiate bokeh figure
-    p = figure(x_range=(0,len(freq_array)),
+    p = figure(x_range=(0,protein_len),
                y_range=(0,2),
                tools=['pan', 'box_zoom', 'wheel_zoom', 'save',
                       'reset', hover],
@@ -374,17 +392,24 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     #        name='rec'
     #        )
 
-    # coverage bar charts
-    p.vbar(x='x',width=50,top='y',bottom=0.8,source=source_cov,color='#D3D3D3', name='seq cov')
-    cov_label = LabelSet(x='x',y='y',text='label',text_font_size='8px',
-                         x_offset=-13.5, y_offset=0, source=source_cov)
-    p.add_layout(cov_label)
+    # sequence coverage bar charts
+    p.vbar(x='x',width=bin_width,top='y',bottom=bar_bottom,source=source_cov,color='#D3D3D3', name='seq cov')
+    # cov_label = LabelSet(x='x',y='y',text='label',text_font_size='8px',
+    #                      x_offset=-13.5, y_offset=0, source=source_cov)
+    # p.add_layout(cov_label)
+    cov_bar_legend_top, cov_bar_legend_bottom = 1.95,1.95-1/bar_shrink_raio
+    cov_bar_x_coor = 0.01*protein_len
+    p.vbar(x=[cov_bar_x_coor],width=bin_width,top=[cov_bar_legend_top],bottom=[cov_bar_legend_bottom],
+           color='#D3D3D3',name='seq_cov_legend')
+    for y_coor, text in zip([cov_bar_legend_bottom,cov_bar_legend_top],['0%','100%']):
+        label_cov = Label(x=cov_bar_x_coor,y=y_coor,x_offset=5, y_offset=-5,text=text,text_font_size='10px',text_align='left')
+        p.add_layout(label_cov)
 
     # line shows whole protein length
-    p.line(x=[0,len(freq_array)],y=[0.6,0.6],line_width=20,color='#808080',alpha=0.9,name='line')
+    p.line(x=[0,protein_len],y=[0.6,0.6],line_width=20,color='#808080',alpha=0.9,name='line')
 
     # adjusted PTM text coordinates calculation
-    numpy_zero_array = np.zeros((200, len(freq_array))) # mask numpy array for text plotting
+    numpy_zero_array = np.zeros((200, protein_len)) # mask numpy array for text plotting
     ptm_x,ptm_y = [], []
     new_ptm_x, new_ptm_y = [], [] # adjusted text coordinates to prevent overlap
     ptms = []
@@ -567,7 +592,7 @@ if __name__ == '__main__':
     from tsv_reader import modified_peptide_from_psm
 
     # SMART web crawler to extract domain info
-    prot_list = ['Q8TER0','E9PWQ3','P11276']
+    prot_list = ['P11276']
     info_dict = get_smart_info(prot_list)
 
     # protein_info
@@ -584,13 +609,13 @@ if __name__ == '__main__':
     ptm_map_result = ptm_map(psm_list,protein_dict)
 
     # updated 8/3/22
-    bokeh_return = domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='Q8TER0')
+    bokeh_return = domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='P11276')
 
     # updated 8/3/22
     bokeh_to_html(bokeh_return,
                   protein_info_dict,
-                  html_out='F:/matrisomedb2.0/newbokeh_test_Q8TER0.html',
-                  UniprotID='Q8TER0')
+                  html_out='F:/matrisomedb2.0/newbokeh_test_P11276.html',
+                  UniprotID='P11276')
 
     # domain coverage
     # domain_coverage_bokeh = plot_domain_coverage2(protein_freq_dict,info_dict,'E9PWQ3')
@@ -609,3 +634,5 @@ if __name__ == '__main__':
     #               UniportID='E9PWQ3')
 
 
+    # info_dict = smart_scrap(['P20152'])
+    # print (info_dict[0],'\n',info_dict[1])
