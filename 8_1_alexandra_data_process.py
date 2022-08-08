@@ -235,6 +235,7 @@ with pd.ExcelWriter('D:/data/Naba_deep_matrisome/PSM_info_DF_XS.xlsx') as writer
             print(each_file)
 """
 ### get total spec count from summary excel
+"""
 excel_path = 'D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F.xlsx'
 df = pd.read_excel(excel_path,index_col=0)
 
@@ -246,3 +247,18 @@ df_mask = df.loc[df_ecm.index,:]
 columns = [each for each in df_mask.columns if 'total_spec' in each and '_seq_' in each]
 for col in columns:
     print (col, df_mask[col].sum())
+"""
+### download SMART domains
+from smart_crawler import get_smart_info
+import json
+ecm_df = pd.read_excel('F:/matrisomedb2.0/AnnotatedDeDuplicated.xlsx',index_col=0)
+ecm_protein_list = ecm_df[ecm_df['Division']!='Non-matrisome'].index.to_list()
+domain_info_dict = get_smart_info(ecm_protein_list)
+with open('F:/matrisomedb2.0/smart_domain.json','w') as json_file:
+    json.dump(domain_info_dict,json_file)
+
+## read json file as dict
+# with open('F:/matrisomedb2.0/smart_domain.json') as f_o:
+#     domain_dict = json.load(f_o)
+#     for p in domain_dict:
+#         print (p, domain_dict[p])

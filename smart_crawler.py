@@ -37,7 +37,8 @@ def get_smart_info(protein_list:list):
     time_start = time.time()
     info_dict = {}
     for prot in protein_list:
-        domain_dict = defaultdict(set)
+        print (f'crawling {prot} from SMART...')
+        domain_dict = defaultdict(list)
         time.sleep(1)
         req = Request('https://smart.embl.de/smart/show_motifs.pl?ID='+prot,
                       headers={'User-Agent': 'Mozilla/5.0'})
@@ -47,7 +48,7 @@ def get_smart_info(protein_list:list):
         # print (split_dict)
         for each in split_dict:
             # print (each, split_dict[each]['n'], split_dict[each]['st'], split_dict[each]['en'])
-            domain_dict[split_dict[each]['n']].add((int(split_dict[each]['st']),int(split_dict[each]['en'])))
+            domain_dict[split_dict[each]['n']].append((int(split_dict[each]['st']),int(split_dict[each]['en'])))
         info_dict[prot] = domain_dict
     print (f'crawler takes {time.time()-time_start}')
     return info_dict
@@ -590,10 +591,15 @@ def hashcolor(s):
 
 if __name__ == '__main__':
     from tsv_reader import modified_peptide_from_psm
+    import json
 
     # SMART web crawler to extract domain info
-    prot_list = ['P11276']
-    info_dict = get_smart_info(prot_list)
+    # prot_list = ['P11276']
+    # info_dict = get_smart_info(prot_list)
+
+    # read domain from json file
+    with open('F:/matrisomedb2.0/smart_domain.json') as f_o:
+        info_dict = json.load(f_o)
 
     # protein_info
     protein_info_dict = protein_info_from_fasta('D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta')
