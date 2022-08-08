@@ -98,6 +98,7 @@ def peptide_map(psm_dict,protein_dict):
     :param psm_dict: {'peptide': frequency(int)}
     :return:
     """
+    start = time.time()
     id_list,seq_list = extract_UNID_and_seq(protein_dict)
     seqline = creat_total_seq_line(seq_list,sep='|')
     zeroline = zero_line_for_seq(seqline)
@@ -111,6 +112,7 @@ def peptide_map(psm_dict,protein_dict):
 
     for i in range(len(sep_pos_array) - 1):  # iterate from the left of zeroline all the way to the right
         prot_freq_dict[id_list[i]] = zeroline[sep_pos_array[i] + 1:sep_pos_array[i + 1]]
+    print (f'peptide mapping took {time.time()-start}s')
 
     return prot_freq_dict
 
@@ -122,6 +124,7 @@ def ptm_map(psm_list,protein_dict):
     :param protein_dict:
     :return:
     """
+    time_start = time.time()
     regex_pat = '\w{1}\[\d+\.?\d+\]'  # universal ptm pattern
 
     regex_set = set()
@@ -172,7 +175,7 @@ def ptm_map(psm_list,protein_dict):
         id_ptm_freq_dict[id_list[i]] = {ptm:
             ptm_index_line_dict[ptm][separtor_pos_array[i] + 1:separtor_pos_array[i + 1]]
             for ptm in regex_set}
-
+    print (f'PTM mapping took {time.time()-time_start}s')
     return id_ptm_idx_dict, id_ptm_freq_dict
 
 
@@ -377,7 +380,7 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     p.rect(x="x", y=0.6, width='w', height=50,
            source=source,
            fill_color='color',
-           fill_alpha='coverage',
+    #       fill_alpha='coverage',
            line_width=2,
            line_color='black',
            height_units="screen",
@@ -447,16 +450,16 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
                     border_line_alpha=0.7,
                     items=[LegendItem(label=lab, renderers=[gly])
                            for lab, gly in zip([d for d in color_map_dict.keys()],legend_gly)])
-    # alpha color bar
-    color_mapper = LinearColorMapper(palette=Blues9[::-1], low=0, high=1)
-    color_bar = ColorBar(color_mapper=color_mapper,location=(0, 0),ticker=SingleIntervalTicker(interval=0.1))
+    # alpha color bar, domain coverage
+    # color_mapper = LinearColorMapper(palette=Blues9[::-1], low=0, high=1)
+    # color_bar = ColorBar(color_mapper=color_mapper,location=(0, 0),ticker=SingleIntervalTicker(interval=0.1))
+    # p.add_layout(color_bar,'right')
 
     p.add_layout(legend)
-    p.add_layout(color_bar,'right')
     p.xgrid.visible = False
     p.ygrid.visible = False
     p.yaxis.visible = False
-    print (f'{time.time()-time_start} s')
+    print (f'bokeh graph took {time.time()-time_start}s')
     show(p)
     return components(p)
 
