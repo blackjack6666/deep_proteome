@@ -401,7 +401,7 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     # cov_label = LabelSet(x='x',y='y',text='label',text_font_size='8px',
     #                      x_offset=-13.5, y_offset=0, source=source_cov)
     # p.add_layout(cov_label)
-    cov_bar_legend_top, cov_bar_legend_bottom = 1.95,1.95-1/bar_shrink_raio
+    cov_bar_legend_top, cov_bar_legend_bottom = 1.3,1.3-1/bar_shrink_raio
     cov_bar_x_coor = 0.01*protein_len
     p.vbar(x=[cov_bar_x_coor],width=bin_width,top=[cov_bar_legend_top],bottom=[cov_bar_legend_bottom],
            color='#D3D3D3',name='seq_cov_legend')
@@ -410,7 +410,7 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
         p.add_layout(label_cov)
 
     # line shows whole protein length
-    p.line(x=[0,protein_len],y=[0.6,0.6],line_width=20,color='#808080',alpha=0.9,name='line')
+    p.line(x=[0,protein_len],y=[0.6,0.6],line_width=10,color='#000000',alpha=0.8,name='line')
 
     # adjusted PTM text coordinates calculation
     numpy_zero_array = np.zeros((200, protein_len)) # mask numpy array for text plotting
