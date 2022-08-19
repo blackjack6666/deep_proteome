@@ -526,6 +526,60 @@ def ptm_domain_htmap(ptm_map_result, domain_pos_dict, protein_entry:str):
     return components(p)
 
 
+def ptm_dist_dash(id_ptm_idx_dict,protein_dict):
+    """
+    generate ptm distribution in html file with plotly
+    :param id_ptm_idx_dict: first return from ptm_map
+    :param protein_dict: protein seq dictionary
+    :return:
+    """
+    import dash
+    import dash_html_components as html
+    import dash_core_components as dcc
+    from dash.dependencies import Input, Output
+    import plotly.express as px
+    import plotly.graph_objects as go
+
+    ptm_set = list(set([ptm for each in id_ptm_idx_dict for ptm in id_ptm_idx_dict[each]]))
+    print (ptm_set)
+
+    df = pd.DataFrame(columns=['PTM','freq','protein_id'])
+    tp_list = [(ptm,len(id_ptm_idx_dict[each][ptm]),each, len(protein_dict[each]))
+               for each in id_ptm_idx_dict for ptm in ptm_set]
+    ptm_list, freq_list, protein_id_list, length_list = zip(*tp_list)
+    df['PTM'] = ptm_list
+    df['freq'] = freq_list
+    df['protein_id'] = protein_id_list
+    df['len'] = length_list
+    df = df.sort_values(by=['len'])
+
+    df_select = df.loc[df['PTM']==ptm_set[1]]
+
+    # line plot showing ptm distribution across proteins
+    x = range(df_select.shape[0])
+    y = df_select['freq']
+    df_plot_line = pd.DataFrame(dict(x=x,freq=y,
+                                prot=df_select['protein_id'],len=df_select['len']))
+    fig1 = px.line(data_frame=df_plot_line,x='x',y='freq',custom_data=['prot','len'])
+    fig1.update_traces(line_color='#808080', line_width=2,hovertemplate='protein_id: %{customdata[0]}<br>length: %{customdata[1]}')
+
+    # dot showing ptm freq for one protein
+    protein_entry = 'P20152'
+    df_plot_scatter = df_plot_line.loc[df_plot_line['prot']==protein_entry]
+    fig2 = px.scatter(df_plot_scatter,x='x',y='freq',custom_data=['prot','len'])
+    fig2.update_traces(marker=dict(
+                color='LightSkyBlue',
+                size=20,
+                line=dict(
+                    color='MediumPurple',
+                    width=2
+                )
+            ),hovertemplate='protein_id: %{customdata[0]}<br>length: %{customdata[1]}')
+
+    fig3 = go.Figure(data=fig1.data+fig2.data)
+    fig3.show()
+
+
 def color_generator():
     import random
     r = lambda: random.randint(0,255)
@@ -607,15 +661,20 @@ if __name__ == '__main__':
     # protein_info
     protein_info_dict = protein_info_from_fasta('D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta')
 
+    # use subset of protein dict
+    protein_dict = fasta_reader('D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta')
+    ecm_df = pd.read_excel('F:/matrisomedb2.0/AnnotatedDeDuplicated.xlsx', index_col=0)
+    ecm_list = ecm_df[ecm_df['Division'] != 'Non-matrisome'].index.tolist()
+    ecm_protein_dict = {prot: protein_dict[prot] for prot in ecm_list}
+
     # peptide mapping
     psm_tsv = 'D:/data/Naba_deep_matrisome/07232021_secondsearch/SNED1_1080D/psm.tsv'
     psm_dict = psm_reader(psm_tsv)[0]
-    protein_dict = fasta_reader('D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta')
-    protein_freq_dict = peptide_map(psm_dict,protein_dict)
+    protein_freq_dict = peptide_map(psm_dict,ecm_protein_dict)
 
     # ptm mapping
     psm_list = modified_peptide_from_psm(psm_tsv)
-    ptm_map_result = ptm_map(psm_list,protein_dict)
+    ptm_map_result = ptm_map(psm_list,ecm_protein_dict)
 
     # updated 8/3/22
     bokeh_return = domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='P11276')
@@ -625,6 +684,9 @@ if __name__ == '__main__':
                   protein_info_dict,
                   html_out='F:/matrisomedb2.0/newbokeh_test_P11276.html',
                   UniprotID='P11276')
+
+    # update 8/19/22
+    # ptm_dist_dash(ptm_map_result[0],protein_dict)
 
     # domain coverage
     # domain_coverage_bokeh = plot_domain_coverage2(protein_freq_dict,info_dict,'E9PWQ3')
