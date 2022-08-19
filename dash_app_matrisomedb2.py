@@ -37,7 +37,7 @@ def ptm_dist_dash(id_ptm_idx_dict, protein_dict, uniprot_gene_dict, protein_entr
     app = dash.Dash()
     app_options = [{'label':each.replace('\\',''),'value':each} for each in ptm_set]
     app.layout = html.Div(id='parent', children=[
-        html.H1(id='H1', children='PTM distributions', style={'textAlign': 'center',
+        html.H1(id='H1', children='PTM distributions in Matrisome', style={'textAlign': 'center',
                                                                           'marginTop': 40, 'marginBottom': 40}),
 
         dcc.Dropdown(id='dropdown',
@@ -80,7 +80,7 @@ def ptm_dist_dash(id_ptm_idx_dict, protein_dict, uniprot_gene_dict, protein_entr
     app.run_server(debug=True)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
 
     # use subset of protein dict
     protein_dict = fasta_reader('D:/data/Naba_deep_matrisome/uniprot-proteome_UP000000589_mouse_human_SNED1.fasta')
