@@ -25,6 +25,10 @@ from subprocess import call
 
 # set pythonhashseed to static to make sure hashfunciton produce same hash value
 
+ptm_map_dict = {'Q\\[129\\]':'Gln deamidation','N\\[115\\]':'ASN deamidation',
+                'Q\\[111\\]':'Gln to pyroGln','C\\[143\\]':'selenocysteine',
+                'M\\[147\\]':'Met oxidation','P\\[113\\]':'Pro hydroxylation',
+                'K\\[144\\]':'Lys hydroxylation'}
 
 def get_smart_info(protein_list:list):
     """
@@ -544,13 +548,13 @@ def ptm_table_bokeh(id_ptm_idx_dict, protein_dict, protein_info_dict):
         info_dict['Gene'].append(protein_info_dict[prot][0])
         info_dict['Length'].append(len(protein_dict[prot]))
         for ptm in id_ptm_idx_dict[prot]:
-            info_dict[ptm].append(len(id_ptm_idx_dict[prot][ptm]))
+            info_dict[ptm_map_dict[ptm]].append(len(id_ptm_idx_dict[prot][ptm]))
     df = pd.DataFrame(info_dict)
     # print (df)
     source = ColumnDataSource(df)
 
     columns = [TableColumn(field=each,title=each) for each in df.columns]
-    table = DataTable(source=source,columns=columns, width=800, height=600, editable=True)
+    table = DataTable(source=source,columns=columns, width=1000, height=600, editable=True)
     # show(table)
 
     return components(table)
