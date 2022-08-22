@@ -14,7 +14,7 @@ from multiprocessing_naive_algorithym import *
 from aho_corasick import automaton_trie,automaton_matching
 from protein_coverage import fasta_reader
 from tsv_reader import psm_reader, protein_info_from_fasta
-from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter, Plot, Rect, Legend, LegendItem,SingleIntervalTicker, Label, LabelSet
+from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter, Plot, Rect, Legend, LegendItem,SingleIntervalTicker, Label, LabelSet, TableColumn, DataTable
 from bokeh.palettes import Spectral7, Viridis, Plasma, Blues9, Turbo256
 from bokeh.transform import factor_cmap
 from bokeh.plotting import figure
@@ -367,7 +367,7 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     # bokeh plot, hovertool
     hover = HoverTool(names=['rec'],tooltips=[('domain', '@domain'), ('start position', '@start'),('end position','@end'),('domain coverage','@coverage{:.1%}'),])
     # initiate bokeh figure
-    p = figure(x_range=(0,protein_len),
+    p = figure(x_range=(-10,protein_len),
                y_range=(0,2),
                tools=['pan', 'box_zoom', 'wheel_zoom', 'save',
                       'reset', hover],
@@ -401,13 +401,16 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     # cov_label = LabelSet(x='x',y='y',text='label',text_font_size='8px',
     #                      x_offset=-13.5, y_offset=0, source=source_cov)
     # p.add_layout(cov_label)
-    cov_bar_legend_top, cov_bar_legend_bottom = 1.3,1.3-1/bar_shrink_raio
-    cov_bar_x_coor = 0.01*protein_len
-    p.vbar(x=[cov_bar_x_coor],width=bin_width,top=[cov_bar_legend_top],bottom=[cov_bar_legend_bottom],
-           color='#D3D3D3',name='seq_cov_legend')
+    cov_bar_legend_top, cov_bar_legend_bottom = bar_bottom+1/bar_shrink_raio,bar_bottom
+    cov_bar_x_coor = -8
+    # p.vbar(x=[cov_bar_x_coor],width=bin_width,top=[cov_bar_legend_top],bottom=[cov_bar_legend_bottom],
+    #        color='#D3D3D3',name='seq_cov_legend')
+    # label annotations
     for y_coor, text in zip([cov_bar_legend_bottom,cov_bar_legend_top],['0%','100%']):
-        label_cov = Label(x=cov_bar_x_coor,y=y_coor,x_offset=5, y_offset=-5,text=text,text_font_size='10px',text_align='left')
+        label_cov = Label(x=cov_bar_x_coor,y=y_coor,x_offset=0, y_offset=-5,text=text,text_font_size='10px',text_align='left')
         p.add_layout(label_cov)
+    seq_cov_title = Label(x=-5, y=1.1, text='Sequence coverage binned by every 10 aa',text_font_size='12px',text_align='left',text_color='#A9A9A9')
+    p.add_layout(seq_cov_title)
 
     # line shows whole protein length
     p.line(x=[0,protein_len],y=[0.6,0.6],line_width=10,color='#000000',alpha=0.8,name='line')
@@ -460,7 +463,7 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     p.ygrid.visible = False
     p.yaxis.visible = False
     print (f'bokeh graph took {time.time()-time_start}s')
-    show(p)
+    # show(p)
     return components(p)
 
 
@@ -526,58 +529,31 @@ def ptm_domain_htmap(ptm_map_result, domain_pos_dict, protein_entry:str):
     return components(p)
 
 
-def ptm_dist_dash(id_ptm_idx_dict,protein_dict):
+def ptm_table_bokeh(id_ptm_idx_dict, protein_dict, protein_info_dict):
     """
-    generate ptm distribution in html file with plotly
-    :param id_ptm_idx_dict: first return from ptm_map
-    :param protein_dict: protein seq dictionary
+    plot a bokeh table to show ptms frequency
+    :param id_ptm_idx_dict:
+    :param protein_dict:
+    :param uniprot_gene_dict:
     :return:
     """
-    import dash
-    import dash_html_components as html
-    import dash_core_components as dcc
-    from dash.dependencies import Input, Output
-    import plotly.express as px
-    import plotly.graph_objects as go
 
-    ptm_set = list(set([ptm for each in id_ptm_idx_dict for ptm in id_ptm_idx_dict[each]]))
-    print (ptm_set)
+    info_dict = defaultdict(list)
+    for prot in id_ptm_idx_dict:
+        info_dict['Uniprot ID'].append(prot)
+        info_dict['Gene'].append(protein_info_dict[prot][0])
+        info_dict['Length'].append(len(protein_dict[prot]))
+        for ptm in id_ptm_idx_dict[prot]:
+            info_dict[ptm].append(len(id_ptm_idx_dict[prot][ptm]))
+    df = pd.DataFrame(info_dict)
+    # print (df)
+    source = ColumnDataSource(df)
 
-    df = pd.DataFrame(columns=['PTM','freq','protein_id'])
-    tp_list = [(ptm,len(id_ptm_idx_dict[each][ptm]),each, len(protein_dict[each]))
-               for each in id_ptm_idx_dict for ptm in ptm_set]
-    ptm_list, freq_list, protein_id_list, length_list = zip(*tp_list)
-    df['PTM'] = ptm_list
-    df['freq'] = freq_list
-    df['protein_id'] = protein_id_list
-    df['len'] = length_list
-    df = df.sort_values(by=['len'])
+    columns = [TableColumn(field=each,title=each) for each in df.columns]
+    table = DataTable(source=source,columns=columns, width=800, height=600, editable=True)
+    # show(table)
 
-    df_select = df.loc[df['PTM']==ptm_set[1]]
-
-    # line plot showing ptm distribution across proteins
-    x = range(df_select.shape[0])
-    y = df_select['freq']
-    df_plot_line = pd.DataFrame(dict(x=x,freq=y,
-                                prot=df_select['protein_id'],len=df_select['len']))
-    fig1 = px.line(data_frame=df_plot_line,x='x',y='freq',custom_data=['prot','len'])
-    fig1.update_traces(line_color='#808080', line_width=2,hovertemplate='protein_id: %{customdata[0]}<br>length: %{customdata[1]}')
-
-    # dot showing ptm freq for one protein
-    protein_entry = 'P20152'
-    df_plot_scatter = df_plot_line.loc[df_plot_line['prot']==protein_entry]
-    fig2 = px.scatter(df_plot_scatter,x='x',y='freq',custom_data=['prot','len'])
-    fig2.update_traces(marker=dict(
-                color='LightSkyBlue',
-                size=20,
-                line=dict(
-                    color='MediumPurple',
-                    width=2
-                )
-            ),hovertemplate='protein_id: %{customdata[0]}<br>length: %{customdata[1]}')
-
-    fig3 = go.Figure(data=fig1.data+fig2.data)
-    fig3.show()
+    return components(table)
 
 
 def color_generator():
@@ -617,10 +593,11 @@ def combine_bokeh(domain_bokeh_return, ptm_bokeh_return, protein_info_dict, html
     return new_html
 
 
-def bokeh_to_html(domain_cov_ptm_bokeh, protein_info_dict, html_out='test.html',UniprotID=''):
+def bokeh_to_html(domain_cov_ptm_bokeh, ptm_table_bokeh, protein_info_dict, html_out='test.html',UniprotID=''):
     # load bokeh js scripts and divs
     time_start = time.time()
     js_script, div = domain_cov_ptm_bokeh
+    ptm_js_script, ptm_div = ptm_table_bokeh
     smart_url = 'https://smart.embl.de/smart/show_motifs.pl?ID=' + UniprotID
 
     # read html template
@@ -629,8 +606,12 @@ def bokeh_to_html(domain_cov_ptm_bokeh, protein_info_dict, html_out='test.html',
     html_template_f.close()
 
     # write new html with js script and divs
+    # domain graph div
     new_html = html_template.replace('<!-- COPY/PASTE domain coverage SCRIPT HERE -->', js_script).\
         replace('<!-- INSERT domain DIVS HERE -->',div)
+    # ptm table div
+    new_html = new_html.replace('<!-- COPY/PASTE ptm SCRIPT HERE -->',ptm_js_script).\
+        replace('<!-- INSERT ptm DIVS HERE -->',ptm_div)
 
     new_html = new_html.replace('<!-- UniprotID -->',
                                 protein_info_dict[UniprotID][0] + '  (' + protein_info_dict[UniprotID][
@@ -677,16 +658,17 @@ if __name__ == '__main__':
     ptm_map_result = ptm_map(psm_list,ecm_protein_dict)
 
     # updated 8/3/22
-    bokeh_return = domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='P11276')
+    domain_bokeh_return = domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='P11276')
+
+    # update 8/22/22
+    ptm_bokeh_return = ptm_table_bokeh(ptm_map_result[0],ecm_protein_dict,protein_info_dict)
 
     # updated 8/3/22
-    bokeh_to_html(bokeh_return,
+    bokeh_to_html(domain_bokeh_return,
+                  ptm_bokeh_return,
                   protein_info_dict,
                   html_out='F:/matrisomedb2.0/newbokeh_test_P11276.html',
                   UniprotID='P11276')
-
-    # update 8/19/22
-    # ptm_dist_dash(ptm_map_result[0],protein_dict)
 
     # domain coverage
     # domain_coverage_bokeh = plot_domain_coverage2(protein_freq_dict,info_dict,'E9PWQ3')

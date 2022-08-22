@@ -8,6 +8,12 @@ import pandas as pd
 from smart_crawler import ptm_map
 from protein_coverage import fasta_reader
 from tsv_reader import modified_peptide_from_psm, protein_info_from_fasta
+from bokeh.embed import components
+from bokeh.io import show
+from bokeh.models import CustomJS, Dropdown, ColumnDataSource, HoverTool,IndexFilter,CDSView, Select
+# from bokeh.models.widgets import Select
+from bokeh.plotting import figure
+from bokeh.layouts import column,row
 
 
 def ptm_dist_dash(id_ptm_idx_dict, protein_dict, uniprot_gene_dict, protein_entry):
@@ -80,6 +86,77 @@ def ptm_dist_dash(id_ptm_idx_dict, protein_dict, uniprot_gene_dict, protein_entr
     app.run_server(debug=True)
 
 
+def ptm_dist_bokeh(id_ptm_idx_dict, protein_dict, uniprot_gene_dict, protein_entry):
+
+    """
+    use bokeh, callback requires JS code, still in development
+    :param id_ptm_idx_dict:
+    :param protein_dict:
+    :param uniprot_gene_dict:
+    :param protein_entry:
+    :return:
+    """
+
+    ptm_set = list(set([ptm for each in id_ptm_idx_dict for ptm in id_ptm_idx_dict[each]]))
+    print(ptm_set)
+
+    df = pd.DataFrame(columns=['PTM', 'freq', 'protein_id', 'len', 'gene'])
+    tp_list = [(ptm, len(id_ptm_idx_dict[each][ptm]), each, len(protein_dict[each]), uniprot_gene_dict[each])
+               for each in id_ptm_idx_dict for ptm in ptm_set]
+    ptm_list, freq_list, protein_id_list, length_list, gene_list = zip(*tp_list)
+    df['PTM'] = ptm_list
+    df['freq'] = freq_list
+    df['protein_id'] = protein_id_list
+    df['len'] = length_list
+    df['gene'] = gene_list
+    df = df.sort_values(by=['len'])
+    df_select = df.loc[df['PTM'] == ptm_set[0]].copy()
+    df_select.loc[:,'ind'] = range(0,df_select.shape[0])
+
+    source = ColumnDataSource(data={'PTM':df_select.PTM,'freq':df_select.freq,
+                                    'protein_id':df_select.protein_id,'ind':df_select.ind,
+                                    'len':df_select.len,'gene':df_select.gene})
+    hover = HoverTool(names=['line','scatter'],tooltips=[('Uniprot_id', '@protein_id'), ('gene', '@gene'),('length','@len'),('frequency','@freq'),])
+
+    p = figure(x_range=(0,df_select.shape[0]),
+               # y_range=(0,2),
+               tools=['pan', 'box_zoom', 'wheel_zoom', 'save',
+                      'reset', hover],
+               plot_height=500, plot_width=1600,
+               toolbar_location='right',
+               title='',
+               x_axis_label='ECM proteins')
+
+    p.line(x='ind',y='freq',source=source,line_width=2,color='#000000',name='line')
+
+    df_scatter = df_select.loc[df_select['protein_id']==protein_entry]
+    scatter_source = ColumnDataSource(data={'PTM':df_scatter.PTM,'freq':df_scatter.freq,
+                                    'protein_id':df_scatter.protein_id,'ind':df_scatter.ind,
+                                    'len':df_scatter.len,'gene':df_scatter.gene})
+    p.scatter(x='ind',y='freq',color='red',source=scatter_source,name='scatter',size=10)
+
+    # Define a callback function
+    filter_ = IndexFilter(indices=[])
+    callback = CustomJS(args=dict(src=source,filter=filter_),code='''
+    const indices = []
+    for (var i = 0; i < src.get_length(); i++) {
+    console.log(i, src.data['PTM'][i], cb_obj.value)
+    if (src.data['PTM'][i] == cb_obj.value) {
+      indices.push(i)
+        }
+    }
+    filter.indices = indices
+    src.change.emit()
+  ''')
+
+    # create dropdown select widget
+    select = Select(title="PTMs", options=ptm_set, value=ptm_set[0])
+    # Attach the update_plot callback to the 'value' property of select
+    select.js_on_change('value', callback)
+    view = CDSView(source=source,filters=[filter_])
+    layout = column(select, p)
+    show(layout)
+
 if __name__ == "__main__":
 
     # use subset of protein dict
@@ -96,3 +173,6 @@ if __name__ == "__main__":
 
     # plot dash app
     ptm_dist_dash(ptm_map_result[0],ecm_protein_dict,ecm_prot_gene_dict,'P11276')
+
+    # plot using bokeh app,updates 8/21
+    # ptm_dist_bokeh(ptm_map_result[0],ecm_protein_dict,ecm_prot_gene_dict,'P11276')
