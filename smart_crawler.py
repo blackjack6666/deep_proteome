@@ -663,7 +663,7 @@ if __name__ == '__main__':
     ptm_map_result = ptm_map(psm_list,ecm_protein_dict)
 
     # updated 8/3/22
-    domain_bokeh_return = domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='P11276')
+    domain_bokeh_return = domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='E9PZ16')
 
     # update 8/22/22
     ptm_bokeh_return = ptm_table_bokeh(ptm_map_result[0],ecm_protein_dict,protein_info_dict)
@@ -672,8 +672,8 @@ if __name__ == '__main__':
     bokeh_to_html(domain_bokeh_return,
                   ptm_bokeh_return,
                   protein_info_dict,
-                  html_out='F:/matrisomedb2.0/newbokeh_test_P11276.html',
-                  UniprotID='P11276')
+                  html_out='F:/matrisomedb2.0/newbokeh_test_E9PZ16.html',
+                  UniprotID='E9PZ16')
 
     # domain coverage
     # domain_coverage_bokeh = plot_domain_coverage2(protein_freq_dict,info_dict,'E9PWQ3')
