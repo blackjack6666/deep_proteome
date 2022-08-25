@@ -426,17 +426,18 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     ptms = []
     for tp in ptm_index_sort:
         each_idx, ptm = tp
-        ptms.append(ptm.replace('\\', ''))
+        # ptms.append(ptm.replace('\\', ''))
+        ptms.append(ptm)
         ptm_x.append(each_idx)
         ptm_y.append(0.5)
         x_offset,y_offset = 0,0
         while True: # keep moving down if text are too close
-            nonzero_count = np.count_nonzero(numpy_zero_array[190+y_offset:200+y_offset,each_idx+x_offset:each_idx+50+x_offset])
+            nonzero_count = np.count_nonzero(numpy_zero_array[190+y_offset:200+y_offset,each_idx+x_offset:each_idx+130+x_offset])
             if nonzero_count == 0:
                 # print (ptm,each_idx,x_offset,y_offset)
                 new_ptm_x.append(each_idx+x_offset)
                 new_ptm_y.append((25+y_offset)/200*2)
-                numpy_zero_array[190+y_offset:200+y_offset,each_idx+x_offset:each_idx+50+x_offset] += 1
+                numpy_zero_array[190+y_offset:200+y_offset,each_idx+x_offset:each_idx+130+x_offset] += 1
                 break
             else:
                 # print ('moving down')
@@ -445,8 +446,8 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
 
     # label ptm and connect to protein domains
     for x,y,x_,y_,ptm in zip(new_ptm_x,new_ptm_y,ptm_x,ptm_y,ptms):
-        p.line(x=[x_+1,x+1],y=[y_,y+0.1],line_width=1,color='black',alpha=0.6) # connect domain with text
-        label = Label(x=x,y=y,text=ptm+'\n'+str(x_+1),text_font_size='10px', text_align='center', text_font='Tahoma')
+        p.line(x=[x_+1,x+1],y=[y_,y+0.1],line_width=1,color='black',alpha=0.3) # connect domain with text
+        label = Label(x=x,y=y,text=ptm_map_dict[ptm]+'\n'+str(x_+1),text_font_size='10px', text_align='center', text_font='Tahoma')
         p.add_layout(label)
     # dummy glyphs to help draw legend
     legend_gly = [p.line(x=[1, 1], y=[1, 1], line_width=15, color=c, name='dummy_for_legend')
