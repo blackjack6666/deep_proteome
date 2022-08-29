@@ -14,7 +14,7 @@ from multiprocessing_naive_algorithym import *
 from aho_corasick import automaton_trie,automaton_matching
 from protein_coverage import fasta_reader
 from tsv_reader import psm_reader, protein_info_from_fasta
-from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter, Plot, Rect, Legend, LegendItem,SingleIntervalTicker, Label, LabelSet, TableColumn, DataTable
+from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter, Plot, Rect, Legend, LegendItem,SingleIntervalTicker, Label, LabelSet, TableColumn, DataTable, HTMLTemplateFormatter
 from bokeh.palettes import Spectral7, Viridis, Plasma, Blues9, Turbo256
 from bokeh.transform import factor_cmap
 from bokeh.plotting import figure
@@ -548,13 +548,18 @@ def ptm_table_bokeh(id_ptm_idx_dict, protein_dict, protein_info_dict):
         info_dict['Uniprot ID'].append(prot)
         info_dict['Gene'].append(protein_info_dict[prot][0])
         info_dict['Length'].append(len(protein_dict[prot]))
+        info_dict['url'].append('%s.html' % prot)  # clickable protein id to other page
         for ptm in id_ptm_idx_dict[prot]:
             info_dict[ptm_map_dict[ptm]].append(len(id_ptm_idx_dict[prot][ptm]))
     df = pd.DataFrame(info_dict)
     # print (df)
     source = ColumnDataSource(df)
 
-    columns = [TableColumn(field=each,title=each) for each in df.columns]
+    columns = []
+    columns.append(TableColumn(field='Uniprot ID',title='Uniprot ID',
+                               formatter=HTMLTemplateFormatter(template='<a href="<%= url %>"><%= value %></a>')))
+    columns += [TableColumn(field=each,title=each)
+                for each in df.columns[1:] if each!='url']
     table = DataTable(source=source,columns=columns, width=1000, height=600, editable=True)
     # show(table)
 
