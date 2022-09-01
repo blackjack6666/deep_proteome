@@ -120,7 +120,6 @@ def line_bokeh(dataframes, dataframe_source, protein_entry, save_path=None):
     line_list[i].visible = false;
     }
     }
-     
     """
 
     bg_callback = CustomJS(args=dict(line0=distance,line1=density,line2=sasa,line3=sphere),code=js_code)
