@@ -87,7 +87,7 @@ def line_bokeh(dataframes, dataframe_source, protein_entry, save_path=None):
             sasa.visible = False # hide it at first
         else:
             sphere = p.line(x=x, y=y, line_width=3, line_color='#4875bd')
-            sphere.visible = False
+            sphere.visible = False # hide at first
 
     p.yaxis.visible = False
     p.xaxis.ticker = list(range(1,8))
