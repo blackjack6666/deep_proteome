@@ -173,10 +173,10 @@ if __name__=='__main__':
     # text_cloud(test_file,stop_words=stopWords)
 
     # enrichment text cloud
-    # enrich_freq_dict = word_cloud_enrich(total_test_file, test_file)
+    enrich_freq_dict = word_cloud_enrich(total_test_file, test_file)
     # print(enrich_freq_dict)
-    # textcloud_from_freq(enrich_freq_dict)
+    textcloud_from_freq(enrich_freq_dict)
 
     # single text cloud
-    single_freq_dict = getdictfromtext(test_file)
-    textcloud_from_freq(single_freq_dict)
+    # single_freq_dict = getdictfromtext(test_file)
+    # textcloud_from_freq(single_freq_dict)

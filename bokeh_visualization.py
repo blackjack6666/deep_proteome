@@ -156,17 +156,19 @@ def protein_table(df, save_path=None):
 
 if __name__ == "__main__":
 
-    df_distance = pd.read_excel('D:/data/native_protein_digestion/12072021/control/KRtocenter_dist_unique.xlsx',index_col=0)
-    df_density = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A.xlsx', index_col=0)
-    df_sasa = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa.xlsx', index_col=0)
-    df_sphere = pd.read_excel('D:/data/native_protein_digestion/12072021/control/aa_exposure_structuremap.xlsx',index_col=0)
-    df_names = ['distance', 'density', 'sasa', 'sphere']
-    df_list = [df_distance,df_density,df_sasa,df_sphere]
-
-    for prot in df_distance.index:
-        protein_entry = prot
-        line_bokeh(df_list,df_names,protein_entry=protein_entry,save_path='D:/data/native_protein_digestion/12072021/control_html/'+protein_entry+'.html')
+    # df_distance = pd.read_excel('D:/data/native_protein_digestion/12072021/control/KRtocenter_dist_unique.xlsx',index_col=0)
+    # df_density = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_KR_density_15A.xlsx', index_col=0)
+    # df_sasa = pd.read_excel('D:/data/native_protein_digestion/12072021/control/sasa.xlsx', index_col=0)
+    # df_sphere = pd.read_excel('D:/data/native_protein_digestion/12072021/control/aa_exposure_structuremap.xlsx',index_col=0)
+    # df_names = ['distance', 'density', 'sasa', 'sphere']
+    # df_list = [df_distance,df_density,df_sasa,df_sphere]
+    #
+    # for prot in df_distance.index:
+    #     protein_entry = prot
+    #     line_bokeh(df_list,df_names,protein_entry=protein_entry,save_path='D:/data/native_protein_digestion/12072021/control_html/'+protein_entry+'.html')
     # line_bokeh(df_list, df_names, protein_entry='P39019')
 
-    # df_coverage = pd.read_excel('D:/data/native_protein_digestion/12072021/control/aggre_cov.xlsx',index_col=0)
-    # protein_table(df_coverage, save_path='D:/data/native_protein_digestion/12072021/control_html/table.html')
+    df_coverage = pd.read_excel('D:/data/native_protein_digestion/12072021/control/aggre_cov.xlsx',index_col=0)
+    df_coverage = df_coverage.round(decimals=2)
+
+    protein_table(df_coverage, save_path='D:/data/native_protein_digestion/12072021/control_html/table.html')
