@@ -35,6 +35,7 @@ def peptide_map(psm_dict,protein_dict):
     prot_freq_dict = {}
     coverage_dict = {}
     prot_psm_dict = defaultdict(int)
+    prot_psm_list_dict = defaultdict(list)
 
     start = time.time()
     id_list,seq_list = extract_UNID_and_seq(protein_dict)
@@ -47,10 +48,11 @@ def peptide_map(psm_dict,protein_dict):
     aho_result = automaton_matching(automaton_trie([pep for pep in psm_dict.keys()]),seqline)
     print (f'aho tree building and mapping took {time.time()-map_start}')
     for pos in aho_result:
-
+        map_pep = pos[2]
         # zeroline[pos[0]:pos[1] + 1] += psm_dict[pos[2]]  # map PSMs instead of peptides
-        zeroline[pos[0]:pos[1] + 1] += len(psm_dict[pos[2]])
-        prot_psm_dict[pos_id_dict[pos[0]]] += len(psm_dict[pos[2]])
+        zeroline[pos[0]:pos[1] + 1] += len(psm_dict[map_pep])
+        prot_psm_dict[pos_id_dict[pos[0]]] += len(psm_dict[map_pep])
+        prot_psm_list_dict[pos_id_dict[pos[0]]] += psm_dict[map_pep]
     for i in range(len(sep_pos_array) - 1):  # iterate from the left of zeroline all the way to the right
         freq_array = zeroline[sep_pos_array[i] + 1:sep_pos_array[i + 1]]
 
@@ -59,7 +61,7 @@ def peptide_map(psm_dict,protein_dict):
 
     print (f'script took {time.time()-start}s')
 
-    return prot_freq_dict, prot_psm_dict, coverage_dict
+    return prot_freq_dict, prot_psm_dict, prot_psm_list_dict, coverage_dict
 
 
 def ptm_map(psm_list,protein_dict):
@@ -84,7 +86,10 @@ def ptm_map(psm_list,protein_dict):
         if match:
             for ptm in match:
                 regex_set.add(ptm.replace('[','\[').replace(']','\]').replace('.','\.'))
-    print (regex_set)
+    if 'C\\[57\\.0215\\]' in regex_set:
+        regex_set.remove('C\\[57\\.0215\\]')
+
+    # print (regex_set)
     # aho mapping
     id_list, seq_list = extract_UNID_and_seq(protein_dict)
     seq_line = creat_total_seq_line(seq_list, sep="|")
@@ -126,12 +131,13 @@ def ptm_map(psm_list,protein_dict):
     return id_ptm_idx_dict, id_ptm_freq_dict
 
 
-def seq_cov_gen(freq_array,protein_seq):
+def seq_cov_gen(freq_array,ptm_dict,protein_seq):
     """
     generate seq coverage map in html format (inside body)
     :param freq_array: mapped 1d np zero array for one protein
     :param protein_seq:
     :param protein_id:
+    :param ptm_dict: {ptm1:[index list],ptm2:[index list]}
     :param gene_name:
     :return:
     """
@@ -163,26 +169,30 @@ mark5 {
     """
 
     seq_cov = np.count_nonzero(freq_array)/len(freq_array)*100
-    split_seq = np.arange(0, len(protein_seq), 100)
+    split_seq = np.arange(0, len(protein_seq), 165)
     split_seq = np.append(split_seq,len(protein_seq))
     max_freq = np.max(freq_array)
+    ptm_freq_array = set([idx for ptm in ptm_dict for idx in ptm_dict[ptm]])
+    # print (ptm_freq_array)
 
     seq_cov_str = ''
     for i in range(len(split_seq) - 1):
         for j in range(split_seq[i], split_seq[i + 1]):
-
-            if freq_array[j] == 0:
-                seq_cov_str += protein_seq[j]
-            elif 1 <= freq_array[j] < 0.2 * max_freq:
-                seq_cov_str += '<mark4>' + protein_seq[j] + '</mark4>'
-            elif 0.2 * max_freq <= freq_array[j] < 0.4 * max_freq:
-                seq_cov_str += '<mark3>' + protein_seq[j] + '</mark3>'
-            elif 0.4 * max_freq <= freq_array[j] < 0.6 * max_freq:  # color legend changeable
-                seq_cov_str += '<mark2>' + protein_seq[j] + '</mark2>'
-            elif 0.6 * max_freq <= freq_array[j] < 0.8 * max_freq:  # color legend changeable
-                seq_cov_str += '<mark1>' + protein_seq[j] + '</mark1>'
+            if j not in ptm_freq_array:
+                if freq_array[j] == 0:
+                    seq_cov_str += protein_seq[j]
+                elif 1 <= freq_array[j] < 0.2 * max_freq:
+                    seq_cov_str += '<mark4>' + protein_seq[j] + '</mark4>'
+                elif 0.2 * max_freq <= freq_array[j] < 0.4 * max_freq:
+                    seq_cov_str += '<mark3>' + protein_seq[j] + '</mark3>'
+                elif 0.4 * max_freq <= freq_array[j] < 0.6 * max_freq:  # color legend changeable
+                    seq_cov_str += '<mark2>' + protein_seq[j] + '</mark2>'
+                elif 0.6 * max_freq <= freq_array[j] < 0.8 * max_freq:  # color legend changeable
+                    seq_cov_str += '<mark1>' + protein_seq[j] + '</mark1>'
+                else:
+                     seq_cov_str += '<mark>' + protein_seq[j] + '</mark>'
             else:
-                 seq_cov_str += '<mark>' + protein_seq[j] + '</mark>'
+                seq_cov_str += '<mark5>' + protein_seq[j] + '</mark5>'
         seq_cov_str += '\n'
     return seq_cov_str,seq_cov
 
@@ -253,7 +263,7 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
                y_range=(0,2),
                tools=['pan', 'box_zoom', 'wheel_zoom', 'save',
                       'reset', hover],
-               plot_height=500, plot_width=1600,
+               plot_height=500, plot_width=1200,
                toolbar_location='right',
                title='',
                x_axis_label='amino acid position')
@@ -298,7 +308,7 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     p.line(x=[0,protein_len],y=[0.6,0.6],line_width=10,color='#000000',alpha=0.8,name='line')
 
     # adjusted PTM text coordinates calculation
-    numpy_zero_array = np.zeros((500, protein_len)) # mask numpy array for text plotting
+    numpy_zero_array = np.zeros((800, protein_len)) # mask numpy array for text plotting
     ptm_x,ptm_y = [], []
     new_ptm_x, new_ptm_y = [], [] # adjusted text coordinates to prevent overlap
     ptms = []
@@ -309,13 +319,14 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
         ptm_x.append(each_idx)
         ptm_y.append(0.5)
         x_offset,y_offset = 0,0
+        x_move = int(protein_len/12)
         while True: # keep moving down if text are too close
-            nonzero_count = np.count_nonzero(numpy_zero_array[490+y_offset:500+y_offset,each_idx+x_offset:each_idx+130+x_offset])
+            nonzero_count = np.count_nonzero(numpy_zero_array[790+y_offset:800+y_offset,each_idx+x_offset:each_idx+x_move+x_offset])
             if nonzero_count == 0:
                 # print (ptm,each_idx,x_offset,y_offset)
                 new_ptm_x.append(each_idx+x_offset)
                 new_ptm_y.append((25+y_offset)/200*2)
-                numpy_zero_array[490+y_offset:500+y_offset,each_idx+x_offset:each_idx+130+x_offset] += 1
+                numpy_zero_array[790+y_offset:800+y_offset,each_idx+x_offset:each_idx+x_move+x_offset] += 1
                 break
             else:
                 # print ('moving down')
@@ -409,39 +420,51 @@ def peptide_reader(input_file):
 if __name__ == '__main__':
     import json
     import pickle
+
     # pep_file = 'F:/matrisomedb2.0/peptide_list.txt'
     # psm_dict = peptide_reader(pep_file)
     # pickle.dump(psm_dict,open('F:/matrisomedb2.0/psm_dict_allpeptides_0906.p','wb'))
 
-    psm_dict = pickle.load(open('F:/matrisomedb2.0/psm_dict_allpeptides_0906.p','rb'))
+    # psm_dict = pickle.load(open('F:/matrisomedb2.0/psm_dict_allpeptides_0906.p','rb'))
 
     # print (sum([len(psm_dict[each]) for each in psm_dict]))
 
     protein_dict = fasta_reader('F:/matrisomedb2.0/mat.fasta')
+
     protein_info_dict = protein_info_from_fasta('F:/matrisomedb2.0/mat.fasta')
     # protein_freq_dict= peptide_map(psm_dict,protein_dict)[0]
     # pickle.dump(protein_freq_dict,open('F:/matrisomedb2.0/prot_freq_dict_0907.p','wb'),protocol=5)
+    # prot_psm_list_dict = peptide_map(psm_dict,protein_dict)[2]
+    # pickle.dump(prot_psm_list_dict, open('F:/matrisomedb2.0/prot_psm_list_dict_0908.p', 'wb'), protocol=5)
+    protein_psm_list_dict = pickle.load(open('F:/matrisomedb2.0/prot_psm_list_dict_0908.p', 'rb'))
+
+
     prot_freq_dict = pickle.load(open('F:/matrisomedb2.0/prot_freq_dict_0907.p','rb'))
-    print ('prot_freq_dict reading done.')
-    seq_cov = seq_cov_gen(prot_freq_dict['P11276'], protein_dict['P11276'])
+    # print ('prot_freq_dict reading done.')
 
     # ptm mappig
-    # psm_list = [each for k in psm_dict for each in psm_dict[k]]
-    # ptm_map_result = ptm_map(psm_list,protein_dict)[0]
-    # pickle.dump(ptm_map_result,open('F:/matrisomedb2.0/ptm_map_result_0907.p','wb'),protocol=5)
-    ptm_map_index_dict = pickle.load(open('F:/matrisomedb2.0/ptm_map_result_0907.p','rb'))
+    psm_list = protein_psm_list_dict['Q61001']
+    print (psm_list)
+    ptm_map_result = ptm_map(psm_list,protein_dict)[0]
 
+    # pickle.dump(ptm_map_result,open('F:/matrisomedb2.0/ptm_map_result_0907.p','wb'),protocol=5)
+
+    seq_cov = seq_cov_gen(prot_freq_dict['Q61001'],ptm_map_result['Q61001'], protein_dict['Q61001'])
+    #
     # read domain from json file
     with open('F:/matrisomedb2.0/smart_domain.json') as f_o:
         info_dict = json.load(f_o)
+    prot_len_dict = {each:len(protein_dict[each]) for each in info_dict if each in protein_dict}
+    print (sorted(prot_len_dict.items(), key=lambda x:x[1]))
 
     domain_cov = domain_cov_ptm(prot_freq_dict,
-                                ptm_map_index_dict,
+                                ptm_map_result,
                                 info_dict,
-                                'P11276')
+                                'Q61001')
 
     html_template = 'F:/matrisomedb2.0/domain_seq_cov_html_template.html'
 
-    html_compile(html_template,domain_cov,seq_cov,'P11276',protein_info_dict,
-                 html_out='F:/matrisomedb2.0/P11276_test.html')
+    html_compile(html_template,domain_cov,seq_cov,'Q61001',protein_info_dict,
+                 html_out='F:/matrisomedb2.0/Q61001_test.html')
 
+    # crawl SMART db

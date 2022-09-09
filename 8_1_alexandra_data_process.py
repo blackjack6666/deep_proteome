@@ -251,10 +251,15 @@ for col in columns:
 ### download SMART domains
 from smart_crawler import get_smart_info
 import json
-ecm_df = pd.read_excel('F:/matrisomedb2.0/AnnotatedDeDuplicated.xlsx',index_col=0)
-ecm_protein_list = ecm_df[ecm_df['Division']!='Non-matrisome'].index.to_list()
+# ecm_df = pd.read_excel('F:/matrisomedb2.0/AnnotatedDeDuplicated.xlsx',index_col=0)
+# ecm_protein_list = ecm_df[ecm_df['Division']!='Non-matrisome'].index.to_list()
+
+
+ecm_protein_dict = fasta_reader('F:/matrisomedb2.0/mat.fasta')
+ecm_protein_list = [k for k in ecm_protein_dict.keys()]
+print (len(ecm_protein_list),f'first5:{ecm_protein_list[:5]}')
 domain_info_dict = get_smart_info(ecm_protein_list)
-with open('F:/matrisomedb2.0/smart_domain.json','w') as json_file:
+with open('F:/matrisomedb2.0/smart_domain_0908.json','w') as json_file:
     json.dump(domain_info_dict,json_file)
 
 ## read json file as dict

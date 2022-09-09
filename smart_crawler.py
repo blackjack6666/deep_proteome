@@ -43,17 +43,21 @@ def get_smart_info(protein_list:list):
     for prot in protein_list:
         print (f'crawling {prot} from SMART...')
         domain_dict = defaultdict(list)
-        time.sleep(1)
+        time.sleep(0.1)
         req = Request('https://smart.embl.de/smart/show_motifs.pl?ID='+prot,
                       headers={'User-Agent': 'Mozilla/5.0'})
         webpage = urlopen(req).read().decode('utf-8')
-        web_split = webpage.split('domNfo=')[1].split('};')[0]+'}'  # scrap domain info.
-        split_dict = json.loads(web_split) # convert dict string into dict structure
-        # print (split_dict)
-        for each in split_dict:
-            # print (each, split_dict[each]['n'], split_dict[each]['st'], split_dict[each]['en'])
-            domain_dict[split_dict[each]['n']].append((int(split_dict[each]['st']),int(split_dict[each]['en'])))
-        info_dict[prot] = domain_dict
+        try:
+            web_split = webpage.split('domNfo=')[1].split('};')[0]+'}'  # scrap domain info.
+            split_dict = json.loads(web_split) # convert dict string into dict structure
+            # print (split_dict)
+            for each in split_dict:
+                # print (each, split_dict[each]['n'], split_dict[each]['st'], split_dict[each]['en'])
+                domain_dict[split_dict[each]['n']].append((int(split_dict[each]['st']),int(split_dict[each]['en'])))
+            info_dict[prot] = domain_dict
+        except IndexError:
+            print (f'{prot} has no domain info from SMART')
+            continue
     print (f'crawler takes {time.time()-time_start}')
     return info_dict
 
