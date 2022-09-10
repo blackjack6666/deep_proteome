@@ -13,8 +13,10 @@ ptm_map_dict = {'Q\\[129\\]':'Gln deamidation','N\\[115\\]':'ASN deamidation',
                 'Q\\[111\\]':'Gln to pyroGln','C\\[143\\]':'selenocysteine',
                 'M\\[15\\.9949\\]':'Met oxidation','P\\[15\\.9949\\]':'Pro hydroxylation',
                 'K\\[15\\.9949\\]':'Lys hydroxylation','n\\[42\\.0106\\]':'N-term acetylation',
-                'C\\[57\\.0215\\]':'Cys redu-alky'}
-
+                'C\\[57\\.0215\\]':'Cys redu-alky','R\\[0\\.9840\\]':'Arg damidation','Y\\[79\\.9663\\]':'Phospho-Tyr',
+                'T\\[79\\.9663\\]':'Phospho-Thr', 'S\\[79\\.9663\\]':'Phospho-Ser'}
+regex_list = ['M\\[15\\.9949\\]','P\\[15\\.9949\\]','K\\[15\\.9949\\]','n\\[42\\.0106\\]','C\\[57\\.0215\\]',
+              'R\\[0\\.9840\\]','T\\[79\\.9663\\]','S\\[79\\.9663\\]','Y\\[79\\.9663\\]']
 
 def my_replace(match_obj):
     match_obj = match_obj.group()
@@ -97,13 +99,13 @@ def ptm_map(psm_list,protein_dict):
     separtor_pos_array = separator_pos(seq_line)
     aho_result = automaton_matching(automaton_trie([pep for pep in peptide_psm_dict]), seq_line)
 
-    # ptm mapping
+    # ptm mapping, n-term mod would give 2 index, need to fix. ---> might fix by add n? at the begining of regex str
     ptm_start = time.time()
     for tp in aho_result:
         matched_pep = tp[2]  # without ptm site
         for psm in peptide_psm_dict[matched_pep]:
             for ptm in regex_set:  # check each ptm, mask other ptms
-                new_psm = re.sub('\[\d+\.?\d+\]', '', psm.replace(ptm.replace('\\', ''), '*')).\
+                new_psm = re.sub('n?\[\d+\.?\d+\]', '', psm.replace(ptm.replace('\\', ''), '*')).\
                     replace('*', ptm.replace('\\', ''))
                 ptm_mod = set(re.findall(ptm, new_psm))
                 if ptm_mod:
@@ -129,6 +131,55 @@ def ptm_map(psm_list,protein_dict):
             for ptm in regex_set}
     print (f'ptm script took {time.time()-time_start}s')
     return id_ptm_idx_dict, id_ptm_freq_dict
+
+
+def ptm_map2(peptide_psm_dict, protein_dict, regex_set=regex_list):
+    time_start = time.time()
+
+    id_ptm_idx_dict = {}  # {protein_id:{ptm1:nonzero_index_array,ptm2:nonzero_index_array,...}}
+    regex_set = set(regex_set)
+    if 'C\\[57\\.0215\\]' in regex_set:
+        regex_set.remove('C\\[57\\.0215\\]')
+
+    print(regex_set)
+    # aho mapping
+    id_list, seq_list = extract_UNID_and_seq(protein_dict)
+    seq_line = creat_total_seq_line(seq_list, sep="|")
+    ptm_index_line_dict = {each: zero_line_for_seq(seq_line) for each in regex_set}
+    separtor_pos_array = separator_pos(seq_line)
+    aho_result = automaton_matching(automaton_trie([pep for pep in peptide_psm_dict]), seq_line)
+
+    # ptm mapping, n-term mod would give 2 index, need to fix ---> might fix by add n? in regex pattern to find n-term
+    ptm_start = time.time()
+    for tp in aho_result:
+        matched_pep = tp[2]  # without ptm site
+        for psm in peptide_psm_dict[matched_pep]:
+            for ptm in regex_set:  # check each ptm, mask other ptms
+                new_psm = re.sub('n?\[\d+\.?\d+\]', '', psm.replace(ptm.replace('\\', ''), '*')). \
+                    replace('*', ptm.replace('\\', ''))
+                ptm_mod = set(re.findall(ptm, new_psm))
+                if ptm_mod:
+                    for ele in ptm_mod:
+                        ### count multiple ptms in a peptide seq
+                        num_of_mod = len(
+                            re.findall(ele.replace('[', '\[').replace(']', '\]').replace('.', '\.'), new_psm))
+
+                        PTM_index = [m.start() for m in
+                                     re.finditer(ele.replace('[', '\[').replace(']', '\]').replace('.', '\.'), new_psm)]
+                        PTM_index_clean = [ind - num * (len(ele) - 1) for ind, num in zip(PTM_index, range(num_of_mod))]
+                        for indx in PTM_index_clean:
+                            ptm_index_line_dict[ptm][tp[0] + indx] += 1
+    print(f'ptm mapping took {time.time() - ptm_start}')
+
+    # get ptm freq array and index
+    for i in range(len(separtor_pos_array) - 1):
+        id_ptm_idx_dict[id_list[i]] = {ptm:
+                                           np.nonzero(ptm_index_line_dict[ptm][
+                                                      separtor_pos_array[i] + 1:separtor_pos_array[i + 1]])[0]
+                                       for ptm in regex_set}
+
+    print(f'ptm script took {time.time() - time_start}s')
+    return id_ptm_idx_dict
 
 
 def seq_cov_gen(freq_array,ptm_dict,protein_seq):
@@ -167,7 +218,7 @@ mark5 {
 	color: red;
 }
     """
-
+    print (len(freq_array),len(protein_seq))
     seq_cov = np.count_nonzero(freq_array)/len(freq_array)*100
     split_seq = np.arange(0, len(protein_seq), 165)
     split_seq = np.append(split_seq,len(protein_seq))
@@ -202,7 +253,7 @@ def hashcolor(s):
     return Turbo256[hash(s) % 256]
 
 
-def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry:str):
+def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry:str, data_source='sample'):
     """
     -----
     draw rectangular box as protein domains and alpha as coverage on bokeh,
@@ -213,152 +264,337 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
     :param protein_entry:
     :return:
     """
-    time_start = time.time()
-    freq_array = prot_freq_dict[protein_entry]
-    domain_dict = domain_pos_dict[protein_entry]
-    protein_len = len(freq_array)
+    if protein_entry not in domain_pos_dict:
+        return '','No SMART domain available'
+    else:
+        time_start = time.time()
+        freq_array = prot_freq_dict[protein_entry]
+        domain_dict = domain_pos_dict[protein_entry]
+        protein_len = len(freq_array)
 
-    ## coverage every 10 aa
-    pos_cov_dict = {}
-    bin_width = 10
-    bar_shrink_raio = 5 # make bar shorter
-    bar_bottom = 0.8
-    interval=np.arange(0,protein_len,bin_width)
-    for i in interval[:-1]:
-        coverage = np.count_nonzero(freq_array[i:i+bin_width])/bin_width
-        pos_cov_dict[i+bin_width/2] = coverage/bar_shrink_raio + bar_bottom  # move bar up
-    pos_cov_dict[interval[-1]+bin_width/2] = np.count_nonzero(freq_array[interval[-1]:protein_len])/(protein_len-interval[-1])/bar_shrink_raio+bar_bottom
-    source_cov = ColumnDataSource(dict(x=[k for k in pos_cov_dict.keys()],y=[v for v in pos_cov_dict.values()],
-                                       label=['{:.1f}%'.format((v-0.8)*100) for v in pos_cov_dict.values()]))
+        ## coverage every 10 aa
+        pos_cov_dict = {}
+        bin_width = 10
+        bar_shrink_raio = 5 # make bar shorter
+        bar_bottom = 0.8
+        interval=np.arange(0,protein_len,bin_width)
+        for i in interval[:-1]:
+            coverage = np.count_nonzero(freq_array[i:i+bin_width])/bin_width
+            pos_cov_dict[i+bin_width/2] = coverage/bar_shrink_raio + bar_bottom  # move bar up
+        pos_cov_dict[interval[-1]+bin_width/2] = np.count_nonzero(freq_array[interval[-1]:protein_len])/(protein_len-interval[-1])/bar_shrink_raio+bar_bottom
+        source_cov = ColumnDataSource(dict(x=[k for k in pos_cov_dict.keys()],y=[v for v in pos_cov_dict.values()],
+                                           label=['{:.1f}%'.format((v-0.8)*100) for v in pos_cov_dict.values()]))
 
-    ## extract domain position and calculate domain coverage
-    info_list = []
-    for each_domain in domain_dict:
-        for each_tp in domain_dict[each_domain]:
-            start, end = each_tp[0], each_tp[1]
-            coverage = np.count_nonzero(freq_array[start - 1:end]) / (end - start + 1)
-            info_list.append((start,end,coverage,each_domain))
+        ## extract domain position and calculate domain coverage
+        info_list = []
 
-    start, end, coverage, domain_list = zip(*info_list)
+        for each_domain in domain_dict:
+            for each_tp in domain_dict[each_domain]:
+                start, end = each_tp[0], each_tp[1]
+                coverage = np.count_nonzero(freq_array[start - 1:end]) / (end - start + 1)
+                info_list.append((start,end,coverage,each_domain))
+        if info_list ==[]:
+            return '', 'No SMART domain available'
+        else:
+            start, end, coverage, domain_list = zip(*info_list)
 
-    # x coordinates and widths of rectangular
-    x,width = zip(*[((end_-start_)/2+start_,end_-start_) for end_,start_ in zip(end,start)])
-    # hash color to show each domain
-    color_map_dict = {domain:hashcolor(domain) for domain in set(domain_list)}
-    color_list = [color_map_dict[each] for each in domain_list]
 
-    source = ColumnDataSource(dict(x=x,w=width,color=color_list,domain=domain_list,
-                                   start=start,end=end,
-                                   coverage=coverage))
+            # x coordinates and widths of rectangular
+            x,width = zip(*[((end_-start_)/2+start_,end_-start_) for end_,start_ in zip(end,start)])
+            # hash color to show each domain
+            color_map_dict = {domain:hashcolor(domain) for domain in set(domain_list)}
+            color_list = [color_map_dict[each] for each in domain_list]
 
-    ## prepare data for PTM labeling
+            source = ColumnDataSource(dict(x=x,w=width,color=color_list,domain=domain_list,
+                                           start=start,end=end,
+                                           coverage=coverage))
 
-    ptm_index_dict = ptm_map_result[protein_entry]
-    ptm_index_sort = sorted([(idx,each) for each in ptm_index_dict for idx in ptm_index_dict[each]])
+            ## prepare data for PTM labeling
 
-    # bokeh plot, hovertool
-    hover = HoverTool(names=['rec'],tooltips=[('domain', '@domain'), ('start position', '@start'),('end position','@end'),('domain coverage','@coverage{:.1%}'),])
-    # initiate bokeh figure
-    p = figure(x_range=(-10,protein_len),
-               y_range=(0,2),
-               tools=['pan', 'box_zoom', 'wheel_zoom', 'save',
-                      'reset', hover],
-               plot_height=500, plot_width=1200,
-               toolbar_location='right',
-               title='',
-               x_axis_label='amino acid position')
+            ptm_index_dict = ptm_map_result[protein_entry]
+            ptm_index_sort = sorted([(idx,each) for each in ptm_index_dict for idx in ptm_index_dict[each]])
+            ptm_count = sum([len(ptm_index_dict[ptm]) for ptm in ptm_index_dict])
+            # bokeh plot, hovertool
+            hover = HoverTool(names=['rec'],tooltips=[('domain', '@domain'), ('start position', '@start'),('end position','@end'),('domain coverage','@coverage{:.1%}'),])
+            # initiate bokeh figure
+            p = figure(x_range=(-10,protein_len),
+                       y_range=(0,2),
+                       tools=['pan', 'box_zoom', 'wheel_zoom', 'save',
+                              'reset', hover],
+                       plot_height=500, plot_width=1200,
+                       toolbar_location='right',
+                       title='',
+                       x_axis_label='amino acid position')
 
-    # plot domains as rectangular and alpha shows coverage
-    p.rect(x="x", y=0.6, width='w', height=50,
-           source=source,
-           fill_color='color',
-    #       fill_alpha='coverage',
-           line_width=2,
-           line_color='black',
-           height_units="screen",
-           name='rec'
-           )
-    # reference domains, alpha=1
-    # p.rect(x="x", y=1, width='w', height=10,
-    #        source=source,
-    #        fill_color='color',
-    #        line_width=2,
-    #        line_color='black',
-    #        height_units="screen",
-    #        name='rec'
-    #        )
+            # plot domains as rectangular and alpha shows coverage
+            p.rect(x="x", y=0.6, width='w', height=50,
+                   source=source,
+                   fill_color='color',
+            #       fill_alpha='coverage',
+                   line_width=2,
+                   line_color='black',
+                   height_units="screen",
+                   name='rec'
+                   )
+            # reference domains, alpha=1
+            # p.rect(x="x", y=1, width='w', height=10,
+            #        source=source,
+            #        fill_color='color',
+            #        line_width=2,
+            #        line_color='black',
+            #        height_units="screen",
+            #        name='rec'
+            #        )
 
-    # sequence coverage bar charts
-    p.vbar(x='x',width=bin_width,top='y',bottom=bar_bottom,source=source_cov,color='#D3D3D3', name='seq cov')
-    # cov_label = LabelSet(x='x',y='y',text='label',text_font_size='8px',
-    #                      x_offset=-13.5, y_offset=0, source=source_cov)
-    # p.add_layout(cov_label)
-    cov_bar_legend_top, cov_bar_legend_bottom = bar_bottom+1/bar_shrink_raio,bar_bottom
-    cov_bar_x_coor = -8
-    # p.vbar(x=[cov_bar_x_coor],width=bin_width,top=[cov_bar_legend_top],bottom=[cov_bar_legend_bottom],
-    #        color='#D3D3D3',name='seq_cov_legend')
-    # label annotations
-    for y_coor, text in zip([cov_bar_legend_bottom,cov_bar_legend_top],['0%','100%']):
-        label_cov = Label(x=cov_bar_x_coor,y=y_coor,x_offset=0, y_offset=-5,text=text,text_font_size='10px',text_align='left')
-        p.add_layout(label_cov)
-    seq_cov_title = Label(x=-5, y=1.1, text='Sequence coverage binned by every 10 aa',text_font_size='12px',text_align='left',text_color='#A9A9A9')
-    p.add_layout(seq_cov_title)
+            # sequence coverage bar charts
+            p.vbar(x='x',width=bin_width,top='y',bottom=bar_bottom,source=source_cov,color='#D3D3D3', name='seq cov')
+            # cov_label = LabelSet(x='x',y='y',text='label',text_font_size='8px',
+            #                      x_offset=-13.5, y_offset=0, source=source_cov)
+            # p.add_layout(cov_label)
+            cov_bar_legend_top, cov_bar_legend_bottom = bar_bottom+1/bar_shrink_raio,bar_bottom
+            cov_bar_x_coor = -8
+            # p.vbar(x=[cov_bar_x_coor],width=bin_width,top=[cov_bar_legend_top],bottom=[cov_bar_legend_bottom],
+            #        color='#D3D3D3',name='seq_cov_legend')
+            # label annotations
+            for y_coor, text in zip([cov_bar_legend_bottom,cov_bar_legend_top],['0%','100%']):
+                label_cov = Label(x=cov_bar_x_coor,y=y_coor,x_offset=0, y_offset=-5,text=text,text_font_size='10px',text_align='left')
+                p.add_layout(label_cov)
+            seq_cov_title = Label(x=-5, y=1.1, text='Sequence coverage binned by every 10 aa',text_font_size='12px',text_align='left',text_color='#A9A9A9')
+            p.add_layout(seq_cov_title)
 
-    # line shows whole protein length
-    p.line(x=[0,protein_len],y=[0.6,0.6],line_width=10,color='#000000',alpha=0.8,name='line')
+            # line shows whole protein length
+            p.line(x=[0,protein_len],y=[0.6,0.6],line_width=10,color='#000000',alpha=0.8,name='line')
 
-    # adjusted PTM text coordinates calculation
-    numpy_zero_array = np.zeros((800, protein_len)) # mask numpy array for text plotting
-    ptm_x,ptm_y = [], []
-    new_ptm_x, new_ptm_y = [], [] # adjusted text coordinates to prevent overlap
-    ptms = []
-    for tp in ptm_index_sort:
-        each_idx, ptm = tp
-        # ptms.append(ptm.replace('\\', ''))
-        ptms.append(ptm)
-        ptm_x.append(each_idx)
-        ptm_y.append(0.5)
-        x_offset,y_offset = 0,0
-        x_move = int(protein_len/12)
-        while True: # keep moving down if text are too close
-            nonzero_count = np.count_nonzero(numpy_zero_array[790+y_offset:800+y_offset,each_idx+x_offset:each_idx+x_move+x_offset])
-            if nonzero_count == 0:
-                # print (ptm,each_idx,x_offset,y_offset)
-                new_ptm_x.append(each_idx+x_offset)
-                new_ptm_y.append((25+y_offset)/200*2)
-                numpy_zero_array[790+y_offset:800+y_offset,each_idx+x_offset:each_idx+x_move+x_offset] += 1
-                break
-            else:
-                # print ('moving down')
-                # x_offset += 50 # value to move right
-                y_offset -= 12 # value to move down
+            if data_source=='sample': # if plotting from sample-specific data, label PTMs below domains
+                # adjusted PTM text coordinates calculation
+                numpy_zero_array = np.zeros((1500, protein_len)) # mask numpy array for text plotting
+                ptm_x,ptm_y = [], []
+                new_ptm_x, new_ptm_y = [], [] # adjusted text coordinates to prevent overlap
+                ptms = []
+                for tp in ptm_index_sort:
+                    each_idx, ptm = tp
+                    # ptms.append(ptm.replace('\\', ''))
+                    ptms.append(ptm)
+                    ptm_x.append(each_idx)
+                    ptm_y.append(0.5)
+                    x_offset,y_offset = 0,0
+                    x_move = int(protein_len/12)
+                    while True: # keep moving down if text are too close
+                        nonzero_count = np.count_nonzero(numpy_zero_array[1490+y_offset:1500+y_offset,each_idx+x_offset:each_idx+x_move+x_offset])
+                        if nonzero_count == 0:
+                            # print (ptm,each_idx,x_offset,y_offset)
+                            new_ptm_x.append(each_idx+x_offset)
+                            new_ptm_y.append((25+y_offset)/200*2)
+                            numpy_zero_array[1490+y_offset:1500+y_offset,each_idx+x_offset:each_idx+x_move+x_offset] += 1
+                            break
+                        else:
+                            # print ('moving down')
+                            # x_offset += 50 # value to move right
+                            y_offset -= 12 # value to move down
 
-    # label ptm and connect to protein domains
-    for x,y,x_,y_,ptm in zip(new_ptm_x,new_ptm_y,ptm_x,ptm_y,ptms):
-        p.line(x=[x_+1,x+1],y=[y_,y+0.1],line_width=1,color='black',alpha=0.3) # connect domain with text
-        label = Label(x=x,y=y,text=ptm_map_dict[ptm]+'\n'+str(x_+1),text_font_size='10px', text_align='center', text_font='Tahoma')
-        p.add_layout(label)
-    # dummy glyphs to help draw legend
-    legend_gly = [p.line(x=[1, 1], y=[1, 1], line_width=15, color=c, name='dummy_for_legend')
-                    for c in [v for v in color_map_dict.values()]]
+                # label ptm and connect to protein domains
+                for x,y,x_,y_,ptm in zip(new_ptm_x,new_ptm_y,ptm_x,ptm_y,ptms):
+                    p.line(x=[x_+1,x+1],y=[y_,y+0.1],line_width=1,color='black',alpha=0.3) # connect domain with text
+                    label = Label(x=x,y=y,text=ptm_map_dict[ptm]+'\n'+str(x_+1),text_font_size='10px', text_align='center', text_font='Tahoma')
+                    p.add_layout(label)
+            else: # if from global data, do not label PTMs
+                label = Label(x=1,y=0.10,text=str(ptm_count)+' PTMs occurrence in total\nSee details from PTMs table', text_font_size = '15px', text_font = 'Tahoma')
+                p.add_layout(label)
 
-    legend = Legend(title='Domains', background_fill_color='white',
-                    border_line_color='black',border_line_width=3,
-                    border_line_alpha=0.7,
-                    items=[LegendItem(label=lab, renderers=[gly])
-                           for lab, gly in zip([d for d in color_map_dict.keys()],legend_gly)])
-    # alpha color bar, domain coverage
-    # color_mapper = LinearColorMapper(palette=Blues9[::-1], low=0, high=1)
-    # color_bar = ColorBar(color_mapper=color_mapper,location=(0, 0),ticker=SingleIntervalTicker(interval=0.1))
-    # p.add_layout(color_bar,'right')
+            # dummy glyphs to help draw legend
+            legend_gly = [p.line(x=[1, 1], y=[1, 1], line_width=15, color=c, name='dummy_for_legend')
+                            for c in [v for v in color_map_dict.values()]]
 
-    p.add_layout(legend)
-    p.xgrid.visible = False
-    p.ygrid.visible = False
-    p.yaxis.visible = False
-    print (f'bokeh graph took {time.time()-time_start}s')
-    # show(p)
-    return components(p)
+            legend = Legend(title='Domains', background_fill_color='white',
+                            border_line_color='black',border_line_width=3,
+                            border_line_alpha=0.7,
+                            items=[LegendItem(label=lab, renderers=[gly])
+                                   for lab, gly in zip([d for d in color_map_dict.keys()],legend_gly)])
+            # alpha color bar, domain coverage
+            # color_mapper = LinearColorMapper(palette=Blues9[::-1], low=0, high=1)
+            # color_bar = ColorBar(color_mapper=color_mapper,location=(0, 0),ticker=SingleIntervalTicker(interval=0.1))
+            # p.add_layout(color_bar,'right')
+
+            p.add_layout(legend)
+            p.xgrid.visible = False
+            p.ygrid.visible = False
+            p.yaxis.visible = False
+            print (f'bokeh graph took {time.time()-time_start}s')
+            # show(p)
+            return components(p)
+
+
+def domain_cov_ptm2(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry:str):
+    """
+    -----
+    draw rectangular box as protein domains and alpha as coverage on bokeh,
+    and label PTMs.
+    -----
+    :param protein_freq_dict:
+    :param domain_pos_dict:
+    :param protein_entry:
+    :return:
+    """
+    if protein_entry not in domain_pos_dict:
+        return '','No SMART domain available'
+    else:
+        time_start = time.time()
+        freq_array = prot_freq_dict[protein_entry]
+        domain_dict = domain_pos_dict[protein_entry]
+        protein_len = len(freq_array)
+
+        ## coverage every 10 aa
+        pos_cov_dict = {}
+        bin_width = 10
+        bar_shrink_raio = 5 # make bar shorter
+        bar_bottom = 0.8
+        interval=np.arange(0,protein_len,bin_width)
+        for i in interval[:-1]:
+            coverage = np.count_nonzero(freq_array[i:i+bin_width])/bin_width
+            pos_cov_dict[i+bin_width/2] = coverage/bar_shrink_raio + bar_bottom  # move bar up
+        pos_cov_dict[interval[-1]+bin_width/2] = np.count_nonzero(freq_array[interval[-1]:protein_len])/(protein_len-interval[-1])/bar_shrink_raio+bar_bottom
+        source_cov = ColumnDataSource(dict(x=[k for k in pos_cov_dict.keys()],y=[v for v in pos_cov_dict.values()],
+                                           label=['{:.1f}%'.format((v-0.8)*100) for v in pos_cov_dict.values()]))
+
+        ## extract domain position and calculate domain coverage
+        info_list = []
+        for each_domain in domain_dict:
+            for each_tp in domain_dict[each_domain]:
+                start, end = each_tp[0], each_tp[1]
+                coverage = np.count_nonzero(freq_array[start - 1:end]) / (end - start + 1)
+                info_list.append((start,end,coverage,each_domain))
+
+        start, end, coverage, domain_list = zip(*info_list)
+
+        # x coordinates and widths of rectangular
+        x,width = zip(*[((end_-start_)/2+start_,end_-start_) for end_,start_ in zip(end,start)])
+        # hash color to show each domain
+        color_map_dict = {domain:hashcolor(domain) for domain in set(domain_list)}
+        color_list = [color_map_dict[each] for each in domain_list]
+
+        source = ColumnDataSource(dict(x=x,w=width,color=color_list,domain=domain_list,
+                                       start=start,end=end,
+                                       coverage=coverage))
+
+        ## prepare data for PTM labeling
+
+        ptm_index_dict = ptm_map_result[protein_entry]
+        ptm_clean_index_dict = {ptm:ptm_clean(ptm_index_dict[ptm]) for ptm in ptm_index_dict}
+
+
+        # bokeh plot, hovertool
+        hover = HoverTool(names=['rec'],tooltips=[('domain', '@domain'), ('start position', '@start'),('end position','@end'),('domain coverage','@coverage{:.1%}'),])
+        # initiate bokeh figure
+        p = figure(x_range=(-10,protein_len),
+                   y_range=(0,2),
+                   tools=['pan', 'box_zoom', 'wheel_zoom', 'save',
+                          'reset', hover],
+                   plot_height=500, plot_width=1200,
+                   toolbar_location='right',
+                   title='',
+                   x_axis_label='amino acid position')
+
+        # plot domains as rectangular and alpha shows coverage
+        p.rect(x="x", y=0.6, width='w', height=50,
+               source=source,
+               fill_color='color',
+        #       fill_alpha='coverage',
+               line_width=2,
+               line_color='black',
+               height_units="screen",
+               name='rec'
+               )
+        # reference domains, alpha=1
+        # p.rect(x="x", y=1, width='w', height=10,
+        #        source=source,
+        #        fill_color='color',
+        #        line_width=2,
+        #        line_color='black',
+        #        height_units="screen",
+        #        name='rec'
+        #        )
+
+        # sequence coverage bar charts
+        p.vbar(x='x',width=bin_width,top='y',bottom=bar_bottom,source=source_cov,color='#D3D3D3', name='seq cov')
+        # cov_label = LabelSet(x='x',y='y',text='label',text_font_size='8px',
+        #                      x_offset=-13.5, y_offset=0, source=source_cov)
+        # p.add_layout(cov_label)
+        cov_bar_legend_top, cov_bar_legend_bottom = bar_bottom+1/bar_shrink_raio,bar_bottom
+        cov_bar_x_coor = -8
+        # p.vbar(x=[cov_bar_x_coor],width=bin_width,top=[cov_bar_legend_top],bottom=[cov_bar_legend_bottom],
+        #        color='#D3D3D3',name='seq_cov_legend')
+        # label annotations
+        for y_coor, text in zip([cov_bar_legend_bottom,cov_bar_legend_top],['0%','100%']):
+            label_cov = Label(x=cov_bar_x_coor,y=y_coor,x_offset=0, y_offset=-5,text=text,text_font_size='10px',text_align='left')
+            p.add_layout(label_cov)
+        seq_cov_title = Label(x=-5, y=1.1, text='Sequence coverage binned by every 10 aa',text_font_size='12px',text_align='left',text_color='#A9A9A9')
+        p.add_layout(seq_cov_title)
+
+        # line shows whole protein length
+        p.line(x=[0,protein_len],y=[0.6,0.6],line_width=10,color='#000000',alpha=0.8,name='line')
+
+        # adjusted PTM text coordinates calculation
+        numpy_zero_array = np.zeros((800, protein_len)) # mask numpy array for text plotting
+        ptm_x,ptm_y = [], []
+        new_ptm_x, new_ptm_y = [], [] # adjusted text coordinates to prevent overlap
+        ptms = []
+        ptm_line_y = np.linspace(0.1,0.5,len(ptm_index_dict))
+        ptm_y_map_dict = {ptm:y for ptm, y in zip([k for k in ptm_index_dict.keys()],ptm_line_y)}
+
+        for ptm in ptm_index_dict:
+            for x in ptm_index_dict[ptm]:
+                p.line(x=[x,x],y=[0.5, 0.5-ptm_y_map_dict[ptm]])
+
+        for ptm in ptm_clean_index_dict:
+            for label_x in ptm_clean_index_dict[ptm]:
+                label = Label(x=label_x, y=ptm_y_map_dict[ptm], text=ptm_map_dict[ptm] + '\n' + str(label_x + 1), text_font_size='10px',
+                              text_align='center', text_font='Tahoma')
+                p.add_layout(label)
+        #     # ptms.append(ptm.replace('\\', ''))
+        #     ptms.append(ptm)
+        #     ptm_x.append(each_idx)
+        #     ptm_y.append(0.5)
+        #     x_offset,y_offset = 0,0
+        #     x_move = int(protein_len/12)
+        #     while True: # keep moving down if text are too close
+        #         nonzero_count = np.count_nonzero(numpy_zero_array[790+y_offset:800+y_offset,each_idx+x_offset:each_idx+x_move+x_offset])
+        #         if nonzero_count == 0:
+        #             # print (ptm,each_idx,x_offset,y_offset)
+        #             new_ptm_x.append(each_idx+x_offset)
+        #             new_ptm_y.append((25+y_offset)/200*2)
+        #             numpy_zero_array[790+y_offset:800+y_offset,each_idx+x_offset:each_idx+x_move+x_offset] += 1
+        #             break
+        #         else:
+        #             # print ('moving down')
+        #             # x_offset += 50 # value to move right
+        #             y_offset -= 12 # value to move down
+        #
+        # # label ptm and connect to protein domains
+        # for x,y,x_,y_,ptm in zip(new_ptm_x,new_ptm_y,ptm_x,ptm_y,ptms):
+        #     p.line(x=[x_+1,x+1],y=[y_,y+0.1],line_width=1,color='black',alpha=0.3) # connect domain with text
+        #     label = Label(x=x,y=y,text=ptm_map_dict[ptm]+'\n'+str(x_+1),text_font_size='10px', text_align='center', text_font='Tahoma')
+        #     p.add_layout(label)
+        # dummy glyphs to help draw legend
+        legend_gly = [p.line(x=[1, 1], y=[1, 1], line_width=15, color=c, name='dummy_for_legend')
+                        for c in [v for v in color_map_dict.values()]]
+
+        legend = Legend(title='Domains', background_fill_color='white',
+                        border_line_color='black',border_line_width=3,
+                        border_line_alpha=0.7,
+                        items=[LegendItem(label=lab, renderers=[gly])
+                               for lab, gly in zip([d for d in color_map_dict.keys()],legend_gly)])
+        # alpha color bar, domain coverage
+        # color_mapper = LinearColorMapper(palette=Blues9[::-1], low=0, high=1)
+        # color_bar = ColorBar(color_mapper=color_mapper,location=(0, 0),ticker=SingleIntervalTicker(interval=0.1))
+        # p.add_layout(color_bar,'right')
+
+        p.add_layout(legend)
+        p.xgrid.visible = False
+        p.ygrid.visible = False
+        p.yaxis.visible = False
+        print (f'bokeh graph took {time.time()-time_start}s')
+        # show(p)
+        return components(p)
 
 
 def html_compile(html_template,
@@ -417,10 +653,37 @@ def peptide_reader(input_file):
     return psm_dict
 
 
+def psmlist_todict(psm_list):
+    regex_pat = '\w{1}\[\d+\.?\d+\]'
+    psm_dict = defaultdict(list)
+
+    for psm in psm_list:
+        reg_sub = re.sub(regex_pat, my_replace, psm)
+        psm_dict[reg_sub].append(psm)
+    return psm_dict
+
+
+def ptm_clean(ptm_indx_list):
+    threshold = 10
+    ptm_indx_list = sorted(ptm_indx_list)
+    diff_list = np.insert(np.diff(ptm_indx_list), 0, 100)
+    diff_list = [int(i / 10) for i in diff_list]
+    order_list = list(zip(ptm_indx_list, diff_list))
+    print(order_list)
+    new_ptm_list = []
+    for each in order_list:
+        if each[1] > 0:
+            new_ptm_list.append(each[0])
+    return new_ptm_list
+
+
 if __name__ == '__main__':
     import json
     import pickle
+    import os
 
+    # single protein test
+    """
     # pep_file = 'F:/matrisomedb2.0/peptide_list.txt'
     # psm_dict = peptide_reader(pep_file)
     # pickle.dump(psm_dict,open('F:/matrisomedb2.0/psm_dict_allpeptides_0906.p','wb'))
@@ -437,7 +700,6 @@ if __name__ == '__main__':
     # prot_psm_list_dict = peptide_map(psm_dict,protein_dict)[2]
     # pickle.dump(prot_psm_list_dict, open('F:/matrisomedb2.0/prot_psm_list_dict_0908.p', 'wb'), protocol=5)
     protein_psm_list_dict = pickle.load(open('F:/matrisomedb2.0/prot_psm_list_dict_0908.p', 'rb'))
-
 
     prot_freq_dict = pickle.load(open('F:/matrisomedb2.0/prot_freq_dict_0907.p','rb'))
     # print ('prot_freq_dict reading done.')
@@ -466,5 +728,79 @@ if __name__ == '__main__':
 
     html_compile(html_template,domain_cov,seq_cov,'Q61001',protein_info_dict,
                  html_out='F:/matrisomedb2.0/Q61001_test.html')
+    """
+    # matrisomeDB batch
+    with open('F:/matrisomedb2.0/smart_domain_0908.json') as f_o:
+        info_dict = json.load(f_o)
 
-    # crawl SMART db
+    protein_dict = fasta_reader('F:/matrisomedb2.0/mat.fasta')
+
+    protein_info_dict = protein_info_from_fasta('F:/matrisomedb2.0/mat.fasta')
+
+    global_protein_psm_dict = json.load(open('F:/matrisomedb2.0/global_protein_psm.dict_fromsample.json','r'))
+    sample_prot_psm_dict = json.load(open('F:/matrisomedb2.0/sample_protein_psm_dict_3.json','r')) # sample name has illgal charcters
+
+    # all_psm = pickle.load(open('F:/matrisomedb2.0/all_psm.p','rb'))
+    # print (len(all_psm))
+    # all_psm_dict = psmlist_todict(all_psm)
+    # print ('convet psm list to pep_psm dict')
+    # glob_prot_freq_dict = peptide_map(all_psm_dict,protein_dict)[0]
+    # pickle.dump(glob_prot_freq_dict, open('F:/matrisomedb2.0/glob_prot_freq_dict.p', 'wb'),protocol=5)
+    # glob_prot_ptm_ind_dict = ptm_map2(all_psm_dict,protein_dict,regex_list)
+    # pickle.dump(glob_prot_ptm_ind_dict,open('F:/matrisomedb2.0/glob_prot_ptm_ind_dict.p','wb'),protocol=5)
+
+
+    glob_prot_freq_dict = pickle.load(open('F:/matrisomedb2.0/glob_prot_freq_dict.p','rb'))
+    glob_ptm_map = pickle.load(open('F:/matrisomedb2.0/glob_prot_ptm_ind_dict.p','rb'))
+    html_tempalte = open(r'F:\matrisomedb2.0\html_templates/domain_seq_cov_html_template_0909.html', 'r')
+    html_tempalte_read = html_tempalte.read()
+    html_tempalte.close()
+
+    for sample in sample_prot_psm_dict:
+        print (sample)
+        for prot in sample_prot_psm_dict[sample]:
+            if os.path.exists(r'F:\matrisomedb2.0\domain_htmls/'+sample+'_'+prot+'_domaincov.html'):
+                print (sample,prot,'exists')
+                continue
+
+            else:
+                start = time.time()
+                print (prot)
+                # new_protein_dict = {prot:protein_dict[prot],'XXX':'XXX'}
+                sample_psm_list = sample_prot_psm_dict[sample][prot]
+                sample_psm_dict = psmlist_todict(sample_psm_list)
+                # protein_dict = {prot:protein_dict[prot],'XXX':'XXX','AAA':'AAA'}
+                # global_psm_list = global_protein_psm_dict[prot]
+                # glob_psm_dict = psmlist_todict(global_psm_list)
+
+                sample_prot_freq_dict = peptide_map(sample_psm_dict,protein_dict)[0]
+                # print (prot,len(sample_prot_freq_dict[prot]),len(protein_dict[prot]))
+                # glob_prot_freq_dict = peptide_map(glob_psm_dict,protein_dict)[0]
+
+                sample_ptm_map = ptm_map(sample_psm_list,protein_dict)[0]
+                # glob_ptm_map = ptm_map(global_psm_list,protein_dict)[0]
+                if len(sample_prot_freq_dict[prot]) != len(protein_dict[prot]):
+                    print (prot, 'NON EQUAL LENGTH!')
+                    continue
+                else:
+                    sample_seq_cov = seq_cov_gen(sample_prot_freq_dict[prot],sample_ptm_map[prot],protein_dict[prot])
+                    glob_seq_cov = seq_cov_gen(glob_prot_freq_dict[prot],glob_ptm_map[prot],protein_dict[prot])
+
+                    sample_domain_cov = domain_cov_ptm(sample_prot_freq_dict,sample_ptm_map,info_dict,prot,data_source='sample')
+                    glob_domain_cov = domain_cov_ptm(glob_prot_freq_dict, glob_ptm_map, info_dict, prot,data_source='global')
+
+                    new_html = html_tempalte_read.replace('<!-- COPY/PASTE domain coverage SCRIPT HERE -->',sample_domain_cov[0]).\
+                        replace('<!-- COPY/PASTE domain coverage global SCRIPT HERE -->',glob_domain_cov[0]).\
+                        replace('<!-- INSERT domain DIVS HERE -->',sample_domain_cov[1]).\
+                        replace('<!-- INSERT domain DIVS global HERE -->', glob_domain_cov[1]).\
+                        replace('<!-- COPY/PASTE seq coverage value HERE-->',str(sample_seq_cov[1])).\
+                        replace('<!-- COPY/PASTE seq coverage value global HERE-->',str(glob_seq_cov[1])).\
+                        replace('<!-- COPY/PASTE seq coverage str HERE-->',sample_seq_cov[0]).\
+                        replace('<!-- COPY/PASTE seq coverage str global HERE-->',glob_seq_cov[0]).\
+                        replace('<!-- UniprotID -->', protein_info_dict[prot][0] + '  (' + protein_info_dict[prot][
+                                            1].rstrip(' ') + ')').replace('<!-- sample_type -->',sample).\
+                        replace('<!-- 3d cov URL -->',sample+'_'+prot+'_3dcov.html').replace('<!-- 3d cov global URL -->',prot+'_3dcov.html').\
+                        replace('<!-- PTM table URL -->', sample+'_'+prot+'_ptmtable.html').replace('<!-- PTM table global URL -->',prot+'_ptmtable.html')
+                    with open(r'F:\matrisomedb2.0\domain_htmls/'+sample.replace('/','-')+'_'+prot+'_domaincov.html','w') as f_o:
+                        f_o.write(new_html)
+                    print (f'time for {prot}: {time.time()-start}')

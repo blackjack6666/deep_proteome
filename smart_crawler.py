@@ -97,7 +97,13 @@ def smart_scrap(protein_list:list):
 
 def my_replace(match_obj):
     match_obj = match_obj.group()
-    return match_obj[0]  # gives back the first element of matched object as string
+    matched_aa = match_obj[0]
+    if matched_aa != 'n':
+        return matched_aa  # gives back the first element of matched object as string
+    else:
+        # if first match is n, then n acetylation, get rid of n
+        print (match_obj)
+        return ''
 
 
 def peptide_map(psm_dict,protein_dict):
@@ -147,7 +153,8 @@ def ptm_map(psm_list,protein_dict):
         if match:
             for ptm in match:
                 regex_set.add(ptm.replace('[','\[').replace(']','\]').replace('.','\.'))
-
+    print (regex_set)
+    print (peptide_psm_dict['MSEAAPAAPAAAPPAEK'])
     # aho mapping
     id_list, seq_list = extract_UNID_and_seq(protein_dict)
     seq_line = creat_total_seq_line(seq_list, sep="|")
@@ -160,7 +167,7 @@ def ptm_map(psm_list,protein_dict):
         matched_pep = tp[2]  # without ptm site
         for psm in peptide_psm_dict[matched_pep]:
             for ptm in regex_set:  # check each ptm, mask other ptms
-                new_psm = re.sub('\[\d+\.?\d+\]', '', psm.replace(ptm.replace('\\', ''), '*')).\
+                new_psm = re.sub('n?\[\d+\.?\d+\]', '', psm.replace(ptm.replace('\\', ''), '*')).\
                     replace('*', ptm.replace('\\', ''))
                 ptm_mod = set(re.findall(ptm, new_psm))
                 if ptm_mod:
@@ -668,21 +675,22 @@ if __name__ == '__main__':
     protein_freq_dict = peptide_map(psm_dict,ecm_protein_dict)
 
     # ptm mapping
-    psm_list = modified_peptide_from_psm(psm_tsv)
-    ptm_map_result = ptm_map(psm_list,ecm_protein_dict)
-
+    # psm_list = modified_peptide_from_psm(psm_tsv)
+    psm_list = ['n[42.01]M[100]LQTLFLTM[142]LTLALVK[0.984]']
+    ptm_map_result = ptm_map(psm_list,ecm_protein_dict)[0]
+    print (ptm_map_result['Q8BPB5'])
     # updated 8/3/22
-    domain_bokeh_return = domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='E9PZ16')
+    # domain_bokeh_return = domain_cov_ptm(protein_freq_dict,ptm_map_result, info_dict,protein_entry='E9PZ16')
 
     # update 8/22/22
-    ptm_bokeh_return = ptm_table_bokeh(ptm_map_result[0],ecm_protein_dict,protein_info_dict)
+    # ptm_bokeh_return = ptm_table_bokeh(ptm_map_result[0],ecm_protein_dict,protein_info_dict)
 
     # updated 8/3/22
-    bokeh_to_html(domain_bokeh_return,
-                  ptm_bokeh_return,
-                  protein_info_dict,
-                  html_out='F:/matrisomedb2.0/newbokeh_test_E9PZ16.html',
-                  UniprotID='E9PZ16')
+    # bokeh_to_html(domain_bokeh_return,
+    #               ptm_bokeh_return,
+    #               protein_info_dict,
+    #               html_out='F:/matrisomedb2.0/newbokeh_test_E9PZ16.html',
+    #               UniprotID='E9PZ16')
 
     # domain coverage
     # domain_coverage_bokeh = plot_domain_coverage2(protein_freq_dict,info_dict,'E9PWQ3')
