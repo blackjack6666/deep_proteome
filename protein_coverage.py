@@ -35,6 +35,14 @@ def fasta_reader(fasta_file_path):
     return {each.split('\n')[0].split('|')[1]: ''.join(each.split('\n')[1:]) for each in file_split}
 
 
+def protein_id_to_species(fasta_file_path):
+    with open(fasta_file_path, 'r') as file_open:
+        file_split = file_open.read().split('\n>')
+
+    return {each.split('\n')[0].split('|')[1]:each.split('\n')[0].split('OS=')[1].split(' OX=')[0]
+            for each in file_split}
+
+
 def fasta_reader2(fasta_file_path):
     """
     read fasta file without reverse seq

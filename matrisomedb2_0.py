@@ -5,7 +5,7 @@ from tsv_reader import protein_info_from_fasta
 from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter, Plot, Rect, Legend, LegendItem,SingleIntervalTicker, Label, LabelSet, TableColumn, DataTable, HTMLTemplateFormatter
 from bokeh.palettes import Spectral7, Viridis, Plasma, Blues9, Turbo256
 from bokeh.transform import factor_cmap
-from bokeh.plotting import figure
+from bokeh.plotting import figure,output_file,save
 from bokeh.io import save, output_file, show
 from bokeh.embed import components
 
@@ -677,6 +677,101 @@ def ptm_clean(ptm_indx_list):
     return new_ptm_list
 
 
+def ptm_table_bokeh(id_ptm_idx_dict, protein_dict, protein_info_dict, output_html):
+    """
+    plot a bokeh table to show ptms frequency
+    :param id_ptm_idx_dict:
+    :param protein_dict:
+    :param uniprot_gene_dict:
+    :return:
+    """
+    import pandas as pd
+
+    info_dict = defaultdict(list)
+    for prot in id_ptm_idx_dict:
+        info_dict['Uniprot ID'].append(prot)
+        info_dict['Gene'].append(protein_info_dict[prot][0])
+        info_dict['Length'].append(len(protein_dict[prot]))
+        info_dict['url'].append('%s.html' % prot)  # clickable protein id to other page
+        for ptm in id_ptm_idx_dict[prot]:
+            info_dict[ptm_map_dict[ptm]].append(len(id_ptm_idx_dict[prot][ptm]))
+    df = pd.DataFrame(info_dict)
+    # print (df)
+    source = ColumnDataSource(df)
+
+    columns = []
+    columns.append(TableColumn(field='Uniprot ID',title='Uniprot ID',
+                               formatter=HTMLTemplateFormatter(template='<a href="<%= url %>"><%= value %></a>')))
+    columns.append(TableColumn(field='Uniprot ID', title='Uniprot ID'))
+    columns += [TableColumn(field=each,title=each)
+                for each in df.columns[1:] if each!='url']
+    table = DataTable(source=source,columns=columns, width=1000, height=600, editable=True)
+    output_file(output_html)
+    save(table)
+
+
+def ptm_table_bokeh2(id_ptm_idx_dict, output_base):
+    """
+    plot a bokeh table to show ptms frequency
+    :param id_ptm_idx_dict:
+    :param protein_dict:
+    :param uniprot_gene_dict:
+    :return:
+    """
+    import pandas as pd
+
+    for prot in id_ptm_idx_dict:
+        print (prot)
+        ptm_index_dict = id_ptm_idx_dict[prot]
+        ptms, positions = [ptm_map_dict[k] for k in ptm_index_dict.keys()], [[each+1 for each in ptm_index_dict[ptm]] for ptm in ptm_index_dict]
+        df = pd.DataFrame(dict(PTMs=ptms, Positions=positions))
+        # print (df)
+        source = ColumnDataSource(df)
+
+        columns = [TableColumn(field=each,title=each)
+                    for each in df.columns]
+        table = DataTable(source=source,columns=columns, width=2000, height=200, editable=True)
+        output_file(output_base+prot+'_ptmtable.html')
+        save(table)
+
+
+def ptm_table_bokeh3(sample_data, protein_dict, output_base):
+    """
+    show ptm positions for each protein
+    :param id_ptm_idx_dict:
+    :param protein_dict:
+    :param uniprot_gene_dict:
+    :return:
+    """
+    import pandas as pd
+
+    for sample in sample_data:
+
+
+        ptm_id_index_dict = sample_data[sample]['ptm']
+
+        for prot in ptm_id_index_dict:
+            print (prot)
+            # seq = protein_dict[prot]
+            info_dict = {}
+            # info_dict['Amino acid sequence'] = [aa for aa in seq]
+            # info_dict['Amino acid position'] = range(1,len(seq)+1)
+
+            for ptm in ptm_id_index_dict[prot]:
+
+                info_dict[ptm_map_dict[ptm]] = [each+1 for each in ptm_id_index_dict[prot][ptm]]
+
+
+            df = pd.DataFrame(dict(PTMs=[k for k in info_dict.keys()],Positions=[v for v in info_dict.values()]))
+            # print (df)
+            source = ColumnDataSource(df)
+
+            columns = [TableColumn(field=each,title=each)
+                        for each in df.columns]
+            table = DataTable(source=source,columns=columns, width=1000, height=400, editable=True)
+            output_file(output_base+sample.replace('/','-')+'_'+prot+'_ptmtable.html')
+            save(table)
+
 if __name__ == '__main__':
     import json
     import pickle
@@ -730,15 +825,15 @@ if __name__ == '__main__':
                  html_out='F:/matrisomedb2.0/Q61001_test.html')
     """
     # matrisomeDB batch
-    with open('F:/matrisomedb2.0/smart_domain_0908.json') as f_o:
-        info_dict = json.load(f_o)
-
+    # with open('F:/matrisomedb2.0/smart_domain_0908.json') as f_o:
+    #     info_dict = json.load(f_o)
+    #
     protein_dict = fasta_reader('F:/matrisomedb2.0/mat.fasta')
 
     protein_info_dict = protein_info_from_fasta('F:/matrisomedb2.0/mat.fasta')
-
-    global_protein_psm_dict = json.load(open('F:/matrisomedb2.0/global_protein_psm.dict_fromsample.json','r'))
-    sample_prot_psm_dict = json.load(open('F:/matrisomedb2.0/sample_protein_psm_dict_3.json','r')) # sample name has illgal charcters
+    #
+    # global_protein_psm_dict = json.load(open('F:/matrisomedb2.0/global_protein_psm.dict_fromsample.json','r'))
+    # sample_prot_psm_dict = json.load(open('F:/matrisomedb2.0/sample_protein_psm_dict_3.json','r')) # sample name has illgal charcters
 
     # all_psm = pickle.load(open('F:/matrisomedb2.0/all_psm.p','rb'))
     # print (len(all_psm))
@@ -750,12 +845,22 @@ if __name__ == '__main__':
     # pickle.dump(glob_prot_ptm_ind_dict,open('F:/matrisomedb2.0/glob_prot_ptm_ind_dict.p','wb'),protocol=5)
 
 
-    glob_prot_freq_dict = pickle.load(open('F:/matrisomedb2.0/glob_prot_freq_dict.p','rb'))
+    # glob_prot_freq_dict = pickle.load(open('F:/matrisomedb2.0/glob_prot_freq_dict.p','rb'))
     glob_ptm_map = pickle.load(open('F:/matrisomedb2.0/glob_prot_ptm_ind_dict.p','rb'))
-    html_tempalte = open(r'F:\matrisomedb2.0\html_templates/domain_seq_cov_html_template_0909.html', 'r')
-    html_tempalte_read = html_tempalte.read()
-    html_tempalte.close()
+    # html_tempalte = open(r'F:\matrisomedb2.0\html_templates/domain_seq_cov_html_template_0909.html', 'r')
+    # html_tempalte_read = html_tempalte.read()
+    # html_tempalte.close()
 
+    # PTM tables sample
+    # sample_data = pickle.load(open('F:\matrisomedb2.0/sample.data','rb'))
+    output_base = r'F:\matrisomedb2.0/table_htmls_2/'
+    # ptm_table_bokeh2(sample_data,protein_dict,protein_info_dict,output_base)
+    # ptm_table_bokeh3(sample_data,protein_dict,output_base)
+
+    # ptm table global
+    ptm_table_bokeh2(glob_ptm_map,output_base=output_base)
+
+    """
     for sample in sample_prot_psm_dict:
         print (sample)
         for prot in sample_prot_psm_dict[sample]:
@@ -804,3 +909,4 @@ if __name__ == '__main__':
                     with open(r'F:\matrisomedb2.0\domain_htmls/'+sample.replace('/','-')+'_'+prot+'_domaincov.html','w') as f_o:
                         f_o.write(new_html)
                     print (f'time for {prot}: {time.time()-start}')
+    """

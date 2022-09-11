@@ -106,7 +106,7 @@ def getdictfromtext(text_file):
     import re
     from collections import defaultdict
     word_freq_dict = defaultdict(int)
-    stop_pattern = '^a$|^A$|^the$|this|these|those|one|an|The|to|^in$|for|of|or|by|with|is|on|that|be|from|here|^can$|^cannot$|\(|\)'
+    stop_pattern = '^a$|^A$|^the$|this|these|those|one|an|The|to|^in$|for|of|or|by|with|is|on|that|be|from|here|^can$|^cannot$|\(|\)|yet'
 
     with open(text_file,'r',encoding='utf8') as f_o:
         for line in f_o:
