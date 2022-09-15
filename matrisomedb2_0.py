@@ -1,7 +1,5 @@
 from multiprocessing_naive_algorithym import *
 from aho_corasick import automaton_trie, automaton_matching
-from protein_coverage import fasta_reader
-from tsv_reader import protein_info_from_fasta
 from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter, Plot, Rect, Legend, LegendItem,SingleIntervalTicker, Label, LabelSet, TableColumn, DataTable, HTMLTemplateFormatter
 from bokeh.palettes import Spectral7, Viridis, Plasma, Blues9, Turbo256
 from bokeh.transform import factor_cmap
@@ -9,14 +7,43 @@ from bokeh.plotting import figure,output_file,save
 from bokeh.io import save, output_file, show
 from bokeh.embed import components
 
+
 ptm_map_dict = {'Q\\[129\\]':'Gln deamidation','N\\[115\\]':'ASN deamidation',
                 'Q\\[111\\]':'Gln to pyroGln','C\\[143\\]':'selenocysteine',
                 'M\\[15\\.9949\\]':'Met oxidation','P\\[15\\.9949\\]':'Pro hydroxylation',
                 'K\\[15\\.9949\\]':'Lys hydroxylation','n\\[42\\.0106\\]':'N-term acetylation',
-                'C\\[57\\.0215\\]':'Cys redu-alky','R\\[0\\.9840\\]':'Arg damidation','Y\\[79\\.9663\\]':'Phospho-Tyr',
+                'C\\[57\\.0215\\]':'Cys redu-alky','R\\[0\\.9840\\]':'Arg deamidation','Y\\[79\\.9663\\]':'Phospho-Tyr',
                 'T\\[79\\.9663\\]':'Phospho-Thr', 'S\\[79\\.9663\\]':'Phospho-Ser'}
 regex_list = ['M\\[15\\.9949\\]','P\\[15\\.9949\\]','K\\[15\\.9949\\]','n\\[42\\.0106\\]','C\\[57\\.0215\\]',
               'R\\[0\\.9840\\]','T\\[79\\.9663\\]','S\\[79\\.9663\\]','Y\\[79\\.9663\\]']
+
+
+def fasta_reader(fasta_file_path):
+
+    with open(fasta_file_path, 'r') as file_open:
+        file_split = file_open.read().split('\n>')
+
+    return {each.split('\n')[0].split('|')[1]: ''.join(each.split('\n')[1:]) for each in file_split}
+
+
+def protein_info_from_fasta(fasta_path):
+    """
+    get protein name, gene name, entry name, and description
+    :param fasta_path:
+    :return:
+    """
+    info_dict = {}
+    with open(fasta_path,'r') as f:
+        for line in f:
+             if line.startswith('>'):
+                protein_id = line.split('|')[1]
+                cls = line.split('|')[0].split('>')[1]
+                # print (protein_id)
+                description = ' '.join(line.split('OS=')[0].split(' ')[1:])
+
+                gene_name = line.split('GN=')[1].split(' ')[0].rstrip('\n') if 'GN=' in line else 'N/A'
+                info_dict[protein_id] = (gene_name,description,cls)
+    return info_dict
 
 def my_replace(match_obj):
     match_obj = match_obj.group()
@@ -321,7 +348,7 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
                        y_range=(0,2),
                        tools=['pan', 'box_zoom', 'wheel_zoom', 'save',
                               'reset', hover],
-                       plot_height=500, plot_width=1200,
+                       plot_height=500, plot_width=700,
                        toolbar_location='right',
                        title='',
                        x_axis_label='amino acid position')
@@ -378,7 +405,7 @@ def domain_cov_ptm(prot_freq_dict, ptm_map_result, domain_pos_dict,protein_entry
                     ptm_x.append(each_idx)
                     ptm_y.append(0.5)
                     x_offset,y_offset = 0,0
-                    x_move = int(protein_len/12)
+                    x_move = int(protein_len/8)  # 12 to 8 when plot width is 1200 to 700
                     while True: # keep moving down if text are too close
                         nonzero_count = np.count_nonzero(numpy_zero_array[1490+y_offset:1500+y_offset,each_idx+x_offset:each_idx+x_move+x_offset])
                         if nonzero_count == 0:
@@ -824,9 +851,10 @@ if __name__ == '__main__':
     html_compile(html_template,domain_cov,seq_cov,'Q61001',protein_info_dict,
                  html_out='F:/matrisomedb2.0/Q61001_test.html')
     """
+
     # matrisomeDB batch
-    # with open('F:/matrisomedb2.0/smart_domain_0908.json') as f_o:
-    #     info_dict = json.load(f_o)
+    with open('F:/matrisomedb2.0/smart_domain_0908.json') as f_o:
+        info_dict = json.load(f_o)
     #
     protein_dict = fasta_reader('F:/matrisomedb2.0/mat.fasta')
 
@@ -834,7 +862,7 @@ if __name__ == '__main__':
     #
     # global_protein_psm_dict = json.load(open('F:/matrisomedb2.0/global_protein_psm.dict_fromsample.json','r'))
     # sample_prot_psm_dict = json.load(open('F:/matrisomedb2.0/sample_protein_psm_dict_3.json','r')) # sample name has illgal charcters
-
+    # pickle.dump(sample_prot_psm_dict['Pancreatic Ductal Adenocarcinoma Xenograft (BxPC3)']['P21980'],open(r'F:\matrisomedb2.0/data_for_test/sample_psm_list.p','wb'),protocol=5)
     # all_psm = pickle.load(open('F:/matrisomedb2.0/all_psm.p','rb'))
     # print (len(all_psm))
     # all_psm_dict = psmlist_todict(all_psm)
@@ -845,10 +873,10 @@ if __name__ == '__main__':
     # pickle.dump(glob_prot_ptm_ind_dict,open('F:/matrisomedb2.0/glob_prot_ptm_ind_dict.p','wb'),protocol=5)
 
 
-    # glob_prot_freq_dict = pickle.load(open('F:/matrisomedb2.0/glob_prot_freq_dict.p','rb'))
+    glob_prot_freq_dict = pickle.load(open('F:/matrisomedb2.0/glob_prot_freq_dict.p','rb'))
     glob_ptm_map = pickle.load(open('F:/matrisomedb2.0/glob_prot_ptm_ind_dict.p','rb'))
-    # html_tempalte = open(r'F:\matrisomedb2.0\html_templates/domain_seq_cov_html_template_0909.html', 'r')
-    # html_tempalte_read = html_tempalte.read()
+    html_tempalte = open(r'F:\matrisomedb2.0\test/domain_seq_cov_html_template_0909.html', 'r')
+    html_tempalte_read = html_tempalte.read()
     # html_tempalte.close()
 
     # PTM tables sample
@@ -858,8 +886,9 @@ if __name__ == '__main__':
     # ptm_table_bokeh3(sample_data,protein_dict,output_base)
 
     # ptm table global
-    ptm_table_bokeh2(glob_ptm_map,output_base=output_base)
+    # ptm_table_bokeh2(glob_ptm_map,output_base=output_base)
 
+    # domain html generation
     """
     for sample in sample_prot_psm_dict:
         print (sample)
@@ -910,3 +939,46 @@ if __name__ == '__main__':
                         f_o.write(new_html)
                     print (f'time for {prot}: {time.time()-start}')
     """
+
+    # one protein test
+    start = time.time()
+    out_put = r'F:\matrisomedb2.0/test/test2.html'
+    sample = 'Pancreatic Ductal Adenocarcinoma Xenograft (BxPC3)'
+    prot = 'P21980'
+    smart_url = 'https://smart.embl.de/smart/show_motifs.pl?ID=' + prot
+    sample_psm_list = pickle.load(open(r'F:\matrisomedb2.0/data_for_test/sample_psm_list.p','rb'))
+    sample_psm_dict = psmlist_todict(sample_psm_list)
+    # protein_dict = {prot:protein_dict[prot],'XXX':'XXX','AAA':'AAA'}
+    # global_psm_list = global_protein_psm_dict[prot]
+    # glob_psm_dict = psmlist_todict(global_psm_list)
+
+    sample_prot_freq_dict = peptide_map(sample_psm_dict, protein_dict)[0]
+    # print (prot,len(sample_prot_freq_dict[prot]),len(protein_dict[prot]))
+    # glob_prot_freq_dict = peptide_map(glob_psm_dict,protein_dict)[0]
+
+    sample_ptm_map = ptm_map(sample_psm_list, protein_dict)[0]
+    # glob_ptm_map = ptm_map(global_psm_list,protein_dict)[0]
+
+    sample_seq_cov = seq_cov_gen(sample_prot_freq_dict[prot], sample_ptm_map[prot], protein_dict[prot])
+    glob_seq_cov = seq_cov_gen(glob_prot_freq_dict[prot], glob_ptm_map[prot], protein_dict[prot])
+
+    sample_domain_cov = domain_cov_ptm(sample_prot_freq_dict, sample_ptm_map, info_dict, prot, data_source='sample')
+    glob_domain_cov = domain_cov_ptm(glob_prot_freq_dict, glob_ptm_map, info_dict, prot, data_source='global')
+
+    new_html = html_tempalte_read.replace('<!-- COPY/PASTE domain coverage SCRIPT HERE -->', sample_domain_cov[0]). \
+        replace('<!-- COPY/PASTE domain coverage global SCRIPT HERE -->', glob_domain_cov[0]). \
+        replace('<!-- INSERT domain DIVS HERE -->', sample_domain_cov[1]). \
+        replace('<!-- INSERT domain DIVS global HERE -->', glob_domain_cov[1]). \
+        replace('<!-- COPY/PASTE seq coverage value HERE-->', str(sample_seq_cov[1])). \
+        replace('<!-- COPY/PASTE seq coverage value global HERE-->', str(glob_seq_cov[1])). \
+        replace('<!-- COPY/PASTE seq coverage str HERE-->', sample_seq_cov[0]). \
+        replace('<!-- COPY/PASTE seq coverage str global HERE-->', glob_seq_cov[0]). \
+        replace('<!-- UniprotID -->', protein_info_dict['P21980'][0] + '  (' + protein_info_dict['P21980'][
+        1].rstrip(' ') + ')').replace('<!-- sample_type -->', sample). \
+        replace('<!-- 3d cov URL -->', sample + '_' + prot + '_3dcov.html').replace('<!-- 3d cov global URL -->',
+                                                                                    prot + '_3dcov.html'). \
+        replace('<!-- PTM table URL -->', sample + '_' + prot + '_ptmtable.html').replace(
+        '<!-- PTM table global URL -->', prot + '_ptmtable.html').replace('<!-- SMART URL -->',smart_url)
+    with open(out_put,'w') as f_o:
+        f_o.write(new_html)
+    print(f'time for {prot}: {time.time() - start}')
