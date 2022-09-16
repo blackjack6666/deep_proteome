@@ -1,12 +1,12 @@
 from multiprocessing_naive_algorithym import *
 from aho_corasick import automaton_trie, automaton_matching
-from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter, Plot, Rect, Legend, LegendItem,SingleIntervalTicker, Label, LabelSet, TableColumn, DataTable, HTMLTemplateFormatter
+from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter, Plot, Rect,CustomJS, Legend, LegendItem,SingleIntervalTicker, Label, LabelSet, TableColumn, DataTable, HTMLTemplateFormatter, Button
 from bokeh.palettes import Spectral7, Viridis, Plasma, Blues9, Turbo256
 from bokeh.transform import factor_cmap
 from bokeh.plotting import figure,output_file,save
 from bokeh.io import save, output_file, show
 from bokeh.embed import components
-
+from bokeh.layouts import column
 
 ptm_map_dict = {'Q\\[129\\]':'Gln deamidation','N\\[115\\]':'ASN deamidation',
                 'Q\\[111\\]':'Gln to pyroGln','C\\[143\\]':'selenocysteine',
@@ -757,9 +757,15 @@ def ptm_table_bokeh2(id_ptm_idx_dict, output_base):
 
         columns = [TableColumn(field=each,title=each)
                     for each in df.columns]
-        table = DataTable(source=source,columns=columns, width=2000, height=200, editable=True)
+        table = DataTable(source=source,columns=columns, width=2000, height=250, editable=True)
+        # button to download table as tsv/excel
+        button = Button(label="Download table as csv", button_type="success")
+        button.js_on_event("button_click", CustomJS(args=dict(source=source),
+                                                    code=open("F:/matrisomedb2.0/db_script/ptm_button.js").read()))
+        controls = column(table,button)
+
         output_file(output_base+prot+'_ptmtable.html')
-        save(table)
+        save(controls)
 
 
 def ptm_table_bokeh3(sample_data, protein_dict, output_base):
@@ -886,7 +892,7 @@ if __name__ == '__main__':
     # ptm_table_bokeh3(sample_data,protein_dict,output_base)
 
     # ptm table global
-    # ptm_table_bokeh2(glob_ptm_map,output_base=output_base)
+    ptm_table_bokeh2(glob_ptm_map,output_base='F:/matrisomedb2.0/table_htmls/')
 
     # domain html generation
     """
@@ -941,6 +947,7 @@ if __name__ == '__main__':
     """
 
     # one protein test
+    """
     start = time.time()
     out_put = r'F:\matrisomedb2.0/test/test2.html'
     sample = 'Pancreatic Ductal Adenocarcinoma Xenograft (BxPC3)'
@@ -982,3 +989,4 @@ if __name__ == '__main__':
     with open(out_put,'w') as f_o:
         f_o.write(new_html)
     print(f'time for {prot}: {time.time() - start}')
+    """
