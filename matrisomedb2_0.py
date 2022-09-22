@@ -18,6 +18,42 @@ regex_list = ['M\\[15\\.9949\\]','P\\[15\\.9949\\]','K\\[15\\.9949\\]','n\\[42\\
               'R\\[0\\.9840\\]','T\\[79\\.9663\\]','S\\[79\\.9663\\]','Y\\[79\\.9663\\]']
 
 
+button_ptm_table_js_code = """
+function table_to_csv(source) {
+    const columns = Object.keys(source.data)
+    const nrows = source.get_length()
+    const lines = [columns.join(',')]
+
+    for (let i = 0; i < nrows; i++) {
+        let row = [];
+        for (let j = 0; j < columns.length-1; j++) {
+            const column = columns[j]
+            row.push(source.data[column][i].toString())
+        }
+        lines.push(row.join(','))
+    }
+    return lines.join('\n').concat('\n')
+}
+
+
+const filename = prot+'_'+'PTMs_table.csv'
+const filetext = table_to_csv(source)
+const blob = new Blob([filetext], { type: 'text/csv;charset=utf-8;' })
+
+//addresses IE
+if (navigator.msSaveBlob) {
+    navigator.msSaveBlob(blob, filename)
+} else {
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    link.target = '_blank'
+    link.style.visibility = 'hidden'
+    link.dispatchEvent(new MouseEvent('click'))
+}
+"""
+
+
 def fasta_reader(fasta_file_path):
 
     with open(fasta_file_path, 'r') as file_open:
@@ -737,7 +773,7 @@ def ptm_table_bokeh(id_ptm_idx_dict, protein_dict, protein_info_dict, output_htm
     save(table)
 
 
-def ptm_table_bokeh2(id_ptm_idx_dict, output_base):
+def ptm_table_bokeh2(id_ptm_idx_dict, output_base, js_code):
     """
     plot a bokeh table to show ptms frequency
     :param id_ptm_idx_dict:
@@ -759,16 +795,16 @@ def ptm_table_bokeh2(id_ptm_idx_dict, output_base):
                     for each in df.columns]
         table = DataTable(source=source,columns=columns, width=2000, height=250, editable=True)
         # button to download table as tsv/excel
-        button = Button(label="Download table as csv", button_type="success")
-        button.js_on_event("button_click", CustomJS(args=dict(source=source),
-                                                    code=open("F:/matrisomedb2.0/db_script/ptm_button.js").read()))
+        button = Button(label="Download PTM table as CSV", button_type="success", width=300)
+        button.js_on_event("button_click", CustomJS(args=dict(source=source, prot=prot),
+                                                    code=js_code))
         controls = column(table,button)
 
         output_file(output_base+prot+'_ptmtable.html')
         save(controls)
 
 
-def ptm_table_bokeh3(sample_data, protein_dict, output_base):
+def ptm_table_bokeh3(sample_data, output_base, js_code):
     """
     show ptm positions for each protein
     :param id_ptm_idx_dict:
@@ -802,10 +838,19 @@ def ptm_table_bokeh3(sample_data, protein_dict, output_base):
             columns = [TableColumn(field=each,title=each)
                         for each in df.columns]
             table = DataTable(source=source,columns=columns, width=1000, height=400, editable=True)
+
+            # add button to download table as tsv/excel
+            button = Button(label="Download PTM table as CSV", button_type="success", width=300)
+            button.js_on_event("button_click", CustomJS(args=dict(source=source,prot=sample+'_'+prot),
+                                                        code=js_code))
+            controls = column(table, button)
+
             output_file(output_base+sample.replace('/','-')+'_'+prot+'_ptmtable.html')
-            save(table)
+            save(controls)
+
 
 if __name__ == '__main__':
+
     import json
     import pickle
     import os
@@ -858,7 +903,7 @@ if __name__ == '__main__':
                  html_out='F:/matrisomedb2.0/Q61001_test.html')
     """
 
-    # matrisomeDB batch
+    ### matrisomeDB batch
     with open('F:/matrisomedb2.0/smart_domain_0908.json') as f_o:
         info_dict = json.load(f_o)
     #
@@ -886,13 +931,15 @@ if __name__ == '__main__':
     # html_tempalte.close()
 
     # PTM tables sample
-    # sample_data = pickle.load(open('F:\matrisomedb2.0/sample.data','rb'))
-    output_base = r'F:\matrisomedb2.0/table_htmls_2/'
+    js_code = open('F:/matrisomedb2.0/db_script/ptm_button.js').read()
+    sample_data = pickle.load(open('F:\matrisomedb2.0/sample.data','rb'))
+    # output_base = r'F:\matrisomedb2.0/table_htmls_2/'
     # ptm_table_bokeh2(sample_data,protein_dict,protein_info_dict,output_base)
-    # ptm_table_bokeh3(sample_data,protein_dict,output_base)
+    # ptm_table_bokeh3(sample_data,output_base='F:/matrisomedb2.0/table_htmls/',js_code=js_code)
 
     # ptm table global
-    ptm_table_bokeh2(glob_ptm_map,output_base='F:/matrisomedb2.0/table_htmls/')
+
+    # ptm_table_bokeh2(glob_ptm_map,output_base='F:/matrisomedb2.0/table_htmls/',js_code=js_code)
 
     # domain html generation
     """
@@ -947,23 +994,25 @@ if __name__ == '__main__':
     """
 
     # one protein test
-    """
+
     start = time.time()
-    out_put = r'F:\matrisomedb2.0/test/test2.html'
-    sample = 'Pancreatic Ductal Adenocarcinoma Xenograft (BxPC3)'
-    prot = 'P21980'
+    out_put = r'F:\matrisomedb2.0/test/Basement membrane of lens capsule_P08572.html'
+    sample = 'Basement membrane of lens capsule'
+    prot = 'P08572'
     smart_url = 'https://smart.embl.de/smart/show_motifs.pl?ID=' + prot
-    sample_psm_list = pickle.load(open(r'F:\matrisomedb2.0/data_for_test/sample_psm_list.p','rb'))
-    sample_psm_dict = psmlist_todict(sample_psm_list)
+    # sample_psm_list = pickle.load(open(r'F:\matrisomedb2.0/data_for_test/sample_psm_list.p','rb'))
+    # sample_psm_dict = psmlist_todict(sample_psm_list)
     # protein_dict = {prot:protein_dict[prot],'XXX':'XXX','AAA':'AAA'}
     # global_psm_list = global_protein_psm_dict[prot]
     # glob_psm_dict = psmlist_todict(global_psm_list)
 
-    sample_prot_freq_dict = peptide_map(sample_psm_dict, protein_dict)[0]
+    # sample_prot_freq_dict = peptide_map(sample_psm_dict, protein_dict)[0]
+    sample_prot_freq_dict = sample_data[sample]['freq']
     # print (prot,len(sample_prot_freq_dict[prot]),len(protein_dict[prot]))
     # glob_prot_freq_dict = peptide_map(glob_psm_dict,protein_dict)[0]
 
-    sample_ptm_map = ptm_map(sample_psm_list, protein_dict)[0]
+    # sample_ptm_map = ptm_map(sample_psm_list, protein_dict)[0]
+    sample_ptm_map = sample_data[sample]['ptm']
     # glob_ptm_map = ptm_map(global_psm_list,protein_dict)[0]
 
     sample_seq_cov = seq_cov_gen(sample_prot_freq_dict[prot], sample_ptm_map[prot], protein_dict[prot])
@@ -989,4 +1038,3 @@ if __name__ == '__main__':
     with open(out_put,'w') as f_o:
         f_o.write(new_html)
     print(f'time for {prot}: {time.time() - start}')
-    """
