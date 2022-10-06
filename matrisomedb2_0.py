@@ -954,31 +954,59 @@ if __name__ == '__main__':
     # global_protein_psm_dict = json.load(open('F:/matrisomedb2.0/global_protein_psm.dict_fromsample.json','r'))
     # sample_prot_psm_dict = json.load(open('F:/matrisomedb2.0/sample_protein_psm_dict_3.json','r')) # sample name has illgal charcters
     # pickle.dump(sample_prot_psm_dict['Pancreatic Ductal Adenocarcinoma Xenograft (BxPC3)']['P21980'],open(r'F:\matrisomedb2.0/data_for_test/sample_psm_list.p','wb'),protocol=5)
+
+    ## map glob psm into freq_array_dict and ptm index dict
     # all_psm = pickle.load(open('F:/matrisomedb2.0/all_psm.p','rb'))
+    # all_psm = pickle.load(open('F:/matrisomedb2_0_revise/all_psm_result9.p','rb'))
     # print (len(all_psm))
     # all_psm_dict = psmlist_todict(all_psm)
     # print ('convet psm list to pep_psm dict')
     # glob_prot_freq_dict = peptide_map(all_psm_dict,protein_dict)[0]
-    # pickle.dump(glob_prot_freq_dict, open('F:/matrisomedb2.0/glob_prot_freq_dict.p', 'wb'),protocol=5)
+    # pickle.dump(glob_prot_freq_dict, open('F:/matrisomedb2_0_revise/glob_prot_freq_dict_result9.p', 'wb'),protocol=5)
     # glob_prot_ptm_ind_dict = ptm_map2(all_psm_dict,protein_dict,regex_list)
-    # pickle.dump(glob_prot_ptm_ind_dict,open('F:/matrisomedb2.0/glob_prot_ptm_ind_dict.p','wb'),protocol=5)
+    # pickle.dump(glob_prot_ptm_ind_dict,open('F:/matrisomedb2_0_revise/glob_prot_ptm_ind_dict.p','wb'),protocol=5)
 
+    ## map sample psm into freq array dict and ptm index dict
+    # sample_prot_psm_dict = json.load(open('F:/matrisomedb2_0_revise/sample_protein_psm_dict_result9.json','r'))
+    # sample_data = {}
+    # for sample in sample_prot_psm_dict:
+    #     print (sample)
+    #     sample_dict = {}
+    #     psm_list = []
+    #     for prot in sample_prot_psm_dict[sample]:
+    #         psm_list+=sample_prot_psm_dict[sample][prot]
+    #     if len(psm_list)!=0:
+    #         psm_dict = psmlist_todict(psm_list)
+    #         prot_freq_dict = peptide_map(psm_dict,protein_dict)[0]
+    #         sample_dict['freq'] = prot_freq_dict
+    #         prot_ptm_ind_dict = ptm_map2(psm_dict,protein_dict,regex_list)
+    #         sample_dict['ptm'] = prot_ptm_ind_dict
+    #         sample_data[sample] = sample_dict
+    # pickle.dump(sample_data,open('F:/matrisomedb2_0_revise/sample_result9.data','wb'),protocol=5)
 
-    glob_prot_freq_dict = pickle.load(open('F:/matrisomedb2.0/glob_prot_freq_dict.p','rb'))
-    glob_ptm_map = pickle.load(open('F:/matrisomedb2.0/glob_prot_ptm_ind_dict.p','rb'))
-    html_tempalte = open(r'F:\matrisomedb2.0\test/domain_seq_cov_html_template_0909.html', 'r')
-    html_tempalte_read = html_tempalte.read()
+    # glob_prot_freq_dict = pickle.load(open('F:/matrisomedb2.0/glob_prot_freq_dict.p','rb'))
+    # glob_ptm_map = pickle.load(open('F:/matrisomedb2.0/glob_prot_ptm_ind_dict.p','rb'))
+    # html_tempalte = open(r'F:\matrisomedb2.0\test/domain_seq_cov_html_template_0909.html', 'r')
+    # html_tempalte_read = html_tempalte.read()
     # html_tempalte.close()
 
     ## domain cov/PTM CSVs
-    for prot in glob_prot_freq_dict:
-        print (prot)
-        folder = 'F:/matrisomedb2.0/domain_cov_ptm_csv/'
-        domain_cov_ptm_csv(glob_prot_freq_dict,glob_ptm_map,info_dict,prot,folder+prot)
+    folder = 'F:/matrisomedb2_0_revise/domain_cov_ptm_csv/'
+    # for prot in glob_prot_freq_dict:
+    #     print (prot)
+    #     domain_cov_ptm_csv(glob_prot_freq_dict,glob_ptm_map,info_dict,prot,folder+prot)
+
+    sample_data = pickle.load(open('F:/matrisomedb2_0_revise/sample_result9.data','rb'))
+    for sample in sample_data:
+        print (sample)
+        prot_freq_dict, ptm_map = sample_data[sample]['freq'], sample_data[sample]['ptm']
+        for prot in prot_freq_dict:
+            domain_cov_ptm_csv(prot_freq_dict,ptm_map,info_dict,prot,folder+sample.replace('/', '_').replace('\u0394','') + '_' + prot)
+
 
     # PTM tables sample
-    js_code = open('F:/matrisomedb2.0/db_script/ptm_button.js').read()
-    sample_data = pickle.load(open('F:\matrisomedb2.0/sample.data','rb'))
+    # js_code = open('F:/matrisomedb2.0/db_script/ptm_button.js').read()
+    # sample_data = pickle.load(open('F:\matrisomedb2.0/sample.data','rb'))
     # output_base = r'F:\matrisomedb2.0/table_htmls_2/'
     # ptm_table_bokeh2(sample_data,protein_dict,protein_info_dict,output_base)
     # ptm_table_bokeh3(sample_data,output_base='F:/matrisomedb2.0/table_htmls/',js_code=js_code)
