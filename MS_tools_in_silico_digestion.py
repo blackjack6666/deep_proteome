@@ -86,16 +86,72 @@ def peptide_generator(input):
     return dict_peptide #returns dictionary to pool
 
 
+def shuffle_reverse(protein_peptide_dict):
+    """
+    reverse each inslico peptide in input, and concatate together to build a reverse
+    :param protein_peptide_dict: {protein_id:(peptide1,peptide2,peptide3...)}, could be from peptide_generator
+    :return:
+    """
+    protein_reverse_seq_dict = {}
+    pep_rev_pep_dict = {}
+    for prot in protein_peptide_dict:
+        rev_seq = ''.join([pep[0]+pep[1:-1][::-1]+pep[-1] for pep in protein_peptide_dict[prot]])
+        protein_reverse_seq_dict[prot] = rev_seq
+    return protein_reverse_seq_dict
+
+
+def shuffle_rev_fasta_gen(fasta_file,protein_peptide_dict,output):
+    # shuffle revese each peptide
+    prot_rev_dict = shuffle_reverse(protein_peptide_dict)
+    # get id and description from fasta file
+    id_descript_dict = read_description(fasta_file)
+    with open(output,'w') as f_o:
+        for prot in prot_rev_dict:
+            rev_seq = prot_rev_dict[prot]
+            block = range(0, len(rev_seq) + 60, 60)
+            f_o.write('>Rev_' + id_descript_dict[prot][0] + '|' + prot + '|' + id_descript_dict[prot][1] + '\n')
+            for i in range(len(block) - 1):
+                f_o.write(rev_seq[block[i]:block[i+1]]+'\n')
+    print (f'Reverse fasta file output to {output}')
+    return 0
+
+
+def pin_file_process(pin_file):
+    """
+    process the raw searched result .pin file from msfragger, competition between each target and decoy peptide
+    :param pin_file: raw file after search with msfragger
+    :return:
+    """
+    from collections import defaultdict
+
+    target,decoy = [],[]
+    peptide_eval_dict = defaultdict(set)
+    with open(pin_file,'r') as f_o:
+        next(f_o)
+        for line in f_o:
+            line_split = line.split('\t')
+            label, peptide, log10e_val = line_split[1],line_split[18][2:-2], float(line_split[8])
+            peptide_eval_dict[peptide].add(log10e_val)
+            if label == '1':
+                target.append(peptide)
+            else:
+                decoy.append(peptide)
+    for each in target:
+        rev = each[0]+each[1:-1][::-1]+each[-1]
+        if rev in decoy:
+            print (each,rev)
 
 
 if __name__ == '__main__':
     import MS_tools_parameters
-    from protein_coverage import fasta_reader2, fasta_reader
+    from protein_coverage import fasta_reader2, fasta_reader,read_description
     import pickle as ppp
     start_time = time.time()
     fasta_file = 'D:/data/pats/human_fasta/uniprot-proteome_UP000005640_sp_only.fasta'
     # print("loading: " + MS_tools_parameters.fasta_filename)
     # dict_fasta = create_fasta_dict(MS_tools_parameters.fasta_filename) # Creates the dictonary of proteins [protein_ID : sequence]
+    ### in-silico digestion
+    """
     dict_fasta = fasta_reader(fasta_file)
     print ("done")
     print (time.time() - start_time)
@@ -113,6 +169,14 @@ if __name__ == '__main__':
     peptide_set = {pep for v in dict_peptides.values() for pep in v}
     print (len(peptide_set))
     ppp.dump(dict_peptides, open('D:/data/native_protein_digestion/inslico_digest_human_fasta.p','wb'),protocol=-1)
+    """
+    # prot_peptides_dict = ppp.load(open('D:/data/native_protein_digestion/inslico_digest_human_fasta.p','rb'))
+    # shuffle_rev_fasta_gen(fasta_file,prot_peptides_dict,'D:/data/pats/human_fasta/human_sp_only_shuffle_rev10112022.fasta')
+
+    pin_file = r'D:\data\pats\human_fasta\test_custom_rev/Tryp_37C_4h.pin'
+    pin_file_process(pin_file)
+
+    ### generate shuffle reverse fasta file
 
 
     """
