@@ -116,9 +116,10 @@ def shuffle_rev_fasta_gen(fasta_file,protein_peptide_dict,output):
     return 0
 
 
-def pin_file_process(pin_file):
+def pin_file_process(pin_file,new_pin_file):
     """
-    process the raw searched result .pin file from msfragger, competition between each target and decoy peptide
+    process the raw searched result .pin file from msfragger, competition between each target and decoy peptide.
+    delete entries that lose competition, output new pin file
     :param pin_file: raw file after search with msfragger
     :return:
     """
@@ -126,20 +127,123 @@ def pin_file_process(pin_file):
 
     target,decoy = [],[]
     peptide_eval_dict = defaultdict(set)
-    with open(pin_file,'r') as f_o:
+    target_keep = set()
+    decoy_delete = set()
+    target_delete = set()
+    decoy_keep = set()
+
+    with open(pin_file,'r',newline='\n') as f_o:
         next(f_o)
         for line in f_o:
             line_split = line.split('\t')
-            label, peptide, log10e_val = line_split[1],line_split[18][2:-2], float(line_split[8])
+            label, peptide, log10e_val = line_split[1],line_split[19][2:-2], float(line_split[8])
             peptide_eval_dict[peptide].add(log10e_val)
             if label == '1':
                 target.append(peptide)
             else:
                 decoy.append(peptide)
+    # only keep minimum eval
+    peptide_eval_dict = {p:min(peptide_eval_dict[p]) for p in peptide_eval_dict}
+    # score competition between target and decoy psm, the lower e value, the higher confidence
+    count = 0
     for each in target:
+        count+=1
+        print (count)
         rev = each[0]+each[1:-1][::-1]+each[-1]
-        if rev in decoy:
-            print (each,rev)
+        if rev in decoy and peptide_eval_dict[each]<peptide_eval_dict[rev]: # if target scores higher than decoy
+            target_keep.add(each)
+            decoy_delete.add(rev)
+        if rev in decoy and peptide_eval_dict[each]>peptide_eval_dict[rev]: # if target scores lower than decoy
+            decoy_keep.add(rev)
+            target_delete.add(each)
+    print (decoy_delete)
+    # re-compile pin file, delete entries with lower score after target-decoy competition
+    pin_read_lines = open(pin_file,'r',newline='\n').readlines()
+
+    new_file = pin_read_lines[0]
+    for line in pin_read_lines[1:]:
+        line_split = line.split('\t')
+        log10e_val,peptide = float(line_split[8]),line_split[19][2:-2]
+        if peptide in target_keep:
+            # if log10e_val == peptide_eval_dict[peptide]: # only keep smallest e val
+            new_file += line
+            # else:
+            #     continue
+        elif peptide in target_delete:
+
+            continue
+        elif peptide in decoy_keep:
+            # if log10e_val == peptide_eval_dict[peptide]:
+            new_file += line
+            # else:
+            #     continue
+        elif peptide in decoy_delete:
+            continue
+        else:
+            new_file += line
+    with open(new_pin_file,'w',newline='\n') as f_w:
+        f_w.write(new_file)
+
+    return 0
+
+
+def pin_f_process2(pin_file,new_pin_file):
+    from collections import Counter, defaultdict
+    import numpy as np
+    target_dict = defaultdict(list)
+    decoy_dict = defaultdict(list)
+    with open(pin_file, 'r', newline='\n') as f_o:
+        next(f_o)
+        for line in f_o:
+            line_split = line.split('\t')
+            spec, label, peptide, log10e_val = line_split[0], line_split[1], line_split[19][2:-2], float(line_split[8])
+            peptide_freq = Counter(peptide)
+            peptide_freq_str = ''.join([a+str(peptide_freq[a]) for a in sorted(peptide_freq)])
+            if label == '1':
+                target_dict[peptide_freq_str].append((spec,log10e_val))
+            else:
+                decoy_dict[peptide_freq_str].append((spec,log10e_val))
+    # getting spectra with minimum e val
+    target_min_eval_dict = {}
+    decoy_min_eval_dict = {}
+    for pep_freq in target_dict:
+        spec_list, log10_eval_list = zip(*target_dict[pep_freq])
+        # min_idx = np.argmin(log10_eval_list)
+        target_min_eval_dict[pep_freq]=np.min(log10_eval_list)
+
+    for decoy_pep_freq in decoy_dict:
+        spec_list, log10_eval_list = zip(*decoy_dict[decoy_pep_freq])
+        # min_idx = np.argmin(log10_eval_list)
+        decoy_min_eval_dict[decoy_pep_freq]=np.min(log10_eval_list)
+
+    pin_read_lines = open(pin_file, 'r', newline='\n').readlines()
+    new_file = pin_read_lines[0]
+    count = 0
+    for line in pin_read_lines[1:]:
+
+        line_split = line.split('\t')
+        label, log10e_val = line_split[1], float(line_split[8])
+        peptide = line_split[19][2:-2]
+        peptide_freq = Counter(peptide)
+        peptide_freq_str = ''.join([a + str(peptide_freq[a]) for a in sorted(peptide_freq)])
+        # target psm
+        if label == '1':
+            if peptide_freq_str in decoy_min_eval_dict:
+                # print (peptide_freq_str)
+                new_file+=line if log10e_val<decoy_min_eval_dict[peptide_freq_str] else ''
+            else:
+                new_file+=line
+        # decoy psm
+        else:
+            if peptide_freq_str in target_min_eval_dict:
+                new_file+=line if log10e_val<target_min_eval_dict[peptide_freq_str] else ''
+            else:
+                new_file+=line
+        count+=1
+        print (count)
+    with open(new_pin_file,'w',newline='\n') as f_w:
+        f_w.write(new_file)
+    return 0
 
 
 if __name__ == '__main__':
@@ -173,8 +277,8 @@ if __name__ == '__main__':
     # prot_peptides_dict = ppp.load(open('D:/data/native_protein_digestion/inslico_digest_human_fasta.p','rb'))
     # shuffle_rev_fasta_gen(fasta_file,prot_peptides_dict,'D:/data/pats/human_fasta/human_sp_only_shuffle_rev10112022.fasta')
 
-    pin_file = r'D:\data\pats\human_fasta\test_custom_rev/Tryp_37C_4h.pin'
-    pin_file_process(pin_file)
+    pin_file = r'D:\data\pats\human_fasta\regular_top10N/Tryp_37C_4h.pin'
+    pin_f_process2(pin_file, r'D:\data\pats\human_fasta\regular_top10N/Tryp_37C_4h_custom.pin')
 
     ### generate shuffle reverse fasta file
 
