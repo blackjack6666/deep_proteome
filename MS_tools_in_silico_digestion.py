@@ -246,6 +246,26 @@ def pin_f_process2(pin_file,new_pin_file):
     return 0
 
 
+def hyper_score_plot(psm_tsv_list):
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    color_dict = {0:'g',1:"r",2:'b'}
+    count = 0
+    for psm_tsv in psm_tsv_list:
+        hyperscore = pd.read_csv(psm_tsv,sep='\t')['Hyperscore'].tolist()
+        try:
+            plt.hist(hyperscore,bins=100, facecolor=color_dict[count],alpha=0.6, label=psm_tsv.split('/')[-2])
+        except KeyError:
+            count = 0
+            plt.hist(hyperscore, bins=100, facecolor=color_dict[count], alpha=0.6, label=psm_tsv.split('/')[-2])
+        count += 1
+    plt.legend(loc="upper right")
+    plt.xlabel('hyper score')
+    plt.ylabel('frequency')
+    plt.show()
+
+
 if __name__ == '__main__':
     import MS_tools_parameters
     from protein_coverage import fasta_reader2, fasta_reader,read_description
@@ -277,8 +297,10 @@ if __name__ == '__main__':
     # prot_peptides_dict = ppp.load(open('D:/data/native_protein_digestion/inslico_digest_human_fasta.p','rb'))
     # shuffle_rev_fasta_gen(fasta_file,prot_peptides_dict,'D:/data/pats/human_fasta/human_sp_only_shuffle_rev10112022.fasta')
 
-    pin_file = r'D:\data\pats\human_fasta\regular_top10N/Tryp_37C_4h.pin'
-    pin_f_process2(pin_file, r'D:\data\pats\human_fasta\regular_top10N/Tryp_37C_4h_custom.pin')
+    # pin_file = r'D:\data\pats\human_fasta\regular_top10N/Tryp_37C_4h.pin'
+    # pin_f_process2(pin_file, r'D:\data\pats\human_fasta\regular_top10N/Tryp_37C_4h_custom.pin')
+    hyper_score_plot(['D:/data/pats/human_fasta/doub_comp_top10N_custom/psm.tsv',
+                      'D:/data/pats/human_fasta/doub_comp_top10N/psm.tsv'])
 
     ### generate shuffle reverse fasta file
 

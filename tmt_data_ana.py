@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 # new_df.to_csv('F:/native_digestion/Uchicago_TMT/tmt_search_0824/tmt-report/abundance_peptide_GN_normalized_0824.tsv',sep='\t')
 
 
-### combine peptides intensities (divided by pool) from 3 tmt peptide.tsv together
+### combine peptides intensities (divided by pool) from 3 tmt peptide.tsv together, * to do: pool value needs to be normalized?
 """
 df1 = pd.read_csv('F:/native_digestion/Uchicago_TMT/tmt_search_0826/TMT1/peptide.tsv',delimiter='\t',index_col=0)
 df2 = pd.read_csv('F:/native_digestion/Uchicago_TMT/tmt_search_0826/TMT2/peptide.tsv',delimiter='\t',index_col=0)
@@ -50,9 +50,18 @@ for pep in pep_set:
             df.at[pep,last_10_column[1:]] = [0]*9
 df.to_csv('F:/native_digestion/Uchicago_TMT/tmt_search_0826/pep_normalized_int.tsv',sep='\t')
 """
-### normalize tmt ratio between 0-1
+### combine trypsin/chymotrypsin data from pep_normalized_int.tsv
 """
 df = pd.read_csv('F:/native_digestion/Uchicago_TMT/tmt_search_0826/pep_normalized_int.tsv',delimiter='\t',index_col=0)
+array = df.to_numpy()
+array_trypsin, array_chymo = array[:,:12], array[:,14:26]
+combined_array = np.add(array_trypsin,array_chymo)
+new_df = pd.DataFrame(combined_array,index=df.index, columns=[str(i)+'h_combined' for i in range(1,13)])
+new_df.to_csv('F:/native_digestion/Uchicago_TMT/tmt_search_0826/pep_normalized_int_combined.tsv',sep='\t')
+"""
+### normalize tmt ratio between 0-1
+"""
+df = pd.read_csv('F:/native_digestion/Uchicago_TMT/tmt_search_0826/pep_normalized_int_combined.tsv',delimiter='\t',index_col=0)
 
 array = df.to_numpy()
 max_int = np.max(array,axis=1) # 1d array
@@ -60,12 +69,14 @@ max_int_array = np.reshape(np.repeat(max_int,df.shape[1]),(df.shape[0],df.shape[
 
 new_array = np.divide(array,max_int_array)
 new_df = pd.DataFrame(new_array, index=df.index,columns=df.columns).fillna(0)
-# new_df.to_csv('F:/native_digestion/Uchicago_TMT/tmt_search_0826/peptide_tmt_normalized_0_1.tsv',sep='\t')
+new_df.to_csv('F:/native_digestion/Uchicago_TMT/tmt_search_0826/peptide_tmt_normalized_combined_0_1.tsv',sep='\t')
 """
 ### plot
+
 import pymannkendall as mk
-df = pd.read_csv('F:/native_digestion/Uchicago_TMT/tmt_search_0826/distance_tmt_weighted_0826.tsv',delimiter='\t',index_col=0)
-new_df = df.loc[:,[each for each in list(df.columns) if 'chymo' in each][:-1]]
+df = pd.read_csv('F:/native_digestion/Uchicago_TMT/tmt_search_0826/distance_tmt_weighted_combined_1018.tsv',delimiter='\t',index_col=0)
+# new_df = df.loc[:,[each for each in list(df.columns) if 'chymo' in each][:-1]]
+new_df = df
 mk_result = mk.original_test(new_df.median().tolist())
 print(mk_result)
 #
@@ -78,5 +89,4 @@ fig,axs = plt.subplots(figsize=(10,6))
 sns.boxplot(data=df_plot,ax=axs, x='sample',y='tmt_weight_distance',linewidth=2.5)
 axs.set_xticklabels(list(new_df.columns), fontsize=10,ha="center", rotation=45)
 plt.show()
-
 
