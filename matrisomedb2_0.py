@@ -1,3 +1,7 @@
+"""
+source code of some new functions in MatrisomeDB2.0
+"""
+
 from multiprocessing_naive_algorithym import *
 from aho_corasick import automaton_trie, automaton_matching
 from bokeh.models import HoverTool, ColumnDataSource, FactorRange, LinearColorMapper,ColorBar,BasicTicker,PrintfTickFormatter, Plot, Rect,CustomJS, Legend, LegendItem,SingleIntervalTicker, Label, LabelSet, TableColumn, DataTable, HTMLTemplateFormatter, Button

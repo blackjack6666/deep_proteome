@@ -36,6 +36,6 @@ def fasta_reverse_generator(fasta_file_in, fasta_file_out):
 if __name__=='__main__':
     from glob import glob
 
-    fasta_file_in = r'F:\sned1_biotinalytion/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta'
+    fasta_file_in = r'F:\Colon/rFS_Homo_sapiens_0318_canonical_and_isoform.fasta'
 
     fasta_reverse_generator(fasta_file_in,fasta_file_in.replace('.fasta','_rev.fasta'))
