@@ -160,6 +160,37 @@ def prosit_prepare():
     new_df.to_csv('F:/Colon/overlapped_prosit.csv')
 
 
+def prepare_data():
+    # prepare a data structure for cos sim cal. {peptidecharge:{file:[spec1,spec2...]}}
+    df = pd.read_csv('F:/Colon/overlapped_target_PSM_from_unfilter.csv')
+    info_dict = defaultdict(list)
+    for tp in df.itertuples():
+        psm = tp.PSM
+        clean_psm = re.sub('M\[15\.9949\]', 'M(ox)', psm)  # replace M oxidation with M(ox)
+        clean_psm = re.sub('C\[57\.0215\]', 'C', clean_psm)  # replace C[] with C
+        clean_psm = re.sub('n\[42\.0106\]', '', clean_psm)  # delete n-term acetylation
+        charge = str(tp.charge)
+        f_name, spec = tp.file_name, tp.spec_no
+        info_dict[clean_psm+charge].append((f_name,spec))
+    pep_file_spec_dict_of_dict = {}
+    for pep in info_dict:
+        f_spec_list_dict=defaultdict(list)
+        for each_tp in info_dict[pep]:
+            f_spec_list_dict[each_tp[0]].append(each_tp[1])
+        pep_file_spec_dict_of_dict[pep]=f_spec_list_dict
+    pickle.dump(pep_file_spec_dict_of_dict,open('F:/Colon/prosit/pep_file_spec_dict_of_dict.p','wb'))
+
+
+def copy_files(target_f_list, output_folder):
+    import os
+    import shutil
+    for f in target_f_list:
+        f_name = f.split('\\')[-1]
+        if not os.path.exists(os.path.join(output_folder,f_name)):
+            print (f)
+            shutil.copy(f,output_folder)
+
+
 if __name__ == '__main__':
     import pickle
     # combined_dict = {}
@@ -191,4 +222,9 @@ if __name__ == '__main__':
     # pin_f_list = glob('F:/Colon/target_search*/*/*_edited.pin')
     # read_pin_into_dict(pin_f_list,pickle_output='F:/Colon/target_search_pin_files.p')
 
-    prosit_prepare()
+    # prepare_data()
+
+    # copy pin files to a folder
+    pin_f_list = glob('F:/Colon/target_search*/*/*_edited.pin')
+    output_folder = 'F:/Colon/unfiltered_pin_files/target_search'
+    copy_files(pin_f_list,output_folder)
