@@ -501,6 +501,7 @@ plt.show()
 """
 
 ### nasf from combined protein tsv file
+"""
 combined_df = pd.read_csv('F:/sned1_biotinalytion/07072022/search/combined_protein.tsv',delimiter='\t',index_col=0)
 nsaf_df = pd.DataFrame(columns=['Protein ID','Gene', 'Protein Length','Description','ColI_FullReaction nsaf',
                                 'ColI_NoBiotin nsaf','ColI_NoPrimary nsaf','FN_FullReaction nsaf',
@@ -522,3 +523,14 @@ nsaf_df['Protein Length'] = combined_df['Protein Length'].tolist()
 nsaf_df['Description'] = combined_df['Description'].tolist()
 
 nsaf_df.to_excel('F:/sned1_biotinalytion/07072022/search/nsaf.xlsx')
+"""
+
+### sned1 biotinlyation
+mass_shift_list = []
+with open('F:/sned1_biotinalytion/11082022/open_search1119_2/WT_cdmplus_300ng/WT_cdmplus_300ng.pin','r') as f_o:
+    next(f_o)
+    for line in f_o:
+        if 'Rev_' not in line and 'Y[' in line:
+            mass_shift = line.split('\t')[6]
+            mass_shift_list.append(float(mass_shift))
+print (sorted(mass_shift_list), len(mass_shift_list))
