@@ -8,7 +8,18 @@ import seaborn as sns
 from glob import glob
 from collections import defaultdict
 import pickle as pk
+import matplotlib.cm as cm
+from scipy.ndimage.filters import gaussian_filter
+from protein_coverage import fasta_reader
+from statannot import add_stat_annotation
 
+
+ecm_class_color_dict = {"Collagens": '#0584B7', 'ECM-affiliated Proteins':'#F4511E',
+                        'ECM Regulators':"#F9A287","Secreted Factors":"#FFE188",
+                        "ECM Glycoproteins":"#133463", "Proteoglycans":"#59D8E6"}
+
+sort_category = ["ECM Glycoproteins","Collagens","Proteoglycans","ECM-affiliated Proteins","ECM Regulators",
+                  "Secreted Factors"]
 
 def qc_check():
     """
@@ -199,9 +210,88 @@ def coverage_calculation():
     aggre_cov_df.to_csv('F:/fred_time_lapse/aggre_cov.tsv',sep='\t')
 
 
+def myplot(x, y, s, bins=1000):
+
+    # scatter density plot
+    heatmap, xedges, yedges = np.histogram2d(x, y, bins=bins)
+    heatmap = gaussian_filter(heatmap, sigma=s)
+
+    extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+    return heatmap.T, extent
+
+
+def coverage_plot():
+    ecm_protein_dict = fasta_reader('F:/matrisomedb2.0/mat.fasta')
+    ecm_prot_list = [k for k in ecm_protein_dict.keys()]
+    cov_df = pd.read_csv('F:/fred_time_lapse/aggre_cov.tsv',sep='\t',index_col=0)
+    ecm_cov_df = cov_df[cov_df.index.isin(ecm_prot_list)]
+    # ecm_cov_df.to_csv('F:/fred_time_lapse/ecm_aggre_cov.tsv',sep='\t')
+    # df_fillna = cov_df.fillna(0)  # all proteins
+    df_fillna = ecm_cov_df.fillna(0) # only ECM proteins from mat.fasta
+
+    x = np.log2(df_fillna['144_240_aggre_cov']+1)
+    y = np.log2(df_fillna['144_1080_cov']+1)
+    fig, ax = plt.subplots()
+    img, extent = myplot(x, y, 16)
+    ax.plot(x, y, 'k.', markersize=3)
+    ax.imshow(img, extent=extent, origin='lower', cmap=cm.binary)
+    ax.set_xlabel('log2 (4h aggre. cov%)', fontsize=8)
+    ax.set_ylabel('log2 (18h std. cov%)', fontsize=8)
+    # ax.set_xticks(range(7))
+    # ax.set_xticklabels([str(i) for i in range(7)])
+    # ax.set_yticks(range(7))
+    # ax.set_yticklabels([str(i) for i in range(7)])
+    # plt.xlim(0, 6.5)
+    # plt.ylim(0, 6.5)
+    ax.set_aspect('equal', adjustable='box')
+    ax.plot(ax.get_xlim(), ax.get_ylim(), ls="--", c=".3")
+    plt.savefig('F:/fred_time_lapse/figures/ecm_cov_144_240agg_vs_1080.png', dpi=300)
+
+    plt.show()
+
+
+def category_cov_plot():
+    # plot sequence coverage for different categories
+    import json
+    # gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json','r'))
+    # ecm_cov_df = pd.read_csv('F:/fred_time_lapse/ecm_aggre_cov.tsv',sep='\t',index_col=0)
+    # gene_list = ecm_cov_df['gene'].tolist()
+    # ecm_catgory = [gene_category_dict[gene]["Category"] for gene in gene_list]
+    # ecm_sub_cat = [gene_category_dict[gene]["Sub"] for gene in gene_list]
+    # ecm_cov_df['category'] = ecm_catgory
+    # ecm_cov_df['sub_category'] = ecm_sub_cat
+    # ecm_cov_df.to_csv('F:/fred_time_lapse/ecm_aggre_cov.tsv',sep='\t')
+
+    ecm_cov_df = pd.read_csv('F:/fred_time_lapse/ecm_aggre_cov.tsv',sep='\t').fillna(0)
+    # violin plot for each category
+    fig,axs = plt.subplots(2,3,figsize=(10,5))
+    for each, ax in zip(sort_category, [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]):
+        color = ecm_class_color_dict[each]
+        sub_df = ecm_cov_df[ecm_cov_df['sub_category'] == each]
+        sub_df_plot = pd.DataFrame(
+            dict(agg_or_standard=['145_4h_agg'] * sub_df.shape[0] + ['145_18h'] * sub_df.shape[0],
+                 coverage=sub_df['145_240_aggre_cov'].tolist() + sub_df['145_1080_cov'].tolist()))
+        median_list = sub_df_plot.groupby(['agg_or_standard'])['coverage'].median().tolist()
+        x_pos_list = range(len(median_list))
+        n_list = ['n = %i' % (sub_df.shape[0]) for i in range(len(median_list))]
+        g = sns.violinplot(data=sub_df_plot, x='agg_or_standard', y='coverage', ax=axs[ax[0], ax[1]], color=color)
+        # label sample size
+        for i in range(len(median_list)):
+            axs[ax[0], ax[1]].text(x_pos_list[i] + 0.05, median_list[i], n_list[i])
+        add_stat_annotation(ax=axs[ax[0],ax[1]], data=sub_df_plot, x='agg_or_standard', y='coverage',
+                            box_pairs=[("145_4h_agg", "145_18h")],
+                            test='Wilcoxon', text_format='star',loc='inside', verbose=2,comparisons_correction='bonferroni')
+        axs[ax[0], ax[1]].set_xlabel('')
+        axs[ax[0], ax[1]].set_ylabel('')
+    plt.savefig('F:/fred_time_lapse/figures/ecm_cov_145_240agg_vs_1080_category.png',dpi=300)
+    # plt.show()
+
+
 if __name__=='__main__':
     # qc_check()
     # cv_box_plot()
     # pr_matrix_reader()
     # aggregate_psms()
-    coverage_calculation()
+    # coverage_calculation()
+    # coverage_plot()
+    category_cov_plot()
