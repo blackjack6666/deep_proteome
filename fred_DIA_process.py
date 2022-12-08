@@ -12,7 +12,7 @@ import matplotlib.cm as cm
 from scipy.ndimage.filters import gaussian_filter
 from protein_coverage import fasta_reader
 from statannot import add_stat_annotation
-
+import json
 
 ecm_class_color_dict = {"Collagens": '#0584B7', 'ECM-affiliated Proteins':'#F4511E',
                         'ECM Regulators':"#F9A287","Secreted Factors":"#FFE188",
@@ -252,7 +252,7 @@ def coverage_plot():
 
 def category_cov_plot():
     # plot sequence coverage for different categories
-    import json
+
     # gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json','r'))
     # ecm_cov_df = pd.read_csv('F:/fred_time_lapse/ecm_aggre_cov.tsv',sep='\t',index_col=0)
     # gene_list = ecm_cov_df['gene'].tolist()
@@ -287,6 +287,20 @@ def category_cov_plot():
     # plt.show()
 
 
+def qc_check_ecm_ratio():
+    # check total intensity of ECM entries/all entries
+    gene_int_files = glob('F:/fred_time_lapse/search*/report.gg_matrix*.tsv')
+    gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json','r'))
+    for each_f in gene_int_files:
+        gg_df = pd.read_csv(each_f,sep='\t')
+        gg_df_ecm = gg_df[gg_df['Genes'].isin(gene_category_dict)]
+        columns = gg_df.columns[1:]
+        for col in columns:
+            totol_int = gg_df[col].sum()
+            ecm_total_int = gg_df_ecm[col].sum()
+            print (col, ecm_total_int/totol_int)
+
+
 if __name__=='__main__':
     # qc_check()
     # cv_box_plot()
@@ -294,4 +308,5 @@ if __name__=='__main__':
     # aggregate_psms()
     # coverage_calculation()
     # coverage_plot()
-    category_cov_plot()
+    # category_cov_plot()
+    qc_check_ecm_ratio()
