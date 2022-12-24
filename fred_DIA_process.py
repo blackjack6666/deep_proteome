@@ -229,6 +229,7 @@ def myplot(x, y, s, bins=1000):
 
 
 def coverage_plot():
+    # scatter plot showing aggregated vs standard coverage
     ecm_protein_dict = fasta_reader('F:/matrisomedb2.0/mat.fasta')
     ecm_prot_list = [k for k in ecm_protein_dict.keys()]
     cov_df = pd.read_csv('F:/fred_time_lapse/analysis/gene_aggre_cov_1219.tsv',sep='\t',index_col=0)
@@ -277,13 +278,25 @@ def category_cov_plot():
 
         color = ecm_class_color_dict[each]
         sub_df = ecm_cov_df[ecm_cov_df['Sub'] == each]
+        aggre_cov, std_cov = sub_df['144_240_aggre_cov'].tolist(), sub_df['144_1080_cov'].tolist()
+        # hue condition
+        condition = []
+        for agg, std in zip(aggre_cov, std_cov):
+            if agg>0 and std==0:
+                condition.append('only in aggre.')
+            elif std>0 and agg==0:
+                condition.append('only in std.')
+            else:
+                condition.append('both')
         sub_df_plot = pd.DataFrame(
             dict(agg_or_standard=['144_4h_agg'] * sub_df.shape[0] + ['144_18h'] * sub_df.shape[0],
-                 coverage=sub_df['144_240_aggre_cov'].tolist() + sub_df['144_1080_cov'].tolist()))
+                 coverage=aggre_cov + std_cov,condition=condition*2))
         median_list = sub_df_plot.groupby(['agg_or_standard'])['coverage'].median().tolist()
         x_pos_list = range(len(median_list))
         n_list = ['n = %i' % (sub_df.shape[0]) for i in range(len(median_list))]
-        g = sns.violinplot(data=sub_df_plot, x='agg_or_standard', y='coverage', ax=axs[ax[0], ax[1]], color=color)
+        g = sns.swarmplot(data=sub_df_plot, x='agg_or_standard', y='coverage', ax=axs[ax[0], ax[1]],
+                          color=color,hue='condition',hue_order=['only in std.','only in aggre.','both'])
+        g.legend_.remove()
         # label sample size
         for i in range(len(median_list)):
             axs[ax[0], ax[1]].text(x_pos_list[i] + 0.05, median_list[i], n_list[i])
@@ -292,7 +305,54 @@ def category_cov_plot():
                             test='Wilcoxon', text_format='star',loc='inside', verbose=2,comparisons_correction='bonferroni')
         axs[ax[0], ax[1]].set_xlabel('')
         axs[ax[0], ax[1]].set_ylabel('')
-    plt.savefig('F:/fred_time_lapse/figures/ecm_cov_144_240agg_vs_1080_category_1222.png',dpi=300)
+    plt.savefig('F:/fred_time_lapse/figures/ecm_cov_144_240agg_vs_1080_category_1223_swarm.png',dpi=300)
+    # plt.show()
+
+
+def dot_plot_connecting():
+    # plot dot plots and connecting the dots for sequence coverage
+    ecm_cov_df = pd.read_csv('F:/fred_time_lapse/analysis/gene_aggre_cov_1219.tsv', sep='\t').fillna(0)
+    fig, axs = plt.subplots(2, 3, figsize=(8, 5))
+    for each, ax in zip(sort_category, [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]):
+
+        color = ecm_class_color_dict[each]
+        sub_df = ecm_cov_df[ecm_cov_df['Sub'] == each]
+        aggre_cov_list, std_cov_list = sub_df['144_240_aggre_cov'].tolist(), sub_df['144_1080_cov'].tolist()
+        sub_df_plot = pd.DataFrame(
+            dict(agg_or_standard=['144_4h_agg'] * sub_df.shape[0] + ['144_18h'] * sub_df.shape[0],
+                 coverage=aggre_cov_list + std_cov_list))
+        median_list = sub_df_plot.groupby(['agg_or_standard'])['coverage'].median().tolist()
+        x_pos_list = range(len(median_list))
+        n_list = ['n = %i' % (sub_df.shape[0]) for i in range(len(median_list))]
+        x_agg, x_std = np.random.normal(0,0.05,size=len(aggre_cov_list)), np.random.normal(1,0.05,size=len(std_cov_list))
+
+        # boxplot
+        axs[ax[0], ax[1]].boxplot([aggre_cov_list,std_cov_list],positions=[0,1], widths=(0.5,0.5), showfliers=False)
+
+        # plot dots
+        for x, y in zip([x_agg, x_std],[aggre_cov_list,std_cov_list]):
+            axs[ax[0], ax[1]].plot(x,y,'o',markersize=5,alpha=0.6,color=color)
+
+        # connecting dots
+        for x1,y1,x2,y2 in zip(x_agg,aggre_cov_list,x_std,std_cov_list):
+            axs[ax[0], ax[1]].plot([x1,x2],[y1,y2],color=color, linestyle='--', alpha=0.3)
+
+        # label sample size
+        # for i in range(len(median_list)):
+        #         #     axs[ax[0], ax[1]].text(x_pos_list[i] + 0.05, median_list[i], n_list[i])
+        axs[ax[0], ax[1]].text(0.01,0.99,n_list[0], ha='left',va='top',transform=axs[ax[0], ax[1]].transAxes)
+
+        # label statistics
+        add_stat_annotation(ax=axs[ax[0], ax[1]], data=sub_df_plot, x='agg_or_standard', y='coverage',
+                            box_pairs=[("144_4h_agg", "144_18h")],
+                            test='Wilcoxon', text_format='star', loc='inside', verbose=2,
+                            comparisons_correction='bonferroni')
+        axs[ax[0], ax[1]].set_xlim([-0.5, 1.5])
+        axs[ax[0], ax[1]].set_xticks([0,1])
+        axs[ax[0], ax[1]].set_xticklabels(['4h_agg','18h_std'], fontsize=10)
+        axs[ax[0], ax[1]].set_xlabel('')
+        axs[ax[0], ax[1]].set_ylabel('')
+    plt.savefig('F:/fred_time_lapse/figures/ecm_cov_144_240agg_vs_1080_category_1223_dotsconnect.png', dpi=300)
     # plt.show()
 
 
@@ -359,7 +419,9 @@ def table_output():
                     # df.loc[gene,sample+std] = str(set(gene_f_psm_dict_of_dict[gene][sample+std]))
     df.to_csv(base_path+'analysis/gene_f_intensity_replicates_1222.tsv',sep='\t')
 
+
 if __name__=='__main__':
+    from protein_coverage import fasta_reader_gene
     # qc_check()
     # cv_box_plot()
     # pr_matrix_reader()
@@ -367,8 +429,8 @@ if __name__=='__main__':
     # coverage_calculation()
     # coverage_plot()
     # category_cov_plot()
+    dot_plot_connecting()
     # qc_check_ecm_ratio()
     # psm_dict = pk.load(open('F:/fred_time_lapse/analysis/prot_f_rep_combined_peptide_dict_1219.p', 'rb'))
     # print (psm_dict['Q8TER0']['145_1080'])
-    table_output()
-
+    # table_output()

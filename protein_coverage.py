@@ -36,11 +36,21 @@ def fasta_reader(fasta_file_path):
 
 
 def fasta_reader_gene(fasta_file_path):
-    # use gene name as key
+    # use gene name as key, take the longest sequence
+    gene_dict = defaultdict(str)
     with open(fasta_file_path, 'r') as file_open:
         file_split = file_open.read().split('\n>')
-    return {each.split('\n')[0].split('GN=')[1].split(' ')[0]: ''.join(each.split('\n')[1:]) for each in file_split
-            if 'GN=' in each.split('\n')[0]}
+    for each in file_split:
+        if 'GN=' in each.split('\n')[0]:
+            gene = each.split('\n')[0].split('GN=')[1].split(' ')[0]
+            seq = ''.join(each.split('\n')[1:])
+            if len(seq) >= len(gene_dict[gene]):
+                gene_dict[gene] = seq
+            else:
+                continue
+    return gene_dict
+    # return {each.split('\n')[0].split('GN=')[1].split(' ')[0]: ''.join(each.split('\n')[1:]) for each in file_split
+    #         if 'GN=' in each.split('\n')[0] and each.split('\n')[0].split('|')[0] == 'sp'}
 
 
 def protein_id_to_species(fasta_file_path):
