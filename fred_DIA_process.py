@@ -144,13 +144,15 @@ def aggregate_psms():
         replicates_combined_psm_dict = {}
         for time in time_points:
             for sample in ['144','145']:
-                total_psm_set = set([psm for rep in ['A','B','C','D','E'] for psm in prot_f_psm_dict_of_dict[prot][sample+rep+'_'+time]])
+                total_psm_set = set([psm for rep in ['A','B','C','D','E'] for psm in prot_f_psm_dict_of_dict[prot][sample+rep+'_'+time]
+                                     if len(set(prot_f_psm_dict_of_dict[prot][sample+rep+'_'+time]))>1]) # num of peptides>1
                 replicates_combined_psm_dict[sample+'_'+time] = total_psm_set
         for sample in ['144','145']:
-            total_psm_set1080 = set([psm for rep in ['NA','NB','NC','ND','NE'] for psm in prot_f_psm_dict_of_dict[prot][sample+rep+'_1080']])
+            total_psm_set1080 = set([psm for rep in ['NA','NB','NC','ND','NE'] for psm in prot_f_psm_dict_of_dict[prot][sample+rep+'_1080']
+                                     if len(set(prot_f_psm_dict_of_dict[prot][sample+rep+'_1080']))>1])
             replicates_combined_psm_dict[sample+'_1080'] = total_psm_set1080
         replicates_combined_dict[prot] = replicates_combined_psm_dict
-    pk.dump(replicates_combined_dict, open('F:/fred_time_lapse/analysis/gene_f_rep_combined_peptide_dict_1219.p', 'wb'))
+    pk.dump(replicates_combined_dict, open('F:/fred_time_lapse/analysis/gene_f_rep_combined_peptide_dict_0107.p', 'wb'))
 
     # aggregate psms throughout time points
     for prot in replicates_combined_dict:
@@ -163,7 +165,7 @@ def aggregate_psms():
                 aggregate_psm_dict[sample+'_'+val+'_aggregate'] = aggregate_psm_set
         aggregate_pep_dict[prot] = aggregate_psm_dict
 
-    pk.dump(aggregate_pep_dict,open('F:/fred_time_lapse/analysis/gene_f_aggregate_peptide_dict_1219.p','wb'))
+    pk.dump(aggregate_pep_dict,open('F:/fred_time_lapse/analysis/gene_f_aggregate_peptide_dict_0107.p','wb'))
 
 
 def coverage_calculation():
@@ -178,8 +180,8 @@ def coverage_calculation():
     protein_info_dict = protein_info_from_fasta('F:/sned1_biotinalytion/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta')
 
     # load aggregated and combined 1080 peptides
-    prot_f_aggregate_pep_dict = pk.load(open('F:/fred_time_lapse/analysis/gene_f_aggregate_peptide_dict_1219.p','rb'))
-    prot_f_combined_pep_dict = pk.load(open('F:/fred_time_lapse/analysis/gene_f_rep_combined_peptide_dict_1219.p','rb')) # key is '144_1080' and '145_1080'
+    prot_f_aggregate_pep_dict = pk.load(open('F:/fred_time_lapse/analysis/gene_f_aggregate_peptide_dict_0107.p','rb'))
+    prot_f_combined_pep_dict = pk.load(open('F:/fred_time_lapse/analysis/gene_f_rep_combined_peptide_dict_0107.p','rb')) # key is '144_1080' and '145_1080'
 
     gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json', 'r'))  # ECM genes
     # calculate coverage
@@ -201,22 +203,24 @@ def coverage_calculation():
                 for time in time_points:
                     np_arry = np.zeros(prot_length)
                     peptides_set = prot_f_aggregate_pep_dict[prot][sample+'_'+time+'_aggregate']
-                    for pep in peptides_set:
-                        pep_loc = seq.find(pep)
-                        pep_end_loc = pep_loc+len(pep)
-                        np_arry[pep_loc:pep_end_loc]+=1
-                    agg_cov = np.count_nonzero(np_arry)/prot_length*100
-                    aggre_cov_df.at[prot,sample+'_'+time+'_aggre_cov'] = agg_cov
+                    # for pep in peptides_set:
+                    #     pep_loc = seq.find(pep)
+                    #     pep_end_loc = pep_loc+len(pep)
+                    #     np_arry[pep_loc:pep_end_loc]+=1
+                    # agg_cov = np.count_nonzero(np_arry)/prot_length*100
+                    # aggre_cov_df.at[prot,sample+'_'+time+'_aggre_cov'] = agg_cov
+                    aggre_cov_df.at[prot,sample+'_'+time+'_aggre_pep'] = str(peptides_set)
             for sample2 in samples_1080:
                 np_arry = np.zeros(prot_length)
                 peptides1080_set = prot_f_combined_pep_dict[prot][sample2]
-                for pep in peptides1080_set:
-                    pep_loc = seq.find(pep)
-                    pep_end_loc = pep_loc + len(pep)
-                    np_arry[pep_loc:pep_end_loc] += 1
-                    cov1080 = np.count_nonzero(np_arry)/prot_length*100
-                    aggre_cov_df.at[prot,sample2+'_cov'] = cov1080
-    aggre_cov_df.to_csv('F:/fred_time_lapse/analysis/gene_aggre_cov_1219.tsv',sep='\t')
+                # for pep in peptides1080_set:
+                #     pep_loc = seq.find(pep)
+                #     pep_end_loc = pep_loc + len(pep)
+                #     np_arry[pep_loc:pep_end_loc] += 1
+                #     cov1080 = np.count_nonzero(np_arry)/prot_length*100
+                #     aggre_cov_df.at[prot,sample2+'_cov'] = cov1080
+                aggre_cov_df.at[prot,sample2+'_pep'] = str(peptides1080_set)
+    aggre_cov_df.to_csv('F:/fred_time_lapse/analysis/gene_aggre_pep_0107.tsv',sep='\t')
 
 
 def myplot(x, y, s, bins=1000):
@@ -312,15 +316,15 @@ def category_cov_plot():
 
 def dot_plot_connecting():
     # plot dot plots and connecting the dots for sequence coverage
-    ecm_cov_df = pd.read_csv('F:/fred_time_lapse/analysis/gene_aggre_cov_1219.tsv', sep='\t').fillna(0)
+    ecm_cov_df = pd.read_csv('F:/fred_time_lapse/analysis/gene_aggre_cov_0107.tsv', sep='\t',index_col=0).fillna(0)
     fig, axs = plt.subplots(2, 3, figsize=(8, 5))
     for each, ax in zip(sort_category, [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]):
 
         color = ecm_class_color_dict[each]
         sub_df = ecm_cov_df[ecm_cov_df['Sub'] == each]
-        aggre_cov_list, std_cov_list = sub_df['144_240_aggre_cov'].tolist(), sub_df['144_1080_cov'].tolist()
+        aggre_cov_list, std_cov_list = sub_df['145_240_aggre_cov'].tolist(), sub_df['145_1080_cov'].tolist()
         sub_df_plot = pd.DataFrame(
-            dict(agg_or_standard=['144_4h_agg'] * sub_df.shape[0] + ['144_18h'] * sub_df.shape[0],
+            dict(agg_or_standard=['145_4h_agg'] * sub_df.shape[0] + ['145_18h'] * sub_df.shape[0],
                  coverage=aggre_cov_list + std_cov_list))
         median_list = sub_df_plot.groupby(['agg_or_standard'])['coverage'].median().tolist()
         x_pos_list = range(len(median_list))
@@ -345,7 +349,7 @@ def dot_plot_connecting():
 
         # label statistics
         add_stat_annotation(ax=axs[ax[0], ax[1]], data=sub_df_plot, x='agg_or_standard', y='coverage',
-                            box_pairs=[("144_4h_agg", "144_18h")],
+                            box_pairs=[("145_4h_agg", "145_18h")],
                             test='Wilcoxon', text_format='star', loc='inside', verbose=2,
                             comparisons_correction='bonferroni')
         axs[ax[0], ax[1]].set_xlim([-0.5, 1.5])
@@ -353,7 +357,7 @@ def dot_plot_connecting():
         axs[ax[0], ax[1]].set_xticklabels(['4h_agg','18h_std'], fontsize=10)
         axs[ax[0], ax[1]].set_xlabel('')
         axs[ax[0], ax[1]].set_ylabel('')
-    plt.savefig('F:/fred_time_lapse/figures/ecm_cov_144_240agg_vs_1080_category_1223_dotsconnect.png', dpi=300)
+    plt.savefig('F:/fred_time_lapse/figures/ecm_cov_145_240agg_vs_1080_category_0107_dotsconnect.png', dpi=300)
     # plt.show()
 
 
@@ -474,10 +478,10 @@ if __name__ == '__main__':
     # coverage_calculation()
     # coverage_plot()
     # category_cov_plot()
-    # dot_plot_connecting()
+    dot_plot_connecting()
     # qc_check_ecm_ratio()
     # psm_dict = pk.load(open('F:/fred_time_lapse/analysis/prot_f_rep_combined_peptide_dict_1219.p', 'rb'))
     # print (psm_dict['Q8TER0']['145_1080'])
-    table_output()
-    filter_df()
+    # table_output()
+    # filter_df()
     # nsaf_cal()

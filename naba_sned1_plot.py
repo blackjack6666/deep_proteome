@@ -5,7 +5,6 @@ import seaborn as sns
 from statannot import add_stat_annotation
 from collections import defaultdict
 import pylab
-from brokenaxes import brokenaxes
 from matplotlib.gridspec import GridSpec
 import matplotlib
 from protein_coverage import fasta_reader
@@ -386,22 +385,26 @@ def cor_matrix(df):
     try:
         ax.set_ylabel('')
         ax.set_xlabel('')
-        ax.set_xlim(-2,8)
-        ax.set_ylim(-2,8)
+        ax.set_xlim(0,8)
+        ax.set_ylim(0,8)
     except:
         continue
   return g
 
-# df_grid = np.log2(df_ecm_aggre.iloc[:,3:7]+1)
-# df_grid = df_grid.rename(columns={'GFP_seq_30_ave_aggre_cov':'GFP 30min aggre. cov',
-#                         'GFP_seq_120_ave_aggre_cov':'GFP 2h aggre. cov',
-#                         'GFP_seq_240_ave_aggre_cov':'GFP 4h aggre. cov',
-#                         'GFP_seq_1080_ave_aggre_cov':'GFP 18h aggre. cov'})
-# cor_matrix(df_grid)
-# plt.savefig('D:/data/Naba_deep_matrisome/07232021_secondsearch/figure_update/GFP_regplot_log2.png',dpi=300)
-# plt.show()
+df_aggre_cov = pd.read_csv('F:/fred_time_lapse/analysis/gene_aggre_cov_0107.tsv', sep='\t',index_col=0).fillna(0)
+df_grid = np.log2(df_aggre_cov.iloc[:,np.r_[3:8,-2]]+1)
+df_grid = df_grid.rename(columns={'144_15_aggre_cov':'log2(144 15min aggre. cov+1)',
+                        '144_30_aggre_cov':'log2(144 30min aggre. cov+1)',
+                        '144_60_aggre_cov':'log2(144 60min aggre. cov+1)',
+                        '144_120_aggre_cov':'log2(144 120min aggre. cov+1)',
+                                  '144_240_aggre_cov':'log2(144 240min aggre. cov+1)',
+                                  '144_1080_cov':'log2(144 18h cov+1)'})
+cor_matrix(df_grid)
+plt.savefig('F:/fred_time_lapse/figures/144_grid_agg_cov.png',dpi=300)
+plt.show()
 
 ### SCV example
+"""
 df = pd.read_excel('D:/data/Naba_deep_matrisome/07232021_secondsearch/7_24_summary_D_F_squential_standard.xlsx',index_col=0)
 timepoints = ['30','120','240','1080']
 time_peptides_dict = {}
@@ -428,3 +431,4 @@ for time in peptide_dict_unique:
         # peplist.append(')')
         # peplist.append('['+time+']')
         print (''.join(peplist))
+"""
