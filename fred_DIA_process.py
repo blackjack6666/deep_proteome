@@ -223,6 +223,38 @@ def coverage_calculation():
     aggre_cov_df.to_csv('F:/fred_time_lapse/analysis/gene_aggre_pep_0107.tsv',sep='\t')
 
 
+def abs_coverage_calculation():
+    """
+    calculate the absolute sequence coverage for time series data without aggregation
+    :return:
+    """
+    protein_seq_dict = fasta_reader_gene(
+        'F:/sned1_biotinalytion/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta')
+    gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json', 'r'))  # ECM genes
+    gene_rep_combined_psm_dict = pk.load(open('F:/fred_time_lapse/analysis/gene_f_rep_combined_peptide_dict_0107.p', 'rb'))
+    samples, times = ['144','145'], ['15', '30', '60', '120', '240']
+    cov_df = pd.DataFrame()
+    for prot in gene_rep_combined_psm_dict:
+        if prot in gene_category_dict:
+            print (prot)
+            seq = protein_seq_dict[prot]
+            prot_length = len(seq)
+            cov_df.loc[prot, 'category'] = gene_category_dict[prot]["Category"]
+            cov_df.loc[prot, 'Sub'] = gene_category_dict[prot]["Sub"]
+            cov_df.at[prot, 'length'] = len(protein_seq_dict[prot])
+            for sample in samples:
+                for time in times:
+                    np_array = np.zeros(prot_length)
+                    peptide_set = gene_rep_combined_psm_dict[prot][sample+'_'+time]
+                    for pep in peptide_set:
+                        pep_loc = seq.find(pep)
+                        pep_end_loc = pep_loc+len(pep)
+                        np_array[pep_loc:pep_end_loc]+=1
+                    cov = np.count_nonzero(np_array)/prot_length*100
+                    cov_df.at[prot,sample+'_'+time+'_abs_cov'] = cov
+    cov_df.to_csv('F:/fred_time_lapse/analysis/ECM_gene_time_series_absoluteCov_0125.tsv',sep='\t')
+
+
 def myplot(x, y, s, bins=1000):
 
     # scatter density plot
@@ -440,20 +472,20 @@ def filter_df():
     import time
     time.sleep(3)
     base_path = 'F:/fred_time_lapse/'
-    df = pd.read_csv(base_path+'analysis/All_gene_timelapsed_peptide_0109_atleast2pep.tsv',sep='\t',index_col=0)
+    df = pd.read_csv(base_path+'analysis/ECM_gene_time_series_absoluteCov_0125.tsv',sep='\t',index_col=0)
     df = df.copy()
     data = []
     index = []
     for row in df.itertuples():
         # filter rows with all 0s
-        # if all([row[i]=="0" for i in range(-5,0)]):
-        if all([row[i] == "0" for i in range(1, len(row))]):
+        if all([row[i]==0 for i in range(-10,0)]):
+        # if all([row[i] == "0" for i in range(1, len(row))]):
             continue
         else:
             data.append([i for i in row][1:])
             index.append(row[0])
     new_df = pd.DataFrame(data, columns=df.columns,index=index)
-    new_df.to_csv(base_path+'analysis/All_gene_timelapsed_peptide_0109_atleast2pep.tsv',sep='\t')
+    new_df.to_csv(base_path+'analysis/ECM_gene_time_series_absoluteCov_0125.tsv',sep='\t')
 
 
 def nsaf_cal():
@@ -484,6 +516,7 @@ if __name__ == '__main__':
     # qc_check_ecm_ratio()
     # psm_dict = pk.load(open('F:/fred_time_lapse/analysis/prot_f_rep_combined_peptide_dict_1219.p', 'rb'))
     # print (psm_dict['Q8TER0']['145_1080'])
-    table_output()
+    # table_output()
     filter_df()
     # nsaf_cal()
+    # abs_coverage_calculation()

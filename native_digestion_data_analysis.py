@@ -325,7 +325,7 @@ import pymannkendall as mk
 from scipy.stats import linregress
 fig,axs = plt.subplots(1,1, figsize=(8,8))
 
-df = pd.read_excel('D:/data/native_protein_digestion/12072021/control/cov_dist_unique.xlsx',index_col=0)
+df = pd.read_excel(r'F:\native_digestion\01202023\analysis/distance_to_center.xlsx',index_col=0)
 # high_conf_id = [each for each in df.index if each in high_conf_id]
 # df = df.loc[high_conf_id]
 # df = df.T.ffill().bfill()
