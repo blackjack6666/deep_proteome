@@ -235,24 +235,25 @@ def abs_coverage_calculation():
     samples, times = ['144','145'], ['15', '30', '60', '120', '240']
     cov_df = pd.DataFrame()
     for prot in gene_rep_combined_psm_dict:
-        if prot in gene_category_dict:
-            print (prot)
+        # if prot in gene_category_dict:
+        if prot != 'null':
+            print(prot)
             seq = protein_seq_dict[prot]
             prot_length = len(seq)
-            cov_df.loc[prot, 'category'] = gene_category_dict[prot]["Category"]
-            cov_df.loc[prot, 'Sub'] = gene_category_dict[prot]["Sub"]
+            # cov_df.loc[prot, 'category'] = gene_category_dict[prot]["Category"]
+            # cov_df.loc[prot, 'Sub'] = gene_category_dict[prot]["Sub"]
             cov_df.at[prot, 'length'] = len(protein_seq_dict[prot])
             for sample in samples:
                 for time in times:
                     np_array = np.zeros(prot_length)
-                    peptide_set = gene_rep_combined_psm_dict[prot][sample+'_'+time]
+                    peptide_set = gene_rep_combined_psm_dict[prot][sample + '_' + time]
                     for pep in peptide_set:
                         pep_loc = seq.find(pep)
-                        pep_end_loc = pep_loc+len(pep)
-                        np_array[pep_loc:pep_end_loc]+=1
-                    cov = np.count_nonzero(np_array)/prot_length*100
-                    cov_df.at[prot,sample+'_'+time+'_abs_cov'] = cov
-    cov_df.to_csv('F:/fred_time_lapse/analysis/ECM_gene_time_series_absoluteCov_0125.tsv',sep='\t')
+                        pep_end_loc = pep_loc + len(pep)
+                        np_array[pep_loc:pep_end_loc] += 1
+                    cov = np.count_nonzero(np_array) / prot_length * 100
+                    cov_df.at[prot, sample + '_' + time + '_abs_cov'] = cov
+    cov_df.to_csv('F:/fred_time_lapse/analysis/All_gene_time_series_absoluteCov_0125.tsv',sep='\t')
 
 
 def myplot(x, y, s, bins=1000):
@@ -472,7 +473,7 @@ def filter_df():
     import time
     time.sleep(3)
     base_path = 'F:/fred_time_lapse/'
-    df = pd.read_csv(base_path+'analysis/ECM_gene_time_series_absoluteCov_0125.tsv',sep='\t',index_col=0)
+    df = pd.read_csv(base_path+'analysis/All_gene_time_series_absoluteCov_0125.tsv',sep='\t',index_col=0)
     df = df.copy()
     data = []
     index = []
@@ -485,7 +486,7 @@ def filter_df():
             data.append([i for i in row][1:])
             index.append(row[0])
     new_df = pd.DataFrame(data, columns=df.columns,index=index)
-    new_df.to_csv(base_path+'analysis/ECM_gene_time_series_absoluteCov_0125.tsv',sep='\t')
+    new_df.to_csv(base_path+'analysis/All_gene_time_series_absoluteCov_0125.tsv',sep='\t')
 
 
 def nsaf_cal():
