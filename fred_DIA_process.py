@@ -14,6 +14,7 @@ from protein_coverage import fasta_reader
 from statannot import add_stat_annotation
 import json
 from protein_coverage import fasta_reader_gene
+import time
 
 ecm_class_color_dict = {"Collagens": '#0584B7', 'ECM-affiliated Proteins':'#F4511E',
                         'ECM Regulators':"#F9A287","Secreted Factors":"#FFE188",
@@ -504,6 +505,105 @@ def nsaf_cal():
     new_df.to_csv('F:/fred_time_lapse/analysis/All_gene_timelapsed_nsaf_0109_atleast2pep.tsv',sep='\t')
 
 
+def cosine_sim_calculating(v1, v2):
+    """
+    calculate the cosine similarity beweeen two b/y ions binned vectors
+    :param v1:
+    :param v2:
+    :return:
+    """
+    from scipy import spatial
+    return 1-spatial.distance.cosine(v1,v2)
+
+
+def dissim_index():
+    """
+    compare dissimlarity between SNED1+/-
+    :return:
+    """
+    cov_df = pd.read_csv('F:/fred_time_lapse/analysis/gene_aggre_cov_0107.tsv',sep='\t',index_col=0)
+    cov_df_copy = cov_df.copy()
+    gene_list, cov_matrix = cov_df.index, cov_df.to_numpy()[:,3:13]
+    for gene, cov_list in zip(gene_list,cov_matrix):
+        # print (gene, cov_list[:5], cov_list[5:])
+        euclidean_dist = np.linalg.norm(cov_list[:5]-cov_list[5:])  # compare aggregated coverage between 144 and 145
+        # euclidean distance is positive if 144 is bigger
+        euclidean_dist_value = euclidean_dist if cov_list[4]-cov_list[9]>=0 else -euclidean_dist
+        cos_sim = cosine_sim_calculating(cov_list[:5],cov_list[5:])
+        cov_df_copy.at[gene,'euclidean_dis+-/cosine_sim'] = euclidean_dist_value/cos_sim
+    cov_df_copy.to_csv('F:/fred_time_lapse/analysis/dissim_index.tsv',sep='\t')
+
+
+def dissim_index_plot():
+    df_ecm_aggre = pd.read_csv('F:/fred_time_lapse/analysis/dissim_index.tsv',sep='\t',index_col=0)
+    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    ax = sns.boxplot(x='Sub', y='euclidean_dis+-/cosine_sim', hue='Sub',palette=ecm_class_color_dict, data=df_ecm_aggre,
+                     linewidth=2.5,
+                 order=["ECM Glycoproteins", "Collagens", "Proteoglycans", "ECM-affiliated Proteins",
+                                "ECM Regulators","Secreted Factors"],
+                 hue_order=["ECM Glycoproteins", "Collagens", "Proteoglycans", "ECM-affiliated Proteins",
+                                "ECM Regulators","Secreted Factors"], dodge=False)
+    ax.get_legend().remove()
+    ax.set_ylabel('Dissimilarity index', fontsize=8)
+    plt.xticks(rotation=30, fontsize=8)
+    plt.tight_layout()
+    plt.savefig('F:/fred_time_lapse/figures/dissim_index.png', dpi=300)
+    # plt.show()
+
+
+def upsetplot_data():
+    """
+    upset plot on peptides in time points
+    :return:
+    """
+    f_peptide_dict = defaultdict(set)
+    total_peptide_set = set()
+    peptide_gene_category_dict = {} # {peptide:(gene,category)}
+    gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json', 'r'))  # ECM genes
+    gene_f_peptides = pk.load(open('F:/fred_time_lapse/analysis/gene_f_rep_combined_peptide_dict_0107.p','rb'))
+    f_list = ['144_15','144_30','144_60','144_120','144_240']
+    df = pd.DataFrame(columns=f_list+['gene','category'])
+
+    for gene in gene_f_peptides:
+        if gene in gene_category_dict:
+            for f in f_list:
+                peptide_set = gene_f_peptides[gene][f]
+                f_peptide_dict[f].update(peptide_set)
+                total_peptide_set.update(peptide_set)
+                for each_pep in peptide_set:
+                    peptide_gene_category_dict[each_pep] = (gene,gene_category_dict[gene]['Sub'])
+    # output a df with peptide seq as index, boolean to show peptide existence in time points
+    for peptide in total_peptide_set:
+        for f in f_list:
+            if peptide in f_peptide_dict[f]:
+                df.at[peptide,f] = 1
+            else:
+                df.at[peptide,f] = 0
+        df.at[peptide,'gene'] = peptide_gene_category_dict[peptide][0]
+        df.at[peptide,'category'] = peptide_gene_category_dict[peptide][1]
+
+    df.to_csv('F:/fred_time_lapse/analysis/upset_plot_peptide.tsv',sep='\t')
+
+
+def upset_plot():
+    # plot upset plot based on data from upsetplot_data()
+    from upsetplot import UpSet, plot
+
+    f_list = ['144_15', '144_30', '144_60', '144_120', '144_240']
+    df = pd.read_csv('F:/fred_time_lapse/analysis/upset_plot_peptide.tsv',sep='\t')
+    df = df.set_index(f_list)
+    # print (df.head)
+    # fig = plt.figure(figsize=(10, 8))
+    upset = UpSet(df,
+                  intersection_plot_elements=0)
+    # upset = plot(df,fig=fig,element_size=None)
+    upset.add_stacked_bars(by='category',colors=ecm_class_color_dict, elements=15)
+    upset.plot()
+    plt.legend('',frameon=False)
+    plt.savefig('F:/fred_time_lapse/figures/144_peptide_upset.png',dpi=300)
+    # plt.show()
+
+
 if __name__ == '__main__':
     from protein_coverage import fasta_reader_gene
     # qc_check()
@@ -518,6 +618,10 @@ if __name__ == '__main__':
     # psm_dict = pk.load(open('F:/fred_time_lapse/analysis/prot_f_rep_combined_peptide_dict_1219.p', 'rb'))
     # print (psm_dict['Q8TER0']['145_1080'])
     # table_output()
-    filter_df()
+    # filter_df()
     # nsaf_cal()
     # abs_coverage_calculation()
+    # dissim_index()
+    # dissim_index_plot()
+    # upsetplot_data()
+    upset_plot()
