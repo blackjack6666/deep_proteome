@@ -16,9 +16,8 @@ import json
 from protein_coverage import fasta_reader_gene
 import time
 
-ecm_class_color_dict = {"Collagens": '#0584B7', 'ECM-affiliated Proteins':'#F4511E',
-                        'ECM Regulators':"#F9A287","Secreted Factors":"#FFE188",
-                        "ECM Glycoproteins":"#133463", "Proteoglycans":"#59D8E6"}
+ecm_class_color_dict = {"ECM Glycoproteins":"#133463","Collagens":"#0584B7","Proteoglycans":"#59D8E6",
+                        "ECM-affiliated Proteins":"#F4511E","ECM Regulators":"#F9A287","Secreted Factors":"#FFE188"}
 
 sort_category = ["ECM Glycoproteins","Collagens","Proteoglycans","ECM-affiliated Proteins","ECM Regulators",
                   "Secreted Factors"]
@@ -595,13 +594,13 @@ def upset_plot():
     # print (df.head)
     # fig = plt.figure(figsize=(10, 8))
     upset = UpSet(df,
-                  intersection_plot_elements=0)
+                  intersection_plot_elements=0,sort_by='cardinality')
     # upset = plot(df,fig=fig,element_size=None)
-    upset.add_stacked_bars(by='category',colors=ecm_class_color_dict, elements=15)
+    upset.add_stacked_bars(by='category',colors=ecm_class_color_dict, elements=18)
     upset.plot()
     plt.legend('',frameon=False)
-    plt.savefig('F:/fred_time_lapse/figures/144_peptide_upset.png',dpi=300)
-    # plt.show()
+    # plt.savefig('F:/fred_time_lapse/figures/144_peptide_upset.png',dpi=300)
+    plt.show()
 
 
 if __name__ == '__main__':
