@@ -103,10 +103,12 @@ if __name__=='__main__':
     # sort = -np.sort(-cov_list)
     # reshape = sort_array.reshape((250,334))
 
-    matrisome_cov_csv = 'D:/data/Naba_deep_matrisome/matrisome coverage_norepeat.xlsx'
-    df_mat = pd.read_excel(matrisome_cov_csv, index_col=0)
+    # matrisome_cov_csv = 'D:/data/Naba_deep_matrisome/matrisome coverage_norepeat.xlsx'
+    # df_mat = pd.read_excel(matrisome_cov_csv, index_col=0)
+    matrisome_cov_csv = 'F:/matrisomedb2.0/statistics/glob_seq_coverage_1.tsv'
+    df_mat = pd.read_csv(matrisome_cov_csv,sep='\t',index_col=0)
 
-    cov_array = df_mat['cov'].to_numpy()*100
+    cov_array = df_mat['Sequence coverage'].to_numpy()
     sort = -np.sort(-cov_array)
     fig, ax = plt.subplots()
     ax.plot(range(len(sort)),sort, '-', color='#fcba03')
