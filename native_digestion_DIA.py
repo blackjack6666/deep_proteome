@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import pickle as pk
 from collections import defaultdict
-
+import matplotlib.pyplot as plt
 
 def peptide_getter():
     """
@@ -108,6 +108,7 @@ def filter_df():
             data.append([i for i in row][1:])
             index.append(row[0])
     new_df = pd.DataFrame(data, columns=df.columns,index=index)
+    # after filtering, 2293 proteins retained (originally 3886)
     new_df.to_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter.tsv',sep='\t')
 
 
@@ -115,21 +116,82 @@ def cluster_map():
     import matplotlib.pyplot as plt
     import seaborn as sns
 
-    data = pd.read_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter_norm01.tsv',sep='\t',index_col=0)
-    # new_data = pd.DataFrame(index=data.index, columns=data.columns)
+    data = pd.read_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter_norm01_removelast2.tsv',sep='\t',index_col=0)
+    protein_list = data.index.tolist()
+    protein_hex_list = disorder_to_hex(protein_list) # add row colors on clustermap
+    # print (protein_hex_list)
+
+    # new_data = pd.DataFrame(index=data.index, columns=data.columns.to_list()[:-2])
     # normalize each protein between 0 and 1
-    # for prot, array in zip(data.index, data.to_numpy()):
+    # for prot, array in zip(data.index, data.to_numpy()[:,:-2]):
     #     normalize_0_1 = (array-np.min(array))/(np.max(array)-np.min(array))
     #     new_data.loc[prot,:] = normalize_0_1
-    # new_data.to_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter_norm01.tsv', sep='\t')
+    # new_data.to_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter_norm01_removelast2.tsv', sep='\t')
+
     fig, ax = plt.subplots(1, 1, figsize=(8, 15))
-    g = sns.clustermap(data=data,col_cluster=False,cmap="YlGnBu",yticklabels=False)
+    g = sns.clustermap(data=data,col_cluster=False,cmap="YlGnBu",yticklabels=False,row_colors=protein_hex_list)
+    # print (g.dendrogram_row.reordered_ind)
     plt.show()
 
+
+def disorder_to_hex(protein_list):
+    """
+    convert disorder ratio to hex color string, high disorder will show as darker red
+    :return:
+    """
+
+    base_rgb = (255,255,255)
+    prot_disorder_dict = pk.load(open('F:/native_digestion/01242023/analysis/prot_disorder_dict.p','rb'))
+    protein_hexcolor_list = ['#%02x%02x%02x' % (255, int(210*(1-prot_disorder_dict[each])),int(210*(1-prot_disorder_dict[each])))
+                             if each in prot_disorder_dict else '#b3b3b3' for each in protein_list]
+
+    df = pd.DataFrame(index=protein_list,columns=['Disorder'])
+    df['Disorder'] = protein_hexcolor_list
+    return df
+
+
+def umap_hdbscan():
+    import umap
+    import hdbscan
+    data = pd.read_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter_norm01.tsv',
+                       sep='\t',index_col=0)
+    clusterable_embedding = umap.UMAP(
+        n_neighbors=20,
+        min_dist=0.1,
+        n_components=2,
+        random_state=42,
+    ).fit_transform(data)
+    plt.scatter(clusterable_embedding[:, 0], clusterable_embedding[:, 1],
+                 s=1.5,alpha=0.8)
+    labels = hdbscan.HDBSCAN(
+        min_samples=20,
+        min_cluster_size=200, # 50
+    ).fit_predict(clusterable_embedding)
+    # print (labels)
+    clustered = (labels >= 0)  # label = -1 for noise data
+    # for i, j, k in zip(data.index,labels, clusterable_embedding[clustered,0]):
+    #     if j == 0:
+    #         print (i, data.loc[i,:],k)
+    plt.scatter(clusterable_embedding[~clustered, 0],
+                clusterable_embedding[~clustered, 1],
+                color=(0.5, 0.5, 0.5),
+                s=3,
+                alpha=0.6)
+    plt.scatter(clusterable_embedding[clustered, 0],
+                clusterable_embedding[clustered, 1],
+                c=labels[clustered],
+                s=3,
+                cmap='Spectral')
+
+    plt.show()
+
+
 if __name__ == '__main__':
+    import seaborn as sns
     # get_unique_peptides()
     # get_protein_set()
     # print (protein_intensity())
     # combine_distance_intensity()
     # filter_df()
-    cluster_map()
+    # cluster_map()
+    umap_hdbscan()
