@@ -5,6 +5,7 @@ import numpy as np
 import pickle as pk
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 def peptide_getter():
     """
@@ -74,7 +75,7 @@ def protein_intensity():
 
 def combine_distance_intensity():
     """
-    combine cleavage to center distance and protein intensity
+    combine cleavage to center distance and protein intensity by multiplying
     :return:
     """
     protein_int_dict = pk.load(open('F:/native_digestion/01242023/time_points/prot_intensity_dict.p','rb'))
@@ -91,17 +92,111 @@ def combine_distance_intensity():
     new_df.to_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity.tsv',sep='\t')
 
 
+def distance_intensity_():
+    """
+    plot distance on y axis, time on x axis, color as intensity
+    :return:
+    """
+
+    protein_int_dict = pk.load(open('F:/native_digestion/01242023/time_points/prot_intensity_dict.p','rb'))
+    distance_df = pd.read_csv('F:/native_digestion/01242023/analysis/distance_to_center_all_filter_nomorethan3zeros.tsv',sep='\t',index_col=0)
+    new_df = pd.DataFrame(columns=['protein_id','average_distance','intensity','time'])
+    protein_id_list = []
+    for prot in distance_df.index:
+        protein_id_list+=[prot]*len(distance_df.columns)
+    ave_dist = distance_df.to_numpy().flatten()
+    int_total_array = np.concatenate([protein_int_dict[prot] for prot in distance_df.index])
+    time_list = list(range(1,len(distance_df.columns)+1))*distance_df.shape[0]
+    for k,v in zip(['protein_id','average_distance','intensity','time'],
+                   [protein_id_list,ave_dist,int_total_array,time_list]):
+        new_df[k] = v
+    new_df.to_csv('F:/native_digestion/01242023/analysis/prot_distance_intensity_1.tsv',sep='\t')
+
+
+def distance_intensity_plot():
+    from functools import reduce
+    from operator import add
+    df = pd.read_csv('F:/native_digestion/01242023/analysis/prot_distance_intensity_1.tsv', sep='\t',index_col=0)
+    df = df.copy().fillna(0)
+    # df = df.dropna()
+    normalize_factor = 100
+    time_range = list(range(1,14))
+    time_index_dict = {i:j for i,j in zip(time_range,chunk_(list(range(1,normalize_factor)),int(normalize_factor/13))[:-1])}
+    time_index_join = reduce(add,[v for v in time_index_dict.values()])
+    print (time_index_dict)
+    plot_array = np.zeros((20,13))
+    prot_unique = df['protein_id'].unique()
+    df_plot = pd.DataFrame(columns=['norm_dist_index','int','time'])
+    norm_dist_index, int_color, time = [],[],[]
+    for each in prot_unique:
+
+        sub_df = df[df['protein_id']==each]
+        dist_array = sub_df['average_distance'].to_numpy()
+        normalized_dist = (dist_array - np.min(dist_array)) / (
+                    np.max(dist_array) - np.min(dist_array)) * (normalize_factor-1)
+        # dist_index = (normalize_factor-1)-normalized_dist  # used as the y-axis index on heatmap
+        dist_index = normalized_dist
+        dist_index_list = [[j]*len(time_index_dict[i+1]) for i, j in enumerate(dist_index)]
+        dist_index_list = reduce(add,dist_index_list)
+
+        # time as index on x-axis, intensity as color
+        int_array,time_array = sub_df['intensity'].tolist(), time_range
+        int_index_list = [[j]*len(time_index_dict[i+1]) for i, j in enumerate(int_array)]
+        int_index_list = reduce(add,int_index_list)
+        norm_dist_index+=dist_index_list
+        int_color+=int_index_list
+        time+=time_index_join
+
+        # for dist, intensity, time in zip(dist_index, int_array,time_array):
+        #     try:
+        #         plot_array[int(dist),time-1] += intensity
+        #     except ValueError:
+        #         print (each,dist_array)
+
+    for i, j in zip(['norm_dist_index','int','time'],[norm_dist_index,int_color,time]):
+        df_plot[i]=j
+
+    print(df_plot.shape)
+    # df_plot.to_csv('F:/native_digestion/01242023/analysis/scatter_plot_0225.tsv',sep='\t')
+    print (df_plot.hist)
+    g = sns.scatterplot(data=df_plot,x='time',y='norm_dist_index',hue='int',s=5,palette='viridis')
+    # plt.legend([], [], frameon=False)
+    # g = sns.heatmap(data=plot_array[:,:-2],cmap='viridis')
+    # plt.show()
+
+
+def delta_dist_cal():
+    # calcuate D'= Dmax-D
+    distance_dict = pk.load(open('F:/native_digestion/01242023/time_points/to_center_distance_dict.pkl','rb'))
+    max_dict_dict = {prot:max([v for v in distance_dict[prot].values()]) for prot in distance_dict}
+    prot_dist_int_df = pd.read_csv('F:/native_digestion/01242023/analysis/prot_distance_intensity_1.tsv',sep='\t',index_col=0)
+    delta_dist = []
+    for dist, prot in zip(prot_dist_int_df['average_distance'],prot_dist_int_df['protein_id']):
+        delta = 0.95*max_dict_dict[prot]-dist
+        if delta<0:
+            delta_dist.append(0)
+        else:
+            delta_dist.append(delta)
+    prot_dist_int_df['deltaD'] = delta_dist
+    prot_dist_int_df.to_csv('F:/native_digestion/01242023/analysis/prot_distance_intensity_2.tsv',sep='\t')
+
+
+def chunk_(list, n):
+    geneartor = (list[i:n + i] for i in range(0, len(list), n))
+    return [i for i in geneartor]
+
+
 def filter_df():
     # filter out all zeros in df
     import time
     time.sleep(3)
-    df = pd.read_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity.tsv',sep='\t',index_col=0)
-    df = df.copy()
+    df = pd.read_excel('F:/native_digestion/01242023/analysis/distance_to_center_all.xlsx',index_col=0)
+    df = df.copy().fillna(0)
     data = []
     index = []
     for row in df.itertuples():
         # filter rows with all 0s
-        if np.count_nonzero([row[i]==0 for i in range(-13,0)])>=6:  # if there are more than 6 zeros
+        if np.count_nonzero([row[i]==0 for i in range(-13,0)])>=3:  # if there are more than 6 zeros
         # if all([row[i] == "0" for i in range(1, len(row))]):
             continue
         else:
@@ -109,7 +204,7 @@ def filter_df():
             index.append(row[0])
     new_df = pd.DataFrame(data, columns=df.columns,index=index)
     # after filtering, 2293 proteins retained (originally 3886)
-    new_df.to_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter.tsv',sep='\t')
+    new_df.to_csv('F:/native_digestion/01242023/analysis/distance_to_center_all_filter_nomorethan3zeros.tsv',sep='\t')
 
 
 def cluster_map():
@@ -186,6 +281,22 @@ def umap_hdbscan():
     plt.show()
 
 
+def ion_quant_analysis():
+    from collections import Counter
+    df = pd.read_csv('D:/data/native_protein_digestion/12072021/ionquant_search/combined_ion.tsv',sep='\t')
+    all_have_prot, at_least6, at_least5 = [],[],[]
+    for row in df.itertuples():
+        num_nonzero = np.count_nonzero(row[-7:])
+        prot_id = row[12]
+        if num_nonzero == 7:
+            all_have_prot.append(prot_id)
+        if num_nonzero >= 6:
+            at_least6.append(prot_id)
+        if num_nonzero >= 5:
+            at_least5.append(prot_id)
+    print (len(set(all_have_prot)),len(set(at_least6)),len(set(at_least5)))
+
+
 if __name__ == '__main__':
     import seaborn as sns
     # get_unique_peptides()
@@ -194,4 +305,9 @@ if __name__ == '__main__':
     # combine_distance_intensity()
     # filter_df()
     # cluster_map()
-    umap_hdbscan()
+    # umap_hdbscan()
+    # distance_intensity_()
+    # distance_intensity_plot()
+    # ion_quant_analysis()
+    distance_intensity_plot()
+    # delta_dist_cal()

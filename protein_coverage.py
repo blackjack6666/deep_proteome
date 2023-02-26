@@ -149,6 +149,19 @@ def fasta_reverse_generator(fasta_file_in, fasta_file_out):
     return fasta_file_out
 
 
+def fasta_shirk(fasta_in,fasta_out,protein_list):
+    # shirk the fasta file to only contain protein in a list
+    protein_dict, prot_description_dict = fasta_reader(fasta_in), read_description(fasta_in)
+    with open(fasta_out, 'w', newline='\n') as file_open:
+        for id in protein_list:
+            seq = protein_dict[id]
+            block = range(0, len(seq) + 60, 60)
+            file_open.write('>' + prot_description_dict[id][0] + '|' + id + '|' + prot_description_dict[id][1] + '\n')
+            for i in range(len(block) - 1):
+                file_open.write(seq[block[i]:block[i + 1]] + '\n')
+    return fasta_out
+
+
 def contaminant_converter(contaminant_file, normalized_contaminant_file):
     contaminant_description_dict = {}
     with open(contaminant_file, 'r') as file_open:
@@ -238,7 +251,7 @@ def aa_frequency(filename):
 
 
 if __name__ == "__main__":
-    fasta_file_input = 'F:/alanine_tailing/20220709/gfp_truncation_alanines.fasta'
-    fasta_file_out = 'F:/alanine_tailing/20220709/gfp_truncation_alanines_rev.fasta'
-    fasta_reverse_generator(fasta_file_input,fasta_file_out)
-
+    import pickle as pk
+    import pandas as pd
+    protein_list = pd.read_excel('F:/native_digestion/01242023/analysis/distance_to_center.xlsx',index_col=0).index.tolist()
+    fasta_in = ''
