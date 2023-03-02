@@ -116,53 +116,55 @@ def distance_intensity_():
 def distance_intensity_plot():
     from functools import reduce
     from operator import add
-    df = pd.read_csv('F:/native_digestion/01242023/analysis/prot_distance_intensity_1.tsv', sep='\t',index_col=0)
+    df = pd.read_csv('F:/native_digestion/01242023/analysis/prot_distance_intensity_2.tsv', sep='\t',index_col=0)
     df = df.copy().fillna(0)
-    # df = df.dropna()
-    normalize_factor = 100
+    # df = df.copy().dropna()
+    normalize_factor = 50
     time_range = list(range(1,14))
-    time_index_dict = {i:j for i,j in zip(time_range,chunk_(list(range(1,normalize_factor)),int(normalize_factor/13))[:-1])}
-    time_index_join = reduce(add,[v for v in time_index_dict.values()])
-    print (time_index_dict)
-    plot_array = np.zeros((20,13))
+    # time_index_dict = {i:j for i,j in zip(time_range,chunk_(list(range(1,normalize_factor)),int(normalize_factor/13))[:-1])}
+    # time_index_join = reduce(add,[v for v in time_index_dict.values()])
+    # print (time_index_dict)
+    plot_array = np.zeros((normalize_factor,13))
     prot_unique = df['protein_id'].unique()
-    df_plot = pd.DataFrame(columns=['norm_dist_index','int','time'])
-    norm_dist_index, int_color, time = [],[],[]
+    # df_plot = pd.DataFrame(columns=['norm_dist_index','int','time'])
+    # norm_dist_index, int_color, time = [],[],[]
     for each in prot_unique:
 
         sub_df = df[df['protein_id']==each]
-        dist_array = sub_df['average_distance'].to_numpy()
+        dist_array = sub_df['deltaD'].to_numpy()
+        # normalize cleavage to center distance
+
         normalized_dist = (dist_array - np.min(dist_array)) / (
                     np.max(dist_array) - np.min(dist_array)) * (normalize_factor-1)
         # dist_index = (normalize_factor-1)-normalized_dist  # used as the y-axis index on heatmap
         dist_index = normalized_dist
-        dist_index_list = [[j]*len(time_index_dict[i+1]) for i, j in enumerate(dist_index)]
-        dist_index_list = reduce(add,dist_index_list)
+        # dist_index_list = [[j]*len(time_index_dict[i+1]) for i, j in enumerate(dist_index)]
+        # dist_index_list = reduce(add,dist_index_list)
 
         # time as index on x-axis, intensity as color
-        int_array,time_array = sub_df['intensity'].tolist(), time_range
-        int_index_list = [[j]*len(time_index_dict[i+1]) for i, j in enumerate(int_array)]
-        int_index_list = reduce(add,int_index_list)
-        norm_dist_index+=dist_index_list
-        int_color+=int_index_list
-        time+=time_index_join
+        int_array,time_array = sub_df['intensity'], sub_df['time']
+        # int_index_list = [[j]*len(time_index_dict[i+1]) for i, j in enumerate(int_array)]
+        # int_index_list = reduce(add,int_index_list)
+        # norm_dist_index+=dist_index_list
+        # int_color+=int_index_list
+        # time+=time_index_join
 
-        # for dist, intensity, time in zip(dist_index, int_array,time_array):
-        #     try:
-        #         plot_array[int(dist),time-1] += intensity
-        #     except ValueError:
-        #         print (each,dist_array)
+        for dist, intensity, time in zip(dist_index, int_array, time_array):
+            try:
 
-    for i, j in zip(['norm_dist_index','int','time'],[norm_dist_index,int_color,time]):
-        df_plot[i]=j
+                plot_array[int(dist),time-1] += intensity
+            except ValueError:
+                print (each,dist_array)
 
-    print(df_plot.shape)
+    # for i, j in zip(['norm_dist_index','int','time'],[norm_dist_index,int_color,time]):
+    #     df_plot[i]=j
+
+    # print(df_plot.shape)
     # df_plot.to_csv('F:/native_digestion/01242023/analysis/scatter_plot_0225.tsv',sep='\t')
-    print (df_plot.hist)
-    g = sns.scatterplot(data=df_plot,x='time',y='norm_dist_index',hue='int',s=5,palette='viridis')
+    # g = sns.scatterplot(data=df_plot,x='time',y='norm_dist_index',hue='int',s=5,palette='viridis')
     # plt.legend([], [], frameon=False)
-    # g = sns.heatmap(data=plot_array[:,:-2],cmap='viridis')
-    # plt.show()
+    g = sns.heatmap(data=plot_array[:,:-2],cmap='viridis',robust=True)
+    plt.show()
 
 
 def delta_dist_cal():
@@ -283,18 +285,21 @@ def umap_hdbscan():
 
 def ion_quant_analysis():
     from collections import Counter
-    df = pd.read_csv('D:/data/native_protein_digestion/12072021/ionquant_search/combined_ion.tsv',sep='\t')
-    all_have_prot, at_least6, at_least5 = [],[],[]
+    df = pd.read_csv('F:/native_digestion/01202023/ionquant_search/combined_ion.tsv',sep='\t')
+    all_have_prot, at_least6, at_least5, at_least4 = [],[],[],[]
     for row in df.itertuples():
-        num_nonzero = np.count_nonzero(row[-7:])
+        num_nonzero = np.count_nonzero(row[-13:])
         prot_id = row[12]
-        if num_nonzero == 7:
+        print (prot_id)
+        if num_nonzero == 13:
             all_have_prot.append(prot_id)
-        if num_nonzero >= 6:
+        if num_nonzero >= 12:
             at_least6.append(prot_id)
-        if num_nonzero >= 5:
+        if num_nonzero >= 11:
             at_least5.append(prot_id)
-    print (len(set(all_have_prot)),len(set(at_least6)),len(set(at_least5)))
+        if num_nonzero >= 10:
+            at_least4.append(prot_id)
+    print (len(set(all_have_prot)),len(set(at_least6)),len(set(at_least5)),len(set(at_least4)))
 
 
 if __name__ == '__main__':
@@ -308,6 +313,6 @@ if __name__ == '__main__':
     # umap_hdbscan()
     # distance_intensity_()
     # distance_intensity_plot()
-    # ion_quant_analysis()
-    distance_intensity_plot()
+    ion_quant_analysis()
+    # distance_intensity_plot()
     # delta_dist_cal()
