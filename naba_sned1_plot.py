@@ -353,6 +353,7 @@ new_str = one_d_covearge_bar(html_template,peptide_list,protein_dict['Q8TER0'],
 
 def corrfunc(x, y, **kws):
   r, p = stats.pearsonr(x, y)
+  average_x, average_y = np.mean(x), np.mean(y)
   # p_stars = ''
   # if p <= 0.05:
   #   p_stars = '*'
@@ -363,6 +364,8 @@ def corrfunc(x, y, **kws):
   ax = plt.gca()
   ax.annotate('r = {:.2f} '.format(r),
               xy=(0.05, 0.9), xycoords=ax.transAxes, fontweight='bold', fontsize=10)
+  ax.annotate('{:.2f}/{:.2f} (x/y)'.format(average_x,average_y),
+              xy=(0.05, 0.82), xycoords=ax.transAxes, fontweight='bold', fontsize=10)
 
 def annotate_colname(x, **kws):
   ax = plt.gca()
@@ -400,8 +403,8 @@ df_grid = df_grid.rename(columns={'144_15_aggre_cov':'log2(144 15min aggre. cov+
                                   '144_240_aggre_cov':'log2(144 240min aggre. cov+1)',
                                   '144_1080_cov':'log2(144 18h cov+1)'})
 cor_matrix(df_grid)
-plt.savefig('F:/fred_time_lapse/figures/144_grid_agg_cov.png',dpi=300)
-plt.show()
+plt.savefig('F:/fred_time_lapse/figures/144_grid_agg_cov_new.png',dpi=300)
+# plt.show()
 
 ### SCV example
 """

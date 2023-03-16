@@ -92,6 +92,21 @@ def combine_distance_intensity():
     new_df.to_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity.tsv',sep='\t')
 
 
+def output_intensity_totsv():
+    distance_df = pd.read_excel('F:/native_digestion/01242023/analysis/distance_to_center_all.xlsx', index_col=0)
+    protein_int_dict = pk.load(open('F:/native_digestion/01242023/time_points/prot_intensity_dict.p', 'rb'))
+    int_df = pd.DataFrame(index=distance_df.index, columns=distance_df.columns.tolist()[:-2])
+    for row in distance_df.itertuples(index=True):
+        prot = row[0]
+        int_array = protein_int_dict[prot][:-2]
+        int_array_fillna = np.where(np.isnan(int_array), 0, int_array)
+        normalized_int = (int_array_fillna - np.min(int_array_fillna)) / (
+                    np.max(int_array_fillna) - np.min(int_array_fillna))
+        int_df.at[prot,:] = normalized_int
+    int_df = int_df.dropna()
+    int_df.to_csv('F:/native_digestion/01242023/analysis/norm_intensity_removelast2.tsv',sep='\t')
+
+
 def distance_intensity_():
     """
     plot distance on y axis, time on x axis, color as intensity
@@ -114,6 +129,10 @@ def distance_intensity_():
 
 
 def distance_intensity_plot():
+    """
+    plot heat map, use data from distance_intensity_
+    :return:
+    """
     from functools import reduce
     from operator import add
     df = pd.read_csv('F:/native_digestion/01242023/analysis/prot_distance_intensity_2.tsv', sep='\t',index_col=0)
@@ -213,7 +232,7 @@ def cluster_map():
     import matplotlib.pyplot as plt
     import seaborn as sns
 
-    data = pd.read_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter_norm01_removelast2.tsv',sep='\t',index_col=0)
+    data = pd.read_csv('F:/native_digestion/01242023/analysis/norm_intensity_removelast2.tsv',sep='\t',index_col=0)
     protein_list = data.index.tolist()
     protein_hex_list = disorder_to_hex(protein_list) # add row colors on clustermap
     # print (protein_hex_list)
@@ -309,10 +328,11 @@ if __name__ == '__main__':
     # print (protein_intensity())
     # combine_distance_intensity()
     # filter_df()
-    # cluster_map()
+    cluster_map()
     # umap_hdbscan()
     # distance_intensity_()
     # distance_intensity_plot()
-    ion_quant_analysis()
+    # ion_quant_analysis()
     # distance_intensity_plot()
     # delta_dist_cal()
+    # output_intensity_totsv()

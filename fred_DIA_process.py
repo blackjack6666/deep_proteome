@@ -599,8 +599,34 @@ def upset_plot():
     upset.add_stacked_bars(by='category',colors=ecm_class_color_dict, elements=18)
     upset.plot()
     plt.legend('',frameon=False)
-    # plt.savefig('F:/fred_time_lapse/figures/144_peptide_upset.png',dpi=300)
+    plt.savefig('F:/fred_time_lapse/figures/144_peptide_upset.png',dpi=300)
+    # plt.show()
+
+
+def abundance_plot_sned1():
+    # plot heatmap showing difference between SNED1+/-
+    df_sned1 = pd.read_csv('F:/fred_time_lapse/analysis/ECM_gene_144std_intensity_0104_atleast2pep.tsv',sep='\t',index_col=0)
+    df_no_sned1 = pd.read_csv('F:/fred_time_lapse/analysis/ECM_gene_145std_intensity_0104_atleast2pep.tsv',sep='\t',index_col=0)
+    prot_144, prot_145 = df_sned1.index.tolist(), df_no_sned1.index.tolist()
+    column_144, column_145 = df_sned1.columns.tolist(),df_no_sned1.columns.tolist()
+    prot_list = set(prot_144+prot_145)
+    df_sum = pd.DataFrame(index=list(prot_list),columns=['144_1080sum','145_1080sum'])
+    for each in prot_list:
+        # print (df_sned1.loc[each,column_144[2]:])
+        sum_144 = df_sned1.loc[each, column_144[2]:].sum() if each in prot_144 else 0
+        sum_145 = df_no_sned1.loc[each, column_145[2]:].sum() if each in prot_145 else 0
+        df_sum.at[each,'144_1080sum'] = sum_144
+        df_sum.at[each,'145_1080sum'] = sum_145
+    normalized_df = (df_sum-df_sum.min())/(df_sum.max()-df_sum.min())
+    plt_array = (normalized_df['144_1080sum']-normalized_df['145_1080sum'])/normalized_df['144_1080sum']*100
+    df_plot = pd.DataFrame(index=normalized_df.index, columns=['difference%'])
+    df_plot['difference%'] = plt_array.tolist()
+    df_plot = df_plot.sort_values(by='difference%', ascending=False)
+    print (df_plot.head)
+    fig,ax = plt.subplots(1,1, figsize=(15,4))
+    g = sns.lineplot(data=df_plot['difference%'],ax=ax,linewidth=2.5,color='k')
     plt.show()
+
 
 
 if __name__ == '__main__':
@@ -623,4 +649,5 @@ if __name__ == '__main__':
     # dissim_index()
     # dissim_index_plot()
     # upsetplot_data()
-    upset_plot()
+    # upset_plot()
+    abundance_plot_sned1()
