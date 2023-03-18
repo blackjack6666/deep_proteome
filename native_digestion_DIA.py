@@ -78,18 +78,33 @@ def combine_distance_intensity():
     combine cleavage to center distance and protein intensity by multiplying
     :return:
     """
-    protein_int_dict = pk.load(open('F:/native_digestion/01242023/time_points/prot_intensity_dict.p','rb'))
-    distance_df = pd.read_excel('F:/native_digestion/01242023/analysis/distance_to_center_all.xlsx',index_col=0)
+    # protein_int_dict = pk.load(open('F:/native_digestion/01242023/time_points/prot_intensity_dict.p','rb'))
+    prot_int_norm_df = pd.read_csv('F:/native_digestion/01242023/analysis/norm_intensity_removelast2.tsv',sep='\t',index_col=0)
+    prot_int_norm_list = prot_int_norm_df.index.tolist()
+    distance_df = pd.read_csv('F:/native_digestion/01242023/analysis/distance_to_center_all_filter_norm01.tsv',sep='\t',index_col=0)
     distance_df = distance_df.fillna(0)
     new_df = pd.DataFrame(index=distance_df.index,columns=distance_df.columns)
     for row in distance_df.itertuples(index=True):
         prot = row[0]
-        int_array = protein_int_dict[prot]
-        int_array_fillna = np.where(np.isnan(int_array),0,int_array)
-        normalized_int = (int_array_fillna-np.min(int_array_fillna))/(np.max(int_array_fillna)-np.min(int_array_fillna))
-        multiply = np.multiply(np.array(row[1:]), normalized_int)
+        int_array = prot_int_norm_df.loc[prot,:].to_numpy() if prot in prot_int_norm_list else np.zeros(11)
+        # int_array_fillna = np.where(np.isnan(int_array),0,int_array)
+        # normalized_int = (int_array_fillna-np.min(int_array_fillna))/(np.max(int_array_fillna)-np.min(int_array_fillna))
+        # multiply = np.multiply(np.array(row[1:]), normalized_int)
+        multiply = np.multiply(np.array(row[1:]), int_array)
         new_df.loc[prot,:] = multiply
-    new_df.to_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity.tsv',sep='\t')
+    new_df.to_csv('F:/native_digestion/01242023/analysis/distance_norm01_times_intensity_norm01.tsv',sep='\t')
+
+
+def normalize_distance():
+    distance_df = pd.read_csv('F:/native_digestion/01242023/analysis/distance_to_center_all_filter.tsv', sep='\t',index_col=0)
+    normal_dist_df = pd.DataFrame(index=distance_df.index, columns=distance_df.columns[:-2])
+    dist_2d = distance_df.to_numpy()[:,:-2]
+    for prot, dist in zip(normal_dist_df.index, dist_2d):
+        dist = np.where(np.isnan(dist), 0, dist)
+        norm_dist = (dist-np.min(dist))/(np.max(dist)-np.min(dist))
+        normal_dist_df.loc[prot,:] = norm_dist
+    normal_dist_df = normal_dist_df.dropna()
+    normal_dist_df.to_csv('F:/native_digestion/01242023/analysis/distance_to_center_all_filter_norm01.tsv',sep='\t')
 
 
 def output_intensity_totsv():
@@ -232,7 +247,7 @@ def cluster_map():
     import matplotlib.pyplot as plt
     import seaborn as sns
 
-    data = pd.read_csv('F:/native_digestion/01242023/analysis/norm_intensity_removelast2.tsv',sep='\t',index_col=0)
+    data = pd.read_csv('F:/native_digestion/01242023/analysis/distance_norm01_times_intensity_norm01.tsv',sep='\t',index_col=0)
     protein_list = data.index.tolist()
     protein_hex_list = disorder_to_hex(protein_list) # add row colors on clustermap
     # print (protein_hex_list)
@@ -336,3 +351,4 @@ if __name__ == '__main__':
     # distance_intensity_plot()
     # delta_dist_cal()
     # output_intensity_totsv()
+    # normalize_distance()

@@ -425,47 +425,47 @@ def table_output():
 
     times, samples, replicates = ['15', '30', '60', '120', '240'], ['144','145'],['A','B','C','D','E']
     std_replicates = ['NA_1080','NB_1080','NC_1080','ND_1080','NE_1080']
-    # for gene in gene_category_dict:
-    #     if gene in intensity_dict:
-    for gene in intensity_dict:
-        print(gene)
-        seq = gene_seq_dict[gene]
-        # df.loc[gene, 'category'] = gene_category_dict[gene]["Category"]
-        # df.loc[gene, 'Sub'] = gene_category_dict[gene]["Sub"]
+    for gene in gene_category_dict:
+        if gene in intensity_dict:
+    # for gene in intensity_dict:
+            print(gene)
+            seq = gene_seq_dict[gene]
+            df.loc[gene, 'category'] = gene_category_dict[gene]["Category"]
+            df.loc[gene, 'Sub'] = gene_category_dict[gene]["Sub"]
 
-        for sample in samples:
-            for time in times:
-                for rep in replicates:
-                    # sequence coverage
-                    np_array = np.zeros(len(seq))
-                    psm_list = gene_f_psm_dict_of_dict[gene][sample + rep + '_' + time]
+            for sample in samples:
+                for time in times:
+                    for rep in replicates:
+                        # sequence coverage
+                        np_array = np.zeros(len(seq))
+                        psm_list = gene_f_psm_dict_of_dict[gene][sample + rep + '_' + time]
+                        if len(set(psm_list)) > 1:  # filter out genes with only one peptide
+                            for each in psm_list:
+                                pep_loc = seq.find(each)
+                                pep_end_loc = pep_loc + len(each)
+                                np_array[pep_loc:pep_end_loc] += 1
+                            df.loc[gene,sample+rep+'_'+time] = np.count_nonzero(np_array)/len(seq)*100
+                            # df.loc[gene, sample + rep + '_' + time] = intensity_dict[gene][sample + rep + '_' + time]
+                            # df.loc[gene,sample+rep+'_'+time] = str(set(psm_list))
+                            # df.loc[gene, sample + rep + '_' + time] = len(psm_list)
+                        else:
+                            df.loc[gene, sample + rep + '_' + time] = 0
+                for std in std_replicates:
+                    np_array_std = np.zeros(len(seq))
+                    psm_list = gene_f_psm_dict_of_dict[gene][sample + std]
                     if len(set(psm_list)) > 1:  # filter out genes with only one peptide
-                        # for each in psm_list:
-                        #     pep_loc = seq.find(each)
-                        #     pep_end_loc = pep_loc + len(each)
-                        #     np_array[pep_loc:pep_end_loc] += 1
-                        # df.loc[gene,sample+rep+'_'+time] = np.count_nonzero(np_array)/len(seq)*100
-                        # df.loc[gene, sample + rep + '_' + time] = intensity_dict[gene][sample + rep + '_' + time]
-                        df.loc[gene,sample+rep+'_'+time] = str(set(psm_list))
-                        # df.loc[gene, sample + rep + '_' + time] = len(psm_list)
+                        for each in psm_list:
+                            pep_loc = seq.find(each)
+                            pep_end_loc = pep_loc + len(each)
+                            np_array_std[pep_loc:pep_end_loc] += 1
+                        df.loc[gene,sample+std] = np.count_nonzero(np_array_std)/len(seq)*100
+                # df.loc[gene, sample + std] = intensity_dict[gene][sample + std]
+                # df.loc[gene,sample+std] = str(set(psm_list))
+                # df.loc[gene,sample+std] = len(psm_list)
                     else:
-                        df.loc[gene, sample + rep + '_' + time] = 0
-            # for std in std_replicates:
-            #     np_array_std = np.zeros(len(seq))
-            # psm_list = gene_f_psm_dict_of_dict[gene][sample + std]
-            # if len(set(psm_list)) > 1:  # filter out genes with only one peptide
-            # for each in psm_list:
-            #     pep_loc = seq.find(each)
-            #     pep_end_loc = pep_loc + len(each)
-            #     np_array_std[pep_loc:pep_end_loc] += 1
-            # df.loc[gene,sample+std] = np.count_nonzero(np_array_std)/len(seq)*100
-            # df.loc[gene, sample + std] = intensity_dict[gene][sample + std]
-            # df.loc[gene,sample+std] = str(set(psm_list))
-            # df.loc[gene,sample+std] = len(psm_list)
-            # else:
-            #     df.loc[gene, sample + std] = 0
+                        df.loc[gene, sample + std] = 0
 
-    df.to_csv(base_path+'analysis/All_gene_timelapsed_peptide_0109_atleast2pep.tsv',sep='\t')
+    df.to_csv(base_path+'analysis/ECM_gene_individual_cov_atleast2pep_0318.tsv',sep='\t')
 
 
 def filter_df():
@@ -473,20 +473,20 @@ def filter_df():
     import time
     time.sleep(3)
     base_path = 'F:/fred_time_lapse/'
-    df = pd.read_csv(base_path+'analysis/All_gene_time_series_absoluteCov_0125.tsv',sep='\t',index_col=0)
+    df = pd.read_csv(base_path+'analysis/ECM_gene_individual_cov_atleast2pep_0318.tsv',sep='\t',index_col=0)
     df = df.copy()
     data = []
     index = []
     for row in df.itertuples():
         # filter rows with all 0s
-        if all([row[i]==0 for i in range(-10,0)]):
-        # if all([row[i] == "0" for i in range(1, len(row))]):
+        # if all([row[i]==0 for i in range(-10,0)]):
+        if all([row[i] == 0 for i in range(3, len(row))]):
             continue
         else:
             data.append([i for i in row][1:])
             index.append(row[0])
     new_df = pd.DataFrame(data, columns=df.columns,index=index)
-    new_df.to_csv(base_path+'analysis/All_gene_time_series_absoluteCov_0125.tsv',sep='\t')
+    new_df.to_csv(base_path+'analysis/ECM_gene_individual_cov_atleast2pep_0318.tsv',sep='\t')
 
 
 def nsaf_cal():
@@ -643,11 +643,11 @@ if __name__ == '__main__':
     # psm_dict = pk.load(open('F:/fred_time_lapse/analysis/prot_f_rep_combined_peptide_dict_1219.p', 'rb'))
     # print (psm_dict['Q8TER0']['145_1080'])
     # table_output()
-    # filter_df()
+    filter_df()
     # nsaf_cal()
     # abs_coverage_calculation()
     # dissim_index()
     # dissim_index_plot()
     # upsetplot_data()
     # upset_plot()
-    abundance_plot_sned1()
+    # abundance_plot_sned1()
