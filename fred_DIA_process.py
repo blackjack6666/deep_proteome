@@ -181,7 +181,7 @@ def coverage_calculation():
 
     # load aggregated and combined 1080 peptides
     # prot_f_aggregate_pep_dict = pk.load(open('F:/fred_time_lapse/analysis/gene_f_aggregate_peptide_dict_0107.p','rb')) # 25 files, 5*5
-    prot_f_aggregate_pep_dict = pk.load(open('F:/fred_time_lapse/analysis/ecm_gene_f_aggregate_peptide_dict_median_rep_0327.p', 'rb')) # 5 files total, median replicate for each time point
+    prot_f_aggregate_pep_dict = pk.load(open('F:/fred_time_lapse/analysis/ecm_gene_f_aggregate_peptide_dict_best_rep_0327.p', 'rb')) # 5 files total, median replicate for each time point
     prot_f_combined_pep_dict = pk.load(open('F:/fred_time_lapse/analysis/gene_f_rep_combined_peptide_dict_0107.p','rb')) # key is '144_1080' and '145_1080'
 
     gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json', 'r'))  # ECM genes
@@ -221,7 +221,7 @@ def coverage_calculation():
                     cov1080 = np.count_nonzero(np_arry)/prot_length*100
                     aggre_cov_df.at[prot,sample2+'_cov'] = cov1080
                 # aggre_cov_df.at[prot,sample2+'_pep'] = str(peptides1080_set)
-    aggre_cov_df.to_csv('F:/fred_time_lapse/analysis/gene_aggre_pep_5compare5_0327.tsv',sep='\t')
+    aggre_cov_df.to_csv('F:/fred_time_lapse/analysis/gene_aggre_pep_5compare5_best_psm_0328.tsv',sep='\t')
 
 
 def abs_coverage_calculation():
@@ -298,6 +298,21 @@ def coverage_plot():
     plt.show()
 
 
+def scatter_plot_cov():
+    # plot scatter plot to compare aggre.cov between sned1 and control
+    ecm_cov_df = pd.read_csv('F:/fred_time_lapse/analysis/gene_aggre_cov_0107.tsv', sep='\t',
+                             index_col=0).fillna(0)
+    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    sned1_agg, control_agg, category = ecm_cov_df['144_1080_cov'], ecm_cov_df['145_1080_cov'], ecm_cov_df['Sub']
+    for x, y, cat in zip(control_agg, sned1_agg, category):
+        ax.plot(x,y,'o',markersize=12,markeredgewidth=2,fillstyle='none',color=ecm_class_color_dict[cat])
+    ax.axline((1, 1), slope=1, ls='--', c='.3')
+    ax.tick_params(axis='both', labelsize=14)
+    plt.savefig('F:/fred_time_lapse/figures/ecm_stdcov_sned1y_controlx_0329.png', dpi=300)
+
+    # plt.show()
+
+
 def category_cov_plot():
     # plot sequence coverage for different categories
 
@@ -350,15 +365,15 @@ def category_cov_plot():
 
 def dot_plot_connecting():
     # plot dot plots and connecting the dots for sequence coverage
-    ecm_cov_df = pd.read_csv('F:/fred_time_lapse/analysis/gene_aggre_cov_0107.tsv', sep='\t',index_col=0).fillna(0)
+    ecm_cov_df = pd.read_csv('F:/fred_time_lapse/analysis/gene_aggre_pep_5compare5_best_psm_0328.tsv', sep='\t',index_col=0).fillna(0)
     fig, axs = plt.subplots(2, 3, figsize=(8, 5))
     for each, ax in zip(sort_category, [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]):
 
         color = ecm_class_color_dict[each]
         sub_df = ecm_cov_df[ecm_cov_df['Sub'] == each]
-        aggre_cov_list, std_cov_list = sub_df['145_240_aggre_cov'].tolist(), sub_df['145_1080_cov'].tolist()
+        aggre_cov_list, std_cov_list = sub_df['144_240_aggre_cov'].tolist(), sub_df['144_1080_cov'].tolist()
         sub_df_plot = pd.DataFrame(
-            dict(agg_or_standard=['145_4h_agg'] * sub_df.shape[0] + ['145_18h'] * sub_df.shape[0],
+            dict(agg_or_standard=['144_4h_agg'] * sub_df.shape[0] + ['144_18h'] * sub_df.shape[0],
                  coverage=aggre_cov_list + std_cov_list))
         median_list = sub_df_plot.groupby(['agg_or_standard'])['coverage'].median().tolist()
         x_pos_list = range(len(median_list))
@@ -383,7 +398,7 @@ def dot_plot_connecting():
 
         # label statistics
         add_stat_annotation(ax=axs[ax[0], ax[1]], data=sub_df_plot, x='agg_or_standard', y='coverage',
-                            box_pairs=[("145_4h_agg", "145_18h")],
+                            box_pairs=[("144_4h_agg", "144_18h")],
                             test='Wilcoxon', text_format='star', loc='inside', verbose=2,
                             comparisons_correction='bonferroni')
         axs[ax[0], ax[1]].set_xlim([-0.5, 1.5])
@@ -391,7 +406,41 @@ def dot_plot_connecting():
         axs[ax[0], ax[1]].set_xticklabels(['4h_agg','18h_std'], fontsize=10)
         axs[ax[0], ax[1]].set_xlabel('')
         axs[ax[0], ax[1]].set_ylabel('')
-    plt.savefig('F:/fred_time_lapse/figures/ecm_cov_145_240agg_vs_1080_category_0107_dotsconnect.png', dpi=300)
+    plt.savefig('F:/fred_time_lapse/figures/ecm_cov_144_240agg_vs_1080_category_0328_5vs5_best.png', dpi=300)
+    # plt.show()
+
+
+def dots_plotting_all():
+    # plot sequence coverage data for all ECMs
+    ecm_cov_df = pd.read_csv('F:/fred_time_lapse/analysis/gene_aggre_pep_5compare5_best_psm_0328.tsv', sep='\t',
+                             index_col=0).fillna(0)
+    fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+    aggre_cov_list, std_cov_list = ecm_cov_df['144_240_aggre_cov'].tolist(), ecm_cov_df['144_1080_cov'].tolist()
+    sub_df_plot = pd.DataFrame(
+        dict(agg_or_standard=['144_4h_agg'] * ecm_cov_df.shape[0] + ['144_18h'] * ecm_cov_df.shape[0],
+             coverage=aggre_cov_list + std_cov_list))
+    x_agg, x_std = np.random.normal(0, 0.05, size=len(aggre_cov_list)), np.random.normal(1, 0.05,
+                                                                                           size=len(std_cov_list))
+    # boxplot
+    ax.boxplot([aggre_cov_list, std_cov_list], positions=[0, 1], widths=(0.3, 0.3), showfliers=False)
+    # plot dots
+    for x, y in zip([x_agg, x_std], [aggre_cov_list, std_cov_list]):
+        ax.plot(x, y, 'o', markersize=5, alpha=0.6, color='k')
+    # connecting dots
+    for x1, y1, x2, y2 in zip(x_agg, aggre_cov_list, x_std, std_cov_list):
+        ax.plot([x1, x2], [y1, y2], color='k', linestyle='--', alpha=0.3)
+
+    ax.text(0.01, 0.99, 'n = %i' % ecm_cov_df.shape[0], ha='left', va='top', transform=ax.transAxes)
+    add_stat_annotation(ax=ax, data=sub_df_plot, x='agg_or_standard', y='coverage',
+                        box_pairs=[("144_4h_agg", "144_18h")],
+                        test='Wilcoxon', text_format='star', loc='inside', verbose=2,
+                        comparisons_correction='bonferroni')
+    ax.set_xlim([-0.5, 1.5])
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels(['4h_agg', '18h_std'], fontsize=10)
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+    plt.savefig('F:/fred_time_lapse/figures/ecm_cov_144_240agg_vs_1080_all_0328_5vs5_best.png', dpi=300)
     # plt.show()
 
 
@@ -485,14 +534,14 @@ def compare5_to5():
             for file in gene_f_psm_dict_of_dict[gene]:
                 psm_n = len(gene_f_psm_dict_of_dict[gene][file])
                 file_psm_n_dict[file] += psm_n
-    file_group_psm_n_dict = defaultdict(list)
+    file_group_psm_n_dict = defaultdict(list) # list for each value contains psm number for each replicate
     for file in file_psm_n_dict:
         sample, time, rep = file.split('_')[0][:-1], file.split('_')[-1], file.split('_')[0][-1]
         file_group_psm_n_dict[sample+'_'+time].append((file_psm_n_dict[file], rep))
     psm_median_group = {}
     for each in file_group_psm_n_dict:
         # print (each, sorted(file_group_psm_n_dict[each]))
-        psm_median_group[each]=each.split('_')[0]+sorted(file_group_psm_n_dict[each])[2][-1]+'_'+each.split('_')[1]
+        psm_median_group[each]=each.split('_')[0]+sorted(file_group_psm_n_dict[each])[-1][-1]+'_'+each.split('_')[1]
     print (psm_median_group)
 
     # aggregate psms throughout time points
@@ -500,16 +549,21 @@ def compare5_to5():
     aggregate_pep_dict = {}
     for prot in intensity_dict:
         aggregate_psm_dict = {}
+
         for ind, val in enumerate(time_points):
             time_points_slice = time_points[:ind + 1]
             for sample in ['144', '145']:
                 # aggregate psms from 15min to 240min
-                aggregate_psm_set = reduce(operator.or_, [set(gene_f_psm_dict_of_dict[prot][psm_median_group[sample+'_'+t]]) for t in
-                                                          time_points_slice])
-                aggregate_psm_dict[sample + '_' + val + '_aggregate'] = aggregate_psm_set
+                aggregate_list = []
+                for t in time_points_slice:
+                    if len(set(gene_f_psm_dict_of_dict[prot][psm_median_group[sample+'_'+t]]))>1:
+                        aggregate_list += gene_f_psm_dict_of_dict[prot][psm_median_group[sample+'_'+t]]
+                # aggregate_psm_set = reduce(operator.or_, [set(gene_f_psm_dict_of_dict[prot][psm_median_group[sample+'_'+t]]) for t in
+                #                                               time_points_slice if len(set(gene_f_psm_dict_of_dict[prot][psm_median_group[sample+'_'+t]]))>1])
+                aggregate_psm_dict[sample+'_'+val+'_aggregate'] = set(aggregate_list)
         aggregate_pep_dict[prot] = aggregate_psm_dict
 
-    pk.dump(aggregate_pep_dict, open('F:/fred_time_lapse/analysis/ecm_gene_f_aggregate_peptide_dict_median_rep_0327.p', 'wb'))
+    pk.dump(aggregate_pep_dict, open('F:/fred_time_lapse/analysis/ecm_gene_f_aggregate_peptide_dict_best_rep_0327.p', 'wb'))
 
 
 def filter_df():
@@ -517,20 +571,20 @@ def filter_df():
     import time
     time.sleep(3)
     base_path = 'F:/fred_time_lapse/'
-    df = pd.read_csv(base_path+'analysis/ECM_gene_individual_cov_atleast2pep_0318.tsv',sep='\t',index_col=0)
-    df = df.copy()
+    df = pd.read_csv(base_path+'analysis/gene_aggre_pep_5compare5_best_psm_0328.tsv',sep='\t',index_col=0)
+    df = df.copy().fillna(0)
     data = []
     index = []
     for row in df.itertuples():
         # filter rows with all 0s
         # if all([row[i]==0 for i in range(-10,0)]):
-        if all([row[i] == 0 for i in range(3, len(row))]):
+        if all([row[i] == 0 for i in range(4, len(row))]):
             continue
         else:
             data.append([i for i in row][1:])
             index.append(row[0])
     new_df = pd.DataFrame(data, columns=df.columns,index=index)
-    new_df.to_csv(base_path+'analysis/ECM_gene_individual_cov_atleast2pep_0318.tsv',sep='\t')
+    new_df.to_csv(base_path+'analysis/gene_aggre_pep_5compare5_best_psm_0328.tsv',sep='\t')
 
 
 def nsaf_cal():
@@ -679,10 +733,12 @@ if __name__ == '__main__':
     # cv_box_plot()
     # pr_matrix_reader()
     # aggregate_psms()
-    coverage_calculation()
+    # coverage_calculation()
     # coverage_plot()
     # category_cov_plot()
     # dot_plot_connecting()
+    # dots_plotting_all()
+    scatter_plot_cov()
     # qc_check_ecm_ratio()
     # psm_dict = pk.load(open('F:/fred_time_lapse/analysis/prot_f_rep_combined_peptide_dict_1219.p', 'rb'))
     # print (psm_dict['Q8TER0']['145_1080'])

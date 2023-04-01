@@ -352,32 +352,47 @@ new_str = one_d_covearge_bar(html_template,peptide_list,protein_dict['Q8TER0'],
 ### grid plot
 
 def corrfunc(x, y, **kws):
-  r, p = stats.pearsonr(x, y)
-  average_x, average_y = np.mean(x), np.mean(y)
-  # p_stars = ''
-  # if p <= 0.05:
-  #   p_stars = '*'
-  # if p <= 0.01:
-  #   p_stars = '**'
-  # if p <= 0.001:
-  #   p_stars = '***'
-  ax = plt.gca()
-  ax.annotate('r = {:.2f} '.format(r),
-              xy=(0.05, 0.9), xycoords=ax.transAxes, fontweight='bold', fontsize=10)
-  ax.annotate('{:.2f}/{:.2f} (x/y)'.format(average_x,average_y),
-              xy=(0.05, 0.82), xycoords=ax.transAxes, fontweight='bold', fontsize=10)
+    # remove 0s from x and y
+    new_x, new_y = [], []
+    for i in range(len(x)):
+        if x[i] !=0 and y[i]!= 0:
+           new_x.append(x[i])
+           new_y.append(y[i])
+
+    r, p = stats.pearsonr(new_x, new_y)
+    average_x, average_y = np.mean(new_x), np.mean(new_y)
+    # p_stars = ''
+    # if p <= 0.05:
+    #   p_stars = '*'
+    # if p <= 0.01:
+    #   p_stars = '**'
+    # if p <= 0.001:
+    #   p_stars = '***'
+    ax = plt.gca()
+    ax.annotate('r = {:.2f} '.format(r),
+                xy=(0.05, 0.9), xycoords=ax.transAxes, fontweight='bold', fontsize=15)
+    # ax.annotate('{:.2f}/{:.2f} (x/y)'.format(average_x,average_y),
+    #             xy=(0.05, 0.82), xycoords=ax.transAxes, fontweight='bold', fontsize=10)
+
 
 def annotate_colname(x, **kws):
-  ax = plt.gca()
-  ax.annotate(x.name, xy=(0.05, 1), xycoords=ax.transAxes,
+    ax = plt.gca()
+    ax.annotate(x.name, xy=(0.05, 1), xycoords=ax.transAxes,
               fontweight='bold',fontsize=10)
 
+def diagonal_line(x,y,**kws):
+    ax = plt.gca()
+    # ax.plot(ax.get_xlim(), ax.get_ylim(), ls="--", c=".3")
+    ax.axline((1, 1), slope=1, ls='--', c='.3')
+
 def cor_matrix(df):
+
   g = sns.PairGrid(df, palette=['red'], corner=True)
   # Use normal regplot as `lowess=True` doesn't provide CIs.
   # g.map_upper(sns.regplot, scatter_kws={'s':10,'color':'black'},color='black')
-  g.map_lower(sns.regplot, scatter_kws={'s': 10, 'color': 'black'}, color='black')
+  g.map_lower(sns.regplot, scatter_kws={'s': 20, 'color': 'black','alpha':0.5}, color='black',fit_reg=False)
   g.map_lower(corrfunc)
+  g.map_lower(diagonal_line)
   g.map_diag(sns.histplot,color='black')
   g.map_diag(annotate_colname)
   cmap = sns.light_palette('#000000',as_cmap=True)
@@ -388,22 +403,28 @@ def cor_matrix(df):
     try:
         ax.set_ylabel('')
         ax.set_xlabel('')
-        ax.set_xlim(0,8)
-        ax.set_ylim(0,8)
+        ax.set_xlim(-5,100)
+        ax.set_ylim(-5,100)
+        ax.set_xticks([0,20, 40, 60, 80])
+        ax.set_xticklabels(['0','20','40', '60', '80'],size = 15)
+        ax.set_yticks([0,20, 40, 60, 80])
+        ax.set_yticklabels(['0','20','40', '60', '80'],size = 15)
     except:
         continue
   return g
 
 df_aggre_cov = pd.read_csv('F:/fred_time_lapse/analysis/gene_aggre_cov_0107.tsv', sep='\t',index_col=0).fillna(0)
-df_grid = np.log2(df_aggre_cov.iloc[:,np.r_[3:8,-2]]+1)
-df_grid = df_grid.rename(columns={'144_15_aggre_cov':'log2(144 15min aggre. cov+1)',
-                        '144_30_aggre_cov':'log2(144 30min aggre. cov+1)',
-                        '144_60_aggre_cov':'log2(144 60min aggre. cov+1)',
-                        '144_120_aggre_cov':'log2(144 120min aggre. cov+1)',
-                                  '144_240_aggre_cov':'log2(144 240min aggre. cov+1)',
-                                  '144_1080_cov':'log2(144 18h cov+1)'})
-cor_matrix(df_grid)
-plt.savefig('F:/fred_time_lapse/figures/144_grid_agg_cov_new.png',dpi=300)
+
+df_origin = df_aggre_cov.iloc[:,np.r_[8:13,-1]]
+df_grid = np.log(df_aggre_cov.iloc[:,np.r_[3:8,-2]]+1)
+df_grid = df_grid.rename(columns={'144_15_aggre_cov':'log(144 15min aggre. cov+1)',
+                        '144_30_aggre_cov':'log(144 30min aggre. cov+1)',
+                        '144_60_aggre_cov':'log(144 60min aggre. cov+1)',
+                        '144_120_aggre_cov':'log(144 120min aggre. cov+1)',
+                                  '144_240_aggre_cov':'log(144 240min aggre. cov+1)',
+                                  '144_1080_cov':'log(144 18h cov+1)'})
+cor_matrix(df_origin)
+plt.savefig('F:/fred_time_lapse/figures/145_grid_agg_cov_new_origin.png',dpi=300)
 # plt.show()
 
 ### SCV example
