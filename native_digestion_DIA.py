@@ -289,11 +289,11 @@ def disorder_to_hex(protein_list):
 
 
 def plddt_to_hex(protein_list):
-    import pickle as pp
+
     pal = sns.color_palette("magma",24)
     pal_list = pal.as_hex()
     print (pal_list)
-    plddt_mean_dict = pp.load(open('D:/data/alphafold_pdb/pLDDT_human_mean.pkl','rb'))
+    plddt_mean_dict = pk.load(open('D:/data/alphafold_pdb/pLDDT_human_mean.pkl','rb'))
     plddt_hex_list = [pal_list[int(plddt_mean_dict[each]/100*23)] if each in plddt_mean_dict else '#b3b3b3' for each in protein_list]
     # print (plddt_hex_list)
     # df = pd.DataFrame(index=protein_list,columns=['plddt'])
@@ -358,10 +358,33 @@ def ion_quant_analysis():
 
 def cluster_analysis():
     """
-
+    analyze results from cluster map
     :return:
     """
+    from scipy import stats
+    df = pd.read_excel('F:/native_digestion/01242023/analysis/cluster_output.xlsx',index_col=0)
+    plddt_mean_dict = pk.load(open('D:/data/alphafold_pdb/pLDDT_human_mean.pkl', 'rb'))
 
+    clusters = ['cluster_1','cluster_2']
+    cluster_1,cluster_2 = df.iloc[:1400,:], df.iloc[1400:,:]  # manually cut
+    # cluster_1,cluster_2 = cluster_1[cluster_1['disorder_ratio']!='None'], cluster_2[cluster_2['disorder_ratio']!='None']
+    # clus1_disorder, clus2_disorder = cluster_1['disorder_ratio'].tolist(), cluster_2['disorder_ratio'].tolist()
+    clus1_disorder, clus2_disorder = [plddt_mean_dict[prot] for prot in cluster_1.index], [plddt_mean_dict[prot] for prot in cluster_2.index]
+    t_test = stats.ttest_ind(clus1_disorder,clus2_disorder)
+    df_plot = pd.DataFrame(columns=['cluster','plddt'])
+    df_plot['cluster'] = ['cluster_1']*cluster_1.shape[0]+['cluster_2']*cluster_2.shape[0]
+    df_plot['plddt'] = clus1_disorder+clus2_disorder
+    print (f't test result {t_test}')
+    fig,ax = plt.subplots(1, 1, figsize=(6, 5))
+    box_plot = ax.boxplot([df_plot[df_plot.cluster==clu]['plddt'] for clu in clusters],
+               positions=range(len(clusters)), showfliers=False,
+               medianprops=dict(linestyle='-', linewidth=3,color='k'), widths=[0.4,0.4],
+                          boxprops=dict(linestyle='-', linewidth=3, color='k'),
+                          whiskerprops=dict(linestyle='-', linewidth=3),
+                          capprops=dict(linestyle='-', linewidth=3))
+    sns.swarmplot(x='cluster', y='plddt', data=df_plot,size=3)
+
+    plt.show()
 if __name__ == '__main__':
     import seaborn as sns
     # get_unique_peptides()
@@ -369,7 +392,7 @@ if __name__ == '__main__':
     # print (protein_intensity())
     # combine_distance_intensity()
     # filter_df()
-    cluster_map()
+    # cluster_map()
     # umap_hdbscan()
     # distance_intensity_()
     # distance_intensity_plot()
@@ -378,8 +401,4 @@ if __name__ == '__main__':
     # delta_dist_cal()
     # output_intensity_totsv()
     # normalize_distance()
-    # data = pd.read_csv(
-    #     'F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter_norm01_removelast2.tsv',
-    #     sep='\t', index_col=0)
-    # protein_list = data.index.tolist()
-    # plddt_to_hex(protein_list)
+    cluster_analysis()
