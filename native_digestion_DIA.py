@@ -247,10 +247,12 @@ def cluster_map():
     import matplotlib.pyplot as plt
     import seaborn as sns
 
-    data = pd.read_csv('F:/native_digestion/01242023/analysis/distance_norm01_times_intensity_norm01.tsv',sep='\t',index_col=0)
+    data = pd.read_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter_norm01_removelast2.tsv',sep='\t',index_col=0)
     protein_list = data.index.tolist()
-    protein_hex_list = disorder_to_hex(protein_list) # add row colors on clustermap
-    # print (protein_hex_list)
+    protein_hex_list = disorder_to_hex(protein_list)  # add row colors on clustermap
+    plddt_hex_list = plddt_to_hex(protein_list)
+    row_colors = pd.DataFrame(dict(disorder=protein_hex_list,plddt=plddt_hex_list))
+    prot_disorder_dict = pk.load(open('F:/native_digestion/01242023/analysis/prot_disorder_dict.p', 'rb'))
 
     # new_data = pd.DataFrame(index=data.index, columns=data.columns.to_list()[:-2])
     # normalize each protein between 0 and 1
@@ -259,10 +261,15 @@ def cluster_map():
     #     new_data.loc[prot,:] = normalize_0_1
     # new_data.to_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter_norm01_removelast2.tsv', sep='\t')
 
-    fig, ax = plt.subplots(1, 1, figsize=(8, 15))
-    g = sns.clustermap(data=data,col_cluster=False,cmap="YlGnBu",yticklabels=False,row_colors=protein_hex_list)
-    # print (g.dendrogram_row.reordered_ind)
+    fig, ax = plt.subplots(1, 1, figsize=(12,8))
+    g = sns.clustermap(data=data.reset_index(drop=True),col_cluster=False,cmap="YlGnBu",yticklabels=False,row_colors=row_colors, figsize=(10,8),dendrogram_ratio=0.15,
+                       cbar_kws={"orientation": "horizontal","shrink": 0.5})
+    # re_order_protein_index = g.dendrogram_row.reordered_ind
+    # re_order_protein_list = [protein_list[each] for each in re_order_protein_index]
+    # print ([(each, prot_disorder_dict[each]) if each in prot_disorder_dict else (each, 'None') for each in re_order_protein_list])
+    plt.tight_layout()
     plt.show()
+    # plt.savefig(r'F:\native_digestion\01242023/analysis/cluster_disorder_plddt.png',dpi=300)
 
 
 def disorder_to_hex(protein_list):
@@ -275,10 +282,23 @@ def disorder_to_hex(protein_list):
     prot_disorder_dict = pk.load(open('F:/native_digestion/01242023/analysis/prot_disorder_dict.p','rb'))
     protein_hexcolor_list = ['#%02x%02x%02x' % (255, int(210*(1-prot_disorder_dict[each])),int(210*(1-prot_disorder_dict[each])))
                              if each in prot_disorder_dict else '#b3b3b3' for each in protein_list]
+    print (protein_hexcolor_list[:5])
+    # df = pd.DataFrame(index=protein_list,columns=['Disorder'])
+    # df['Disorder'] = protein_hexcolor_list
+    return protein_hexcolor_list
 
-    df = pd.DataFrame(index=protein_list,columns=['Disorder'])
-    df['Disorder'] = protein_hexcolor_list
-    return df
+
+def plddt_to_hex(protein_list):
+    import pickle as pp
+    pal = sns.color_palette("magma",24)
+    pal_list = pal.as_hex()
+    print (pal_list)
+    plddt_mean_dict = pp.load(open('D:/data/alphafold_pdb/pLDDT_human_mean.pkl','rb'))
+    plddt_hex_list = [pal_list[int(plddt_mean_dict[each]/100*23)] if each in plddt_mean_dict else '#b3b3b3' for each in protein_list]
+    # print (plddt_hex_list)
+    # df = pd.DataFrame(index=protein_list,columns=['plddt'])
+    # df['plddt'] = plddt_hex_list
+    return plddt_hex_list
 
 
 def umap_hdbscan():
@@ -336,6 +356,12 @@ def ion_quant_analysis():
     print (len(set(all_have_prot)),len(set(at_least6)),len(set(at_least5)),len(set(at_least4)))
 
 
+def cluster_analysis():
+    """
+
+    :return:
+    """
+
 if __name__ == '__main__':
     import seaborn as sns
     # get_unique_peptides()
@@ -352,3 +378,8 @@ if __name__ == '__main__':
     # delta_dist_cal()
     # output_intensity_totsv()
     # normalize_distance()
+    # data = pd.read_csv(
+    #     'F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter_norm01_removelast2.tsv',
+    #     sep='\t', index_col=0)
+    # protein_list = data.index.tolist()
+    # plddt_to_hex(protein_list)
