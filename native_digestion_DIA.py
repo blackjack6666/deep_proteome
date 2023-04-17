@@ -79,32 +79,32 @@ def combine_distance_intensity():
     :return:
     """
     # protein_int_dict = pk.load(open('F:/native_digestion/01242023/time_points/prot_intensity_dict.p','rb'))
-    prot_int_norm_df = pd.read_csv('F:/native_digestion/01242023/analysis/norm_intensity_removelast2.tsv',sep='\t',index_col=0)
+    prot_int_norm_df = pd.read_excel(r'D:\data\native_protein_digestion\12072021\heat_shock_ionquant_MBR/intensity.xlsx',index_col=0)
     prot_int_norm_list = prot_int_norm_df.index.tolist()
-    distance_df = pd.read_csv('F:/native_digestion/01242023/analysis/distance_to_center_all_filter_norm01.tsv',sep='\t',index_col=0)
+    distance_df = pd.read_csv(r'D:\data\native_protein_digestion\12072021\heat_shock_ionquant_MBR/distance_to_center_all_filter.tsv',sep='\t',index_col=0)
     distance_df = distance_df.fillna(0)
     new_df = pd.DataFrame(index=distance_df.index,columns=distance_df.columns)
     for row in distance_df.itertuples(index=True):
         prot = row[0]
-        int_array = prot_int_norm_df.loc[prot,:].to_numpy() if prot in prot_int_norm_list else np.zeros(11)
+        int_array = prot_int_norm_df.loc[prot,:].to_numpy() if prot in prot_int_norm_list else np.zeros(7)
         # int_array_fillna = np.where(np.isnan(int_array),0,int_array)
-        # normalized_int = (int_array_fillna-np.min(int_array_fillna))/(np.max(int_array_fillna)-np.min(int_array_fillna))
-        # multiply = np.multiply(np.array(row[1:]), normalized_int)
-        multiply = np.multiply(np.array(row[1:]), int_array)
+        normalized_int = (int_array-np.min(int_array))/(np.max(int_array)-np.min(int_array))
+        multiply = np.multiply(np.array(row[1:]), normalized_int)
+        # multiply = np.multiply(np.array(row[1:]), int_array)
         new_df.loc[prot,:] = multiply
-    new_df.to_csv('F:/native_digestion/01242023/analysis/distance_norm01_times_intensity_norm01.tsv',sep='\t')
+    new_df.to_csv(r'D:\data\native_protein_digestion\12072021\heat_shock_ionquant_MBR/distance_times_norm_intensity.tsv',sep='\t')
 
 
 def normalize_distance():
-    distance_df = pd.read_csv('F:/native_digestion/01242023/analysis/distance_to_center_all_filter.tsv', sep='\t',index_col=0)
-    normal_dist_df = pd.DataFrame(index=distance_df.index, columns=distance_df.columns[:-2])
-    dist_2d = distance_df.to_numpy()[:,:-2]
+    distance_df = pd.read_csv(r'D:\data\native_protein_digestion\12072021\heat_shock_ionquant_MBR/distance_times_norm_intensity.tsv', sep='\t',index_col=0)
+    normal_dist_df = pd.DataFrame(index=distance_df.index, columns=distance_df.columns[:-1])
+    dist_2d = distance_df.to_numpy()[:,:-1]
     for prot, dist in zip(normal_dist_df.index, dist_2d):
         dist = np.where(np.isnan(dist), 0, dist)
         norm_dist = (dist-np.min(dist))/(np.max(dist)-np.min(dist))
         normal_dist_df.loc[prot,:] = norm_dist
     normal_dist_df = normal_dist_df.dropna()
-    normal_dist_df.to_csv('F:/native_digestion/01242023/analysis/distance_to_center_all_filter_norm01.tsv',sep='\t')
+    normal_dist_df.to_csv(r'D:\data\native_protein_digestion\12072021\heat_shock_ionquant_MBR/distance_times_norm_intensity_norm01.tsv',sep='\t')
 
 
 def output_intensity_totsv():
@@ -226,13 +226,13 @@ def filter_df():
     # filter out all zeros in df
     import time
     time.sleep(3)
-    df = pd.read_excel('F:/native_digestion/01242023/analysis/distance_to_center_all.xlsx',index_col=0)
+    df = pd.read_excel('D:/data/native_protein_digestion/12072021/heat_shock_ionquant_MBR/distance_to_center_all.xlsx',index_col=0)
     df = df.copy().fillna(0)
     data = []
     index = []
     for row in df.itertuples():
         # filter rows with all 0s
-        if np.count_nonzero([row[i]==0 for i in range(-13,0)])>=3:  # if there are more than 6 zeros
+        if np.count_nonzero([row[i]==0 for i in range(-7,0)])>=4:  # if there are more than 6 zeros
         # if all([row[i] == "0" for i in range(1, len(row))]):
             continue
         else:
@@ -240,14 +240,17 @@ def filter_df():
             index.append(row[0])
     new_df = pd.DataFrame(data, columns=df.columns,index=index)
     # after filtering, 2293 proteins retained (originally 3886)
-    new_df.to_csv('F:/native_digestion/01242023/analysis/distance_to_center_all_filter_nomorethan3zeros.tsv',sep='\t')
+    new_df.to_csv('D:/data/native_protein_digestion/12072021/heat_shock_ionquant_MBR/distance_to_center_all_filter.tsv',sep='\t')
 
 
 def cluster_map():
     import matplotlib.pyplot as plt
     import seaborn as sns
 
-    data = pd.read_csv('F:/native_digestion/01242023/analysis/distance_to_center_times_normIntensity_filter_norm01_removelast2.tsv',sep='\t',index_col=0)
+    data_heatshock = pd.read_csv(r'D:\data\native_protein_digestion\12072021\heat_shock_ionquant_MBR/distance_times_norm_intensity_norm01.tsv',sep='\t',index_col=0)
+    protein_list = data_heatshock.index.tolist()
+    data = pd.read_csv(r'F:\native_digestion\01242023\analysis/distance_to_center_times_normIntensity_filter_norm01_removelast2.tsv',sep='\t',index_col=0)
+    data = data[data.index.isin(protein_list)].dropna()
     protein_list = data.index.tolist()
     protein_hex_list = disorder_to_hex(protein_list)  # add row colors on clustermap
     plddt_hex_list = plddt_to_hex(protein_list)
@@ -264,12 +267,12 @@ def cluster_map():
     fig, ax = plt.subplots(1, 1, figsize=(12,8))
     g = sns.clustermap(data=data.reset_index(drop=True),col_cluster=False,cmap="YlGnBu",yticklabels=False,row_colors=row_colors, figsize=(10,8),dendrogram_ratio=0.15,
                        cbar_kws={"orientation": "horizontal","shrink": 0.5})
-    # re_order_protein_index = g.dendrogram_row.reordered_ind
-    # re_order_protein_list = [protein_list[each] for each in re_order_protein_index]
-    # print ([(each, prot_disorder_dict[each]) if each in prot_disorder_dict else (each, 'None') for each in re_order_protein_list])
-    plt.tight_layout()
-    plt.show()
-    # plt.savefig(r'F:\native_digestion\01242023/analysis/cluster_disorder_plddt.png',dpi=300)
+    re_order_protein_index = g.dendrogram_row.reordered_ind
+    re_order_protein_list = [protein_list[each] for each in re_order_protein_index]
+    print ([(each, prot_disorder_dict[each]) if each in prot_disorder_dict else (each, 'None') for each in re_order_protein_list])
+    # plt.tight_layout()
+    # plt.show()
+    # plt.savefig(r'D:\data\native_protein_digestion\12072021\heat_shock_ionquant_MBR/heatshock_cluster_disorder_plddt.png',dpi=300)
 
 
 def disorder_to_hex(protein_list):
@@ -362,29 +365,31 @@ def cluster_analysis():
     :return:
     """
     from scipy import stats
-    df = pd.read_excel('F:/native_digestion/01242023/analysis/cluster_output.xlsx',index_col=0)
+    df = pd.read_excel('F:/native_digestion/01242023/analysis/cluster_heatshock_overlap_output.xlsx',index_col=0)
     plddt_mean_dict = pk.load(open('D:/data/alphafold_pdb/pLDDT_human_mean.pkl', 'rb'))
 
     clusters = ['cluster_1','cluster_2']
-    cluster_1,cluster_2 = df.iloc[:1400,:], df.iloc[1400:,:]  # manually cut
-    # cluster_1,cluster_2 = cluster_1[cluster_1['disorder_ratio']!='None'], cluster_2[cluster_2['disorder_ratio']!='None']
-    # clus1_disorder, clus2_disorder = cluster_1['disorder_ratio'].tolist(), cluster_2['disorder_ratio'].tolist()
-    clus1_disorder, clus2_disorder = [plddt_mean_dict[prot] for prot in cluster_1.index], [plddt_mean_dict[prot] for prot in cluster_2.index]
+    cluster_1,cluster_2 = df.iloc[:150,:], df.iloc[150:,:]  # manually cut 1400
+    cluster_1,cluster_2 = cluster_1[cluster_1['disorder_ratio']!='None'], cluster_2[cluster_2['disorder_ratio']!='None']
+    clus1_disorder, clus2_disorder = cluster_1['disorder_ratio'].tolist(), cluster_2['disorder_ratio'].tolist()
+    # clus1_disorder, clus2_disorder = [plddt_mean_dict[prot] for prot in cluster_1.index], [plddt_mean_dict[prot] for prot in cluster_2.index]
     t_test = stats.ttest_ind(clus1_disorder,clus2_disorder)
-    df_plot = pd.DataFrame(columns=['cluster','plddt'])
+    df_plot = pd.DataFrame(columns=['cluster','disorder_ratio'])
     df_plot['cluster'] = ['cluster_1']*cluster_1.shape[0]+['cluster_2']*cluster_2.shape[0]
-    df_plot['plddt'] = clus1_disorder+clus2_disorder
+    df_plot['disorder_ratio'] = clus1_disorder+clus2_disorder
     print (f't test result {t_test}')
     fig,ax = plt.subplots(1, 1, figsize=(6, 5))
-    box_plot = ax.boxplot([df_plot[df_plot.cluster==clu]['plddt'] for clu in clusters],
+    box_plot = ax.boxplot([df_plot[df_plot.cluster==clu]['disorder_ratio'] for clu in clusters],
                positions=range(len(clusters)), showfliers=False,
                medianprops=dict(linestyle='-', linewidth=3,color='k'), widths=[0.4,0.4],
                           boxprops=dict(linestyle='-', linewidth=3, color='k'),
                           whiskerprops=dict(linestyle='-', linewidth=3),
                           capprops=dict(linestyle='-', linewidth=3))
-    sns.swarmplot(x='cluster', y='plddt', data=df_plot,size=3)
+    sns.swarmplot(x='cluster', y='disorder_ratio', data=df_plot,size=3)
 
     plt.show()
+
+
 if __name__ == '__main__':
     import seaborn as sns
     # get_unique_peptides()
@@ -402,3 +407,4 @@ if __name__ == '__main__':
     # output_intensity_totsv()
     # normalize_distance()
     cluster_analysis()
+
