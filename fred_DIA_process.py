@@ -726,6 +726,36 @@ def abundance_plot_sned1():
     plt.show()
 
 
+def get_unique_time_point():
+    # from the replicate combined data, get peptides unique for each time point,
+    # and label each time point with peptides first IDed at this time point
+    gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json', 'r')) # ECM genes
+    gene_combined_pep = pk.load(open('F:/fred_time_lapse/analysis/gene_f_rep_combined_peptide_dict_0107.p', 'rb'))
+    times, samples = ['15', '30', '60', '120', '240'], ['144','145']
+    df = pd.DataFrame()
+    for gene in gene_category_dict:
+        if gene in gene_combined_pep:
+            print (gene)
+            df.loc[gene, 'category'] = gene_category_dict[gene]["Category"]
+            df.loc[gene, 'Sub'] = gene_category_dict[gene]["Sub"]
+            for sample in samples:
+                total_peptides = set()
+                for time in times:
+                    # times_copy = ['15', '30', '60', '120', '240']
+                    # times_copy.remove(time)
+                    # peptide_set = gene_combined_pep[gene][sample+'_'+time]
+                    # peptide_other_set = set([pep for time1 in times_copy for pep in gene_combined_pep[gene][sample+'_'+time1]])
+                    # # compare the peptide set in one time point with all other time points to get unique ones
+                    # unique_pep = peptide_set.difference(peptide_other_set)
+                    # # print (time, peptide_set, peptide_other_set, unique_pep)
+                    # df.loc[gene,sample+'_'+time+'_unique'] = str(unique_pep)
+
+                    peptide_set = gene_combined_pep[gene][sample+'_'+time]
+                    peptide_set_first_time = peptide_set.difference(total_peptides)
+                    total_peptides.update(peptide_set_first_time)
+                    df.loc[gene,sample+'_'+time] = str(peptide_set_first_time)
+    df.to_csv('F:/fred_time_lapse/analysis/ecm_peptide_first_timepoint_0420.tsv',sep='\t')
+
 
 if __name__ == '__main__':
     from protein_coverage import fasta_reader_gene
@@ -738,7 +768,7 @@ if __name__ == '__main__':
     # category_cov_plot()
     # dot_plot_connecting()
     # dots_plotting_all()
-    scatter_plot_cov()
+    # scatter_plot_cov()
     # qc_check_ecm_ratio()
     # psm_dict = pk.load(open('F:/fred_time_lapse/analysis/prot_f_rep_combined_peptide_dict_1219.p', 'rb'))
     # print (psm_dict['Q8TER0']['145_1080'])
@@ -752,3 +782,4 @@ if __name__ == '__main__':
     # upset_plot()
     # abundance_plot_sned1()
     # compare5_to5()
+    get_unique_time_point()
