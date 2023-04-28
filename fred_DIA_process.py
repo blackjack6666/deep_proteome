@@ -13,6 +13,8 @@ from scipy.ndimage.filters import gaussian_filter
 from protein_coverage import fasta_reader
 from statannot import add_stat_annotation
 import json
+from functools import reduce
+import operator
 from protein_coverage import fasta_reader_gene
 import time
 
@@ -120,8 +122,7 @@ def aggregate_psms():
     aggregate PSMs between different time
     :return:
     """
-    from functools import reduce
-    import operator
+
     prot_f_psm_dict_of_dict = {}
     replicates_combined_dict = {}  # {'uniprotid':{'144_15':{combined_psm_set},'144_30':{combined_psm_set}}}
     aggregate_pep_dict = {}  # {'uniprotid':{'144_15':{aggregated_psm_set},'144_30':{aggregate_psm_set}}}
@@ -571,20 +572,20 @@ def filter_df():
     import time
     time.sleep(3)
     base_path = 'F:/fred_time_lapse/'
-    df = pd.read_csv(base_path+'analysis/gene_aggre_pep_5compare5_best_psm_0328.tsv',sep='\t',index_col=0)
+    df = pd.read_csv(base_path+'analysis/ECM_aggre15_cov_each_replicate_0427.tsv',sep='\t',index_col=0)
     df = df.copy().fillna(0)
     data = []
     index = []
     for row in df.itertuples():
         # filter rows with all 0s
         # if all([row[i]==0 for i in range(-10,0)]):
-        if all([row[i] == 0 for i in range(4, len(row))]):
+        if all([row[i] == 0 for i in range(3, len(row))]):
             continue
         else:
             data.append([i for i in row][1:])
             index.append(row[0])
     new_df = pd.DataFrame(data, columns=df.columns,index=index)
-    new_df.to_csv(base_path+'analysis/gene_aggre_pep_5compare5_best_psm_0328.tsv',sep='\t')
+    new_df.to_csv(base_path+'analysis/ECM_aggre15_cov_each_replicate_0427.tsv',sep='\t')
 
 
 def nsaf_cal():
@@ -757,6 +758,44 @@ def get_unique_time_point():
     df.to_csv('F:/fred_time_lapse/analysis/ecm_peptide_first_timepoint_0420.tsv',sep='\t')
 
 
+def aggregate_cov_each_bio_rep():
+    # aggregate coverage of all time points for each biological replicate
+    base_path = 'F:/fred_time_lapse/'
+
+    gene_f_psm_dict_of_dict = pk.load(open('F:/fred_time_lapse/analysis/gene_f_psm_dict_of_dict_1219.p', 'rb'))
+    gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json', 'r'))  # ECM genes
+    intensity_dict = pk.load(open(base_path + 'analysis/gene_f_intesity_dict_of_dict_1219.p', 'rb'))
+    gene_seq_dict = fasta_reader_gene('F:/sned1_biotinalytion/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta')
+
+    df = pd.DataFrame()
+
+    times, samples, replicates = ['15', '30', '60', '120', '240'], ['144', '145'], ['A', 'B', 'C', 'D', 'E']
+    # std_replicates = ['NA_1080', 'NB_1080', 'NC_1080', 'ND_1080', 'NE_1080']
+    for gene in gene_category_dict:
+        if gene in intensity_dict:
+            # for gene in intensity_dict:
+            print(gene)
+            seq = gene_seq_dict[gene]
+            df.loc[gene, 'category'] = gene_category_dict[gene]["Category"]
+            df.loc[gene, 'Sub'] = gene_category_dict[gene]["Sub"]
+            for sample in samples:
+                for rep in replicates:
+                    np_array = np.zeros(len(seq))
+                    # peptide_set = reduce(operator.or_,[set(gene_f_psm_dict_of_dict[gene][sample + rep + '_' + time]) for time in times
+                    #                if len(set(gene_f_psm_dict_of_dict[gene][sample + rep + '_' + time]))>=1])
+                    peptide_set = set()
+                    for time in times[:-4]:  # which time point to aggregate
+                        peptide_time_set = set(gene_f_psm_dict_of_dict[gene][sample + rep + '_' + time])
+                        if len(peptide_time_set)>1: # at least 2 peptide ids
+                            peptide_set.update(peptide_time_set)
+                    for each in peptide_set:
+                        pep_loc = seq.find(each)
+                        pep_end_loc = pep_loc + len(each)
+                        np_array[pep_loc:pep_end_loc] += 1
+                    df.loc[gene,sample+rep+'_aggregate_15'] = np.count_nonzero(np_array)/len(np_array)*100
+    df.to_csv('F:/fred_time_lapse/analysis/ECM_aggre15_cov_each_replicate_0427.tsv',sep='\t')
+
+
 if __name__ == '__main__':
     from protein_coverage import fasta_reader_gene
     # qc_check()
@@ -773,7 +812,7 @@ if __name__ == '__main__':
     # psm_dict = pk.load(open('F:/fred_time_lapse/analysis/prot_f_rep_combined_peptide_dict_1219.p', 'rb'))
     # print (psm_dict['Q8TER0']['145_1080'])
     # table_output()
-    # filter_df()
+    filter_df()
     # nsaf_cal()
     # abs_coverage_calculation()
     # dissim_index()
@@ -782,4 +821,5 @@ if __name__ == '__main__':
     # upset_plot()
     # abundance_plot_sned1()
     # compare5_to5()
-    get_unique_time_point()
+    # get_unique_time_point()
+    # aggregate_cov_each_bio_rep()
