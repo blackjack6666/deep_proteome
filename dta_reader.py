@@ -98,25 +98,28 @@ if __name__=='__main__':
     # cov_list = [v for v in prot_cov_dict.values()]
 
     # ppp.dump(prot_cov_dict, open('bioplex_protein_coverage_dict.p','wb'))
-    # prot_cov_dict = ppp.load(open('bioplex_protein_coverage_dict.p', 'rb'))
-    # cov_list = np.array([v for v in prot_cov_dict.values()])
+    prot_cov_dict = ppp.load(open('bioplex_protein_coverage_dict.p', 'rb'))
+    cov_array = np.array([v for v in prot_cov_dict.values()])
     # sort = -np.sort(-cov_list)
     # reshape = sort_array.reshape((250,334))
 
     # matrisome_cov_csv = 'D:/data/Naba_deep_matrisome/matrisome coverage_norepeat.xlsx'
     # df_mat = pd.read_excel(matrisome_cov_csv, index_col=0)
-    matrisome_cov_csv = 'F:/matrisomedb2.0/statistics/glob_seq_coverage_1.tsv'
-    df_mat = pd.read_csv(matrisome_cov_csv,sep='\t',index_col=0)
+    # cov_array = df_mat['cov'].to_numpy()*100
+    # matrisome_cov_csv = 'F:/matrisomedb2.0/statistics/glob_seq_coverage_1.tsv'
+    # df_mat = pd.read_csv(matrisome_cov_csv,sep='\t',index_col=0)
+    # cov_array = df_mat['Sequence coverage'].to_numpy()
 
-    cov_array = df_mat['Sequence coverage'].to_numpy()
     sort = -np.sort(-cov_array)
-    fig, ax = plt.subplots()
-    ax.plot(range(len(sort)),sort, '-', color='#fcba03')
+    fig, ax = plt.subplots(figsize=(6.5,5))
+    ax.plot(range(len(sort)),sort, '-', color='#fcba03', alpha=0.3)
     ax.fill_between(range(len(sort)),sort, color='#fcba03',alpha=0.3)
-    ax.fill_between(range(len(sort)), sort, [100]*len(sort), color='grey')
+    ax.fill_between(range(len(sort)), sort, [100]*len(sort), color='#e6e5e3')
     ax.set_xlim(0,len(sort))
     ax.set_ylim(0,100)
+    ax.set_xticks([])
     ax.tick_params(axis='both', which='major', labelsize=15)
+
     plt.show()
 
     # reshape = sort.reshape((49,34))

@@ -796,6 +796,59 @@ def aggregate_cov_each_bio_rep():
     df.to_csv('F:/fred_time_lapse/analysis/ECM_aggre15_cov_each_replicate_0427.tsv',sep='\t')
 
 
+def check_ecm_id():
+    from tsv_reader import protein_info_from_fasta
+    # fasta = 'F:/sned1_biotinalytion/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta'
+    # protein_info_dict = protein_info_from_fasta(fasta)
+    # protein_df = pd.read_csv(r'F:\fred_time_lapse\20230504/report.pr_matrix.tsv',sep='\t',index_col=0).copy()
+    # protein_df['Genes'] = [protein_info_dict[prot][0] for prot in protein_df['Protein.Ids']]
+    # protein_df.to_csv(r'F:\fred_time_lapse\20230504/report.pr_matrix_gene.tsv',sep='\t')
+
+    df = pd.read_csv(r'F:\fred_time_lapse\20230504/report.pr_matrix_gene.tsv',sep='\t',index_col=0)
+    gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json', 'r')) # ECM genes
+    counter = 0
+    ecm_peptide_set = set()
+    for gene, pep in zip(df.Genes,df['Stripped.Sequence']):
+        # if gene in gene_category_dict:
+    #         counter += 1
+        ecm_peptide_set.add(pep)
+    print (len(ecm_peptide_set))
+    # print (counter)
+
+
+    gene_f_psm_dict_of_dict = pk.load(open('F:/fred_time_lapse/analysis/gene_f_psm_dict_of_dict_1219.p', 'rb'))
+    ecm_peptide_list = []
+    for gene in gene_f_psm_dict_of_dict:
+        # if gene in gene_category_dict:
+        for f in gene_f_psm_dict_of_dict[gene]:
+            ecm_peptide_list += gene_f_psm_dict_of_dict[gene][f]
+    print (len(set(ecm_peptide_list)))
+    #         counter+=1
+    # print (counter)
+
+
+def combine_spec_library():
+    # spec_library1 = pd.read_csv(r'F:\fred_time_lapse\spectral_library/library.tsv', sep='\t').copy()
+    spec_library2 = pd.read_csv(r'F:\fred_time_lapse\spectral_library_MDB/library.tsv', sep='\t').copy()
+    # check_set = set([mod_seq+str(charge) for mod_seq, charge in
+    #                  zip(spec_library2.ModifiedPeptideSequence,spec_library2.PrecursorCharge)])
+    # print (spec_library1.columns)
+    # matrix = []
+    # for tp in spec_library1.itertuples():
+    #     mod_seq, charge = tp.ModifiedPeptideSequence, tp.PrecursorCharge
+    #     if mod_seq+str(charge) not in check_set: # add rows from spec library1 that are not in spec library 2
+    #         matrix.append([each for each in tp][1:])
+    #         print (tp[0])
+    #
+    # spec_library3 = pd.DataFrame(matrix, columns=spec_library1.columns)
+    # spec_library3.to_csv(r'F:\fred_time_lapse\spectral_library/library_to_add.tsv',sep='\t')
+
+    spec_library3 = pd.read_csv(r'F:\fred_time_lapse\spectral_library/library_to_add.tsv',sep='\t')
+    concat = pd.concat([spec_library2,spec_library3],axis=0)
+    print (spec_library2.shape, concat.shape)
+    concat.to_csv(r'F:\fred_time_lapse\spectral_library/library_combine.tsv', sep='\t',index=False)
+
+
 if __name__ == '__main__':
     from protein_coverage import fasta_reader_gene
     # qc_check()
@@ -812,7 +865,7 @@ if __name__ == '__main__':
     # psm_dict = pk.load(open('F:/fred_time_lapse/analysis/prot_f_rep_combined_peptide_dict_1219.p', 'rb'))
     # print (psm_dict['Q8TER0']['145_1080'])
     # table_output()
-    filter_df()
+    # filter_df()
     # nsaf_cal()
     # abs_coverage_calculation()
     # dissim_index()
@@ -823,3 +876,5 @@ if __name__ == '__main__':
     # compare5_to5()
     # get_unique_time_point()
     # aggregate_cov_each_bio_rep()
+    check_ecm_id()
+    # combine_spec_library()

@@ -153,7 +153,7 @@ def distance_intensity_plot():
     df = pd.read_csv('F:/native_digestion/01242023/analysis/prot_distance_intensity_2.tsv', sep='\t',index_col=0)
     df = df.copy().fillna(0)
     # df = df.copy().dropna()
-    normalize_factor = 50
+    normalize_factor = 20
     time_range = list(range(1,14))
     # time_index_dict = {i:j for i,j in zip(time_range,chunk_(list(range(1,normalize_factor)),int(normalize_factor/13))[:-1])}
     # time_index_join = reduce(add,[v for v in time_index_dict.values()])
@@ -197,7 +197,17 @@ def distance_intensity_plot():
     # df_plot.to_csv('F:/native_digestion/01242023/analysis/scatter_plot_0225.tsv',sep='\t')
     # g = sns.scatterplot(data=df_plot,x='time',y='norm_dist_index',hue='int',s=5,palette='viridis')
     # plt.legend([], [], frameon=False)
-    g = sns.heatmap(data=plot_array[:,:-2],cmap='viridis',robust=True)
+    # g = sns.heatmap(data=plot_array[:,:-2],cmap='viridis',robust=True)
+    # plt.show()
+    new_plot_array = plot_array[:,:-2]
+    weighted_dist_each_time = []
+    for i in range(11):
+        each_time_array = new_plot_array[:,i]
+        weighted_dist_each_time.append(sum([ind*val for ind, val in enumerate(each_time_array)]))
+    print (weighted_dist_each_time)
+    fig,ax = plt.subplots(1, 1, figsize=(6,3))
+    ax.plot(range(11),weighted_dist_each_time, '-o',c='k',mfc='red')
+    plt.xticks(range(11))
     plt.show()
 
 
@@ -402,9 +412,9 @@ if __name__ == '__main__':
     # distance_intensity_()
     # distance_intensity_plot()
     # ion_quant_analysis()
-    # distance_intensity_plot()
+    distance_intensity_plot()
     # delta_dist_cal()
     # output_intensity_totsv()
     # normalize_distance()
-    cluster_analysis()
+    # cluster_analysis()
 
