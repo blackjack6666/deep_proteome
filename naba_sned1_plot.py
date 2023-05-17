@@ -413,9 +413,9 @@ def cor_matrix(df):
         continue
   return g
 
-df_aggre_cov = pd.read_csv('F:/fred_time_lapse/analysis/gene_aggre_cov_0107.tsv', sep='\t',index_col=0).fillna(0)
+df_aggre_cov = pd.read_csv('F:/fred_time_lapse/20230508/analysis/ECM_aggre_cov_0515.tsv', sep='\t',index_col=0).fillna(0)
 
-df_origin = df_aggre_cov.iloc[:,np.r_[8:13,-1]]
+df_origin = df_aggre_cov.iloc[:,np.r_[3:8,-2]]
 df_grid = np.log(df_aggre_cov.iloc[:,np.r_[3:8,-2]]+1)
 df_grid = df_grid.rename(columns={'144_15_aggre_cov':'log(144 15min aggre. cov+1)',
                         '144_30_aggre_cov':'log(144 30min aggre. cov+1)',
@@ -424,7 +424,7 @@ df_grid = df_grid.rename(columns={'144_15_aggre_cov':'log(144 15min aggre. cov+1
                                   '144_240_aggre_cov':'log(144 240min aggre. cov+1)',
                                   '144_1080_cov':'log(144 18h cov+1)'})
 cor_matrix(df_origin)
-plt.savefig('F:/fred_time_lapse/figures/145_grid_agg_cov_new_origin.png',dpi=300)
+plt.savefig('F:/fred_time_lapse/20230508/analysis/144_grid_agg_cov.png',dpi=300)
 # plt.show()
 
 ### SCV example
