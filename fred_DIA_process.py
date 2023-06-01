@@ -17,6 +17,7 @@ from functools import reduce
 import operator
 from protein_coverage import fasta_reader_gene
 import time
+from tsv_reader import venn_diagram_gen, venn_diagram_gen2
 
 ecm_class_color_dict = {"ECM Glycoproteins":"#133463","Collagens":"#0584B7","Proteoglycans":"#59D8E6",
                         "ECM-affiliated Proteins":"#F4511E","ECM Regulators":"#F9A287","Secreted Factors":"#FFE188"}
@@ -32,7 +33,7 @@ def qc_check():
     gene_int_dict = defaultdict(list)
     base_path = 'F:/fred_time_lapse/'
     # intensity_files = glob(base_path+'search*/report.gg_matrix*.tsv')
-    intensity_files = glob(base_path+'20230508/report.pg_matrix_gene.tsv')
+    intensity_files = glob(base_path+'20230503/report.pg_matrix_gene.tsv')
     for each_f in intensity_files:
         print (each_f)
         df = pd.read_csv(each_f, sep='\t').fillna(0)
@@ -49,7 +50,7 @@ def qc_check():
         for tp in gene_int_dict[gene]:
             f_int_dict[tp[0]]=tp[1]
         gene_f_int_dict[gene] = f_int_dict
-    pk.dump(gene_f_int_dict,open(base_path+'20230508/analysis/gene_f_intesity_dict_of_dict_0509.p','wb'))
+    pk.dump(gene_f_int_dict,open(base_path+'20230503/analysis/gene_f_intesity_dict_of_dict_0524.p','wb'))
 
     # calculate cv (coefficient variance) of gene intensities among 5 replicates,normalize between 0 and 1 first
     """
@@ -101,7 +102,7 @@ def pr_matrix_reader():
     base_path = 'F:/fred_time_lapse/'
     prot_info_dict = defaultdict(list)  # {'uniprotid':[(file,psm),(file,psm)]}
     # psm_f = glob(base_path+'search*/report.pr_matrix*.tsv')
-    psm_f = glob(base_path+'20230517/report.pr_matrix_gene.tsv')
+    psm_f = glob(base_path+'2023_05_25/report.pr_matrix_gene.tsv')
     for each_f in psm_f:
         print (each_f)
         df = pd.read_csv(each_f, sep='\t').fillna('null')
@@ -116,7 +117,7 @@ def pr_matrix_reader():
                         for col in columns if df.loc[i,col] != 'null']
             for prot in prot_id_list:
                 prot_info_dict[prot]+=file_psm
-    pk.dump(prot_info_dict,open(base_path+'20230517/analysis/gene_file_psm_tuple_dict_0517.p','wb'))
+    pk.dump(prot_info_dict,open(base_path+'2023_05_25/analysis/gene_file_psm_tuple_dict_0601.p','wb'))
 
 
 def aggregate_psms():
@@ -128,9 +129,9 @@ def aggregate_psms():
     prot_f_psm_dict_of_dict = {}
     replicates_combined_dict = {}  # {'uniprotid':{'144_15':{combined_psm_set},'144_30':{combined_psm_set}}}
     aggregate_pep_dict = {}  # {'uniprotid':{'144_15':{aggregated_psm_set},'144_30':{aggregate_psm_set}}}
-    """
+
     # {'uniprotid':[(file,psm),(file,psm)]}
-    prot_f_psm_tuple_dict = pk.load(open('F:/fred_time_lapse/20230517/analysis/gene_file_psm_tuple_dict_0517.p','rb'))
+    prot_f_psm_tuple_dict = pk.load(open('F:/fred_time_lapse/2023_05_25/analysis/gene_file_psm_tuple_dict_0601.p','rb'))
 
     for prot in prot_f_psm_tuple_dict:
         f_psm_dict = defaultdict(list)
@@ -138,10 +139,10 @@ def aggregate_psms():
             f_psm_dict[tup[0]].append(tup[1])  
         prot_f_psm_dict_of_dict[prot] = f_psm_dict
     # print (prot_f_psm_dict_of_dict['Q3TW96'])
-    pk.dump(prot_f_psm_dict_of_dict,open('F:/fred_time_lapse/20230517/analysis/gene_f_psm_dict_of_dict_0517.p','wb'))
-    """
-    # combine all psms among replicates (A to E), union all psms in replicates for now for better coverage
+    pk.dump(prot_f_psm_dict_of_dict,open('F:/fred_time_lapse/2023_05_25/analysis/gene_f_psm_dict_of_dict_0601.p','wb'))
 
+    # combine all psms among replicates (A to E), union all psms in replicates for now for better coverage
+    """
     prot_f_psm_dict_of_dict = pk.load(open('F:/fred_time_lapse/20230508/analysis/gene_f_psm_dict_of_dict_0509.p','rb'))
     time_points = ['15', '30', '60', '120', '240']
     for prot in prot_f_psm_dict_of_dict:
@@ -170,22 +171,25 @@ def aggregate_psms():
         aggregate_pep_dict[prot] = aggregate_psm_dict
 
     pk.dump(aggregate_pep_dict,open('F:/fred_time_lapse/20230508/analysis/gene_f_aggregate_peptide_dict_0509.p','wb'))
+    """
 
 
 def combine_psms_fraction():
     # for fractionation samples
     replicates_combined_dict = {}
-    prot_f_psm_dict_of_dict = pk.load(open('F:/fred_time_lapse/20230517/analysis/gene_f_psm_dict_of_dict_0517.p', 'rb'))
-    rep_list = ['145_nA1080_1_6', '145_nA1080_2_7', '145_nA1080_3_8', '145_nA1080_4_9', '145_nA1080_5_10']
+    prot_f_psm_dict_of_dict = pk.load(open('F:/fred_time_lapse/2023_05_25/analysis/gene_f_psm_dict_of_dict_0601.p', 'rb'))
+    # rep_list = ['145_nA1080_1_6', '145_nA1080_2_7', '145_nA1080_3_8', '145_nA1080_4_9', '145_nA1080_5_10']
+    rep_list, bio_list = ['1_6','2_7','3_8','4_9','5_10'], ['B', 'C', 'D', 'E']
     for prot in prot_f_psm_dict_of_dict:
         replicates_combined_psm_dict = {}
-        total_psm_set1080 = set([psm for rep in rep_list for psm in
-                                 prot_f_psm_dict_of_dict[prot][rep]
-                                 if len(set(prot_f_psm_dict_of_dict[prot][rep])) > 1])
-        replicates_combined_psm_dict['145_frac_1080'] = total_psm_set1080
+        for bio in bio_list:
+            total_psm_set1080 = set([psm for rep in rep_list for psm in
+                                     prot_f_psm_dict_of_dict[prot][bio+rep]
+                                     if len(set(prot_f_psm_dict_of_dict[prot][bio+rep])) > 1])
+            replicates_combined_psm_dict[bio+'_frac_combined'] = total_psm_set1080
         replicates_combined_dict[prot] = replicates_combined_psm_dict
     pk.dump(replicates_combined_dict,
-            open('F:/fred_time_lapse/20230517/analysis/gene_f_rep_combined_peptide_dict_0517.p', 'wb'))
+            open('F:/fred_time_lapse/2023_05_25/analysis/gene_f_rep_combined_peptide_dict_0601.p', 'wb'))
 
 
 def coverage_calculation():
@@ -202,35 +206,37 @@ def coverage_calculation():
     # load aggregated and combined 1080 peptides
     prot_f_aggregate_pep_dict = pk.load(open('F:/fred_time_lapse/20230508/analysis/gene_f_aggregate_peptide_dict_0509.p','rb')) # 25 files, 5*5
     # prot_f_aggregate_pep_dict = pk.load(open('F:/fred_time_lapse/analysis/ecm_gene_f_aggregate_peptide_dict_best_rep_0327.p', 'rb')) # 5 files total, median replicate for each time point
-    prot_f_combined_pep_dict = pk.load(open('F:/fred_time_lapse/20230508/analysis/gene_f_rep_combined_peptide_dict_0509.p','rb')) # key is '144_1080' and '145_1080'
+    prot_f_combined_pep_dict = pk.load(open('F:/fred_time_lapse/2023_05_25/analysis/gene_f_rep_combined_peptide_dict_0601.p','rb')) # key is '144_1080' and '145_1080'
 
     intensity_dict = pk.load(open('F:/fred_time_lapse/20230508/analysis/gene_f_intesity_dict_of_dict_0509.p', 'rb'))
     gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json', 'r'))  # ECM genes
     # calculate coverage
     time_points, samples = ['15', '30', '60', '120', '240'], ['144','145']
-    samples_1080 = ['144_1080','145_1080']
+    # samples_1080 = ['144_1080','145_1080']
+    samples_1080 = [bio+'_frac_combined' for bio in ['B','C','D','E']] # fractionation sample combined
     aggre_cov_df = pd.DataFrame()
-    for prot in intensity_dict:
-        # if prot in gene_category_dict: # filter non-ECM genes out
+    for prot in prot_f_combined_pep_dict:
+        # if prot != 'null':
+        if prot in gene_category_dict: # filter non-ECM genes out
             print (prot)
             seq = protein_seq_dict[prot]
             prot_length = len(seq)
             # aggre_cov_df.at[prot,'gene'] = protein_info_dict[prot][0]
             # aggre_cov_df.at[prot,'description'] = protein_info_dict[prot][1]
-            # aggre_cov_df.loc[prot, 'category'] = gene_category_dict[prot]["Category"]
-            # aggre_cov_df.loc[prot, 'Sub'] = gene_category_dict[prot]["Sub"]
-            # aggre_cov_df.at[prot, 'length'] = len(protein_seq_dict[prot])
+            aggre_cov_df.loc[prot, 'category'] = gene_category_dict[prot]["Category"]
+            aggre_cov_df.loc[prot, 'Sub'] = gene_category_dict[prot]["Sub"]
+            aggre_cov_df.at[prot, 'length'] = len(protein_seq_dict[prot])
             # load peptides set
-            for sample in samples:
-                for time in time_points:
-                    np_arry = np.zeros(prot_length)
-                    peptides_set = prot_f_aggregate_pep_dict[prot][sample+'_'+time+'_aggregate']
-                    for pep in peptides_set:
-                        pep_loc = seq.find(pep)
-                        pep_end_loc = pep_loc+len(pep)
-                        np_arry[pep_loc:pep_end_loc]+=1
-                    agg_cov = np.count_nonzero(np_arry)/prot_length*100
-                    aggre_cov_df.at[prot,sample+'_'+time+'_aggre_cov'] = agg_cov
+            # for sample in samples:
+            #     for time in time_points:
+            #         np_arry = np.zeros(prot_length)
+            #         peptides_set = prot_f_aggregate_pep_dict[prot][sample+'_'+time+'_aggregate']
+            #         for pep in peptides_set:
+            #             pep_loc = seq.find(pep)
+            #             pep_end_loc = pep_loc+len(pep)
+            #             np_arry[pep_loc:pep_end_loc]+=1
+            #         agg_cov = np.count_nonzero(np_arry)/prot_length*100
+            #         aggre_cov_df.at[prot,sample+'_'+time+'_aggre_cov'] = agg_cov
                     # aggre_cov_df.at[prot,sample+'_'+time+'_aggre_pep'] = str(peptides_set)
             for sample2 in samples_1080:
                 np_arry = np.zeros(prot_length)
@@ -239,10 +245,10 @@ def coverage_calculation():
                     pep_loc = seq.find(pep)
                     pep_end_loc = pep_loc + len(pep)
                     np_arry[pep_loc:pep_end_loc] += 1
-                    cov1080 = np.count_nonzero(np_arry)/prot_length*100
-                    aggre_cov_df.at[prot,sample2+'_cov'] = cov1080
+                cov1080 = np.count_nonzero(np_arry)/prot_length*100
+                aggre_cov_df.at[prot,sample2+'_cov'] = cov1080
                 # aggre_cov_df.at[prot,sample2+'_pep'] = str(peptides1080_set)
-    aggre_cov_df.to_csv('F:/fred_time_lapse/20230508/analysis/all_gene_aggre_cov_0515.tsv',sep='\t')
+    aggre_cov_df.to_csv('F:/fred_time_lapse/2023_05_25/analysis/ecm_gene_fraction_combined_cov_0601.tsv',sep='\t')
 
 
 def abs_coverage_calculation():
@@ -253,17 +259,17 @@ def abs_coverage_calculation():
     protein_seq_dict = fasta_reader_gene(
         'F:/sned1_biotinalytion/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta')
     gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json', 'r'))  # ECM genes
-    gene_rep_combined_psm_dict = pk.load(open('F:/fred_time_lapse/analysis/gene_f_rep_combined_peptide_dict_0107.p', 'rb'))
+    gene_rep_combined_psm_dict = pk.load(open('F:/fred_time_lapse/20230508/analysis/gene_f_rep_combined_peptide_dict_0509.p', 'rb'))
     samples, times = ['144','145'], ['15', '30', '60', '120', '240']
     cov_df = pd.DataFrame()
     for prot in gene_rep_combined_psm_dict:
-        # if prot in gene_category_dict:
-        if prot != 'null':
+        if prot in gene_category_dict:
+        # if prot != 'null':
             print(prot)
             seq = protein_seq_dict[prot]
             prot_length = len(seq)
-            # cov_df.loc[prot, 'category'] = gene_category_dict[prot]["Category"]
-            # cov_df.loc[prot, 'Sub'] = gene_category_dict[prot]["Sub"]
+            cov_df.loc[prot, 'category'] = gene_category_dict[prot]["Category"]
+            cov_df.loc[prot, 'Sub'] = gene_category_dict[prot]["Sub"]
             cov_df.at[prot, 'length'] = len(protein_seq_dict[prot])
             for sample in samples:
                 for time in times:
@@ -275,7 +281,29 @@ def abs_coverage_calculation():
                         np_array[pep_loc:pep_end_loc] += 1
                     cov = np.count_nonzero(np_array) / prot_length * 100
                     cov_df.at[prot, sample + '_' + time + '_abs_cov'] = cov
-    cov_df.to_csv('F:/fred_time_lapse/analysis/All_gene_time_series_absoluteCov_0125.tsv',sep='\t')
+    cov_df.to_csv('F:/fred_time_lapse/20230508/analysis/ECM_gene_time_series_absoluteCov_0521.tsv',sep='\t')
+
+
+def abs_coverage_plot():
+    # plot absolute ECM seq coverage
+    import plotly.express as px
+
+    df = pd.read_csv('F:/fred_time_lapse/20230508/analysis/ECM_aggre_cov_0515.tsv',sep='\t', index_col=0)
+    sub_df = df.iloc[:,-7:-2]
+    cols = sub_df.columns.tolist()
+    cov = []
+    for each in cols:
+        cov += sub_df[each].tolist()
+    time = []
+    for i in ['15min', '30min', '1hour', '2hour', '4hour']:
+        time += [i]*sub_df.shape[0]
+    df_plot = pd.DataFrame(dict(coverage=cov, time=time))
+    fig = px.violin(df_plot,y='coverage',color='time',points = 'all', box = True)
+    fig.update_layout({'plot_bgcolor': 'rgba(0, 0, 0, 0)'})
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='black')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='black')
+    fig.update_traces(marker={'size': 4})
+    fig.write_image('F:/fred_time_lapse/20230508/analysis/aggre_cov_145.png',scale=2)
 
 
 def myplot(x, y, s, bins=1000):
@@ -333,6 +361,20 @@ def scatter_plot_cov():
 
     # plt.show()
 
+
+def scatter_plot_cov2():
+    # plot scatter plot to show ECM sequence coverage increase ratio from time lapsed digestion
+    ecm_cov_df = pd.read_csv('F:/fred_time_lapse/20230508/analysis/ECM_aggre_cov_0515.tsv', sep='\t',
+                             index_col=0)
+    ecm_cov_df['ratio'] = (ecm_cov_df['145_240_aggre_cov']-ecm_cov_df['145_1080_cov'])/ecm_cov_df['145_1080_cov']*100
+    ecm_cov_df = ecm_cov_df.replace([np.inf, -np.inf], np.nan).dropna(axis=0)
+    # ecm_cov_df.to_csv('F:/fred_time_lapse/20230508/analysis/ECM_aggre_ratio_0521.tsv', sep='\t')
+    fig, ax = plt.subplots(1, 1, figsize=(7, 6))
+    length, agg, ratio, category = ecm_cov_df['length'], ecm_cov_df['145_240_aggre_cov'], ecm_cov_df['ratio'], ecm_cov_df['Sub']
+    for x, y, size, cat in zip(length,agg,ratio,category):
+        ax.plot(x,y,'o',markersize=size/5,markeredgewidth=2,fillstyle='none',color=ecm_class_color_dict[cat])
+    # plt.savefig('F:/fred_time_lapse/20230508/analysis/ECM_coverage_increase_ratio_0521.png', dpi=300)
+    # plt.show()
 
 def category_cov_plot():
     # plot sequence coverage for different categories
@@ -392,9 +434,9 @@ def dot_plot_connecting():
 
         color = ecm_class_color_dict[each]
         sub_df = ecm_cov_df[ecm_cov_df['Sub'] == each]
-        aggre_cov_list, std_cov_list = sub_df['144_240_aggre_cov'].tolist(), sub_df['144_1080_cov'].tolist()
+        aggre_cov_list, std_cov_list = sub_df['145_240_aggre_cov'].tolist(), sub_df['145_1080_cov'].tolist()
         sub_df_plot = pd.DataFrame(
-            dict(agg_or_standard=['144_4h_agg'] * sub_df.shape[0] + ['144_18h'] * sub_df.shape[0],
+            dict(agg_or_standard=['145_4h_agg'] * sub_df.shape[0] + ['145_18h'] * sub_df.shape[0],
                  coverage=aggre_cov_list + std_cov_list))
         median_list = sub_df_plot.groupby(['agg_or_standard'])['coverage'].median().tolist()
         x_pos_list = range(len(median_list))
@@ -419,7 +461,7 @@ def dot_plot_connecting():
 
         # label statistics
         add_stat_annotation(ax=axs[ax[0], ax[1]], data=sub_df_plot, x='agg_or_standard', y='coverage',
-                            box_pairs=[("144_4h_agg", "144_18h")],
+                            box_pairs=[("145_4h_agg", "145_18h")],
                             test='Wilcoxon', text_format='star', loc='inside', verbose=2,
                             comparisons_correction='bonferroni')
         axs[ax[0], ax[1]].set_xlim([-0.5, 1.5])
@@ -427,7 +469,7 @@ def dot_plot_connecting():
         axs[ax[0], ax[1]].set_xticklabels(['4h_agg','18h_std'], fontsize=10)
         axs[ax[0], ax[1]].set_xlabel('')
         axs[ax[0], ax[1]].set_ylabel('')
-    plt.savefig('F:/fred_time_lapse/20230508/analysis/ecm_aggre_cov_vs_18h_0515.png', dpi=300)
+    plt.savefig('F:/fred_time_lapse/20230508/analysis/145_ecm_aggre_cov_vs_18h_0521.png', dpi=300)
     # plt.show()
 
 
@@ -490,55 +532,58 @@ def table_output():
     ecm_genelist = [k for k in gene_category_dict.keys()]
     gene_seq_dict = fasta_reader_gene('F:/sned1_biotinalytion/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta')
 
-    gene_f_psm_dict_of_dict = pk.load(open('F:/fred_time_lapse/20230508/analysis/gene_f_psm_dict_of_dict_0509.p', 'rb'))
-    intensity_dict = pk.load(open(base_path+'20230508/analysis/gene_f_intesity_dict_of_dict_0509.p','rb'))
+    gene_f_psm_dict_of_dict = pk.load(open('F:/fred_time_lapse/20230503/analysis/gene_f_psm_dict_of_dict_0524.p', 'rb'))
+    intensity_dict = pk.load(open(base_path+'20230503/analysis/gene_f_intesity_dict_of_dict_0524.p','rb'))
     df = pd.DataFrame()
 
     times, samples, replicates = ['15', '30', '60', '120', '240'], ['144','145'],['A','B','C','D','E']
     std_replicates = ['NA_1080','NB_1080','NC_1080','ND_1080','NE_1080']
-    # for gene in gene_category_dict:
-        # if gene in intensity_dict:
-    for gene in intensity_dict:
-        print(gene)
-        seq = gene_seq_dict[gene]
-        # df.loc[gene, 'category'] = gene_category_dict[gene]["Category"]
-        # df.loc[gene, 'Sub'] = gene_category_dict[gene]["Sub"]
+    # samples, std_replicates = ['145_nA1080_'], ['1_6', '2_7', '3_8', '4_9', '5_10']
 
-        for sample in samples:
-            for time in times:
-                for rep in replicates:
-                    # sequence coverage
-                    np_array = np.zeros(len(seq))
-                    psm_list = gene_f_psm_dict_of_dict[gene][sample + rep + '_' + time]
-                    psm_count = Counter(psm_list)
+    # for gene in gene_category_dict:
+    #     if gene in intensity_dict:
+    for gene in gene_f_psm_dict_of_dict:
+
+            print(gene)
+            seq = gene_seq_dict[gene]
+            # df.loc[gene, 'category'] = gene_category_dict[gene]["Category"]
+            # df.loc[gene, 'Sub'] = gene_category_dict[gene]["Sub"]
+
+            for sample in samples:
+                for time in times:
+                    for rep in replicates:
+                #         # sequence coverage
+                #         np_array = np.zeros(len(seq))
+                        psm_list = gene_f_psm_dict_of_dict[gene][sample + rep + '_' + time]
+                #         psm_count = Counter(psm_list)
+                        if len(set(psm_list)) > 1:  # filter out genes with only one peptide
+                #             # for each in psm_list:
+                #             #     pep_loc = seq.find(each)
+                #             #     pep_end_loc = pep_loc + len(each)
+                #             #     np_array[pep_loc:pep_end_loc] += 1
+                #             # df.loc[gene,sample+rep+'_'+time] = np.count_nonzero(np_array)/len(seq)*100
+                            df.loc[gene, sample + rep + '_' + time] = intensity_dict[gene][sample + rep + '_' + time]
+                #             df.loc[gene,sample+rep+'_'+time] = str([(pep, 'psm_'+str(psm_count[pep]),'start_'+str(seq.find(pep)+1),'end_'+str(seq.find(pep)+len(pep))) for pep in psm_count])
+                #             # df.loc[gene, sample + rep + '_' + time] = len(psm_list)
+                        else:
+                            df.loc[gene, sample + rep + '_' + time] = 0
+                for std in std_replicates:
+                    np_array_std = np.zeros(len(seq))
+                    psm_list = gene_f_psm_dict_of_dict[gene][sample + std]
+                    # psm_count = Counter(psm_list)
                     if len(set(psm_list)) > 1:  # filter out genes with only one peptide
                         # for each in psm_list:
                         #     pep_loc = seq.find(each)
                         #     pep_end_loc = pep_loc + len(each)
-                        #     np_array[pep_loc:pep_end_loc] += 1
-                        # df.loc[gene,sample+rep+'_'+time] = np.count_nonzero(np_array)/len(seq)*100
-                        # df.loc[gene, sample + rep + '_' + time] = intensity_dict[gene][sample + rep + '_' + time]
-                        df.loc[gene,sample+rep+'_'+time] = str([(pep, 'psm_'+str(psm_count[pep]),'start_'+str(seq.find(pep)+1),'end_'+str(seq.find(pep)+len(pep))) for pep in psm_count])
-                        # df.loc[gene, sample + rep + '_' + time] = len(psm_list)
+                        #     np_array_std[pep_loc:pep_end_loc] += 1
+                        # df.loc[gene,sample+std] = np.count_nonzero(np_array_std)/len(seq)*100
+                        df.loc[gene, sample + std] = intensity_dict[gene][sample + std]
+                        # df.loc[gene,sample+std] = str([(pep, 'psm_'+str(psm_count[pep]),'start_'+str(seq.find(pep)+1),'end_'+str(seq.find(pep)+len(pep))) for pep in psm_count])
+                    # df.loc[gene,sample+std] = len(psm_list)
                     else:
-                        df.loc[gene, sample + rep + '_' + time] = 0
-            for std in std_replicates:
-                np_array_std = np.zeros(len(seq))
-                psm_list = gene_f_psm_dict_of_dict[gene][sample + std]
-                psm_count = Counter(psm_list)
-                if len(set(psm_list)) > 1:  # filter out genes with only one peptide
-                    # for each in psm_list:
-                    #     pep_loc = seq.find(each)
-                    #     pep_end_loc = pep_loc + len(each)
-                    #     np_array_std[pep_loc:pep_end_loc] += 1
-                    # df.loc[gene,sample+std] = np.count_nonzero(np_array_std)/len(seq)*100
-                    # df.loc[gene, sample + std] = intensity_dict[gene][sample + std]
-                    df.loc[gene,sample+std] = str([(pep, 'psm_'+str(psm_count[pep]),'start_'+str(seq.find(pep)+1),'end_'+str(seq.find(pep)+len(pep))) for pep in psm_count])
-                # df.loc[gene,sample+std] = len(psm_list)
-                else:
-                    df.loc[gene, sample + std] = 0
+                        df.loc[gene, sample + std] = 0
 
-    df.to_csv(base_path+'20230508/analysis/All_gene_individual_psm_atleast2pep_0515.tsv',sep='\t')
+    df.to_csv(base_path+'20230503/analysis/All_gene_intensity_0524.tsv',sep='\t')
 
 
 def compare5_to5():
@@ -594,7 +639,7 @@ def filter_df():
     import time
     time.sleep(3)
     base_path = 'F:/fred_time_lapse/'
-    df = pd.read_csv(base_path+'20230508/analysis/ECM_aggre_cov_0515.tsv',sep='\t',index_col=0)
+    df = pd.read_csv(base_path+'20230508/analysis/ECM_gene_time_series_absoluteCov_0521.tsv',sep='\t',index_col=0)
     df = df.copy().fillna(0)
     data = []
     index = []
@@ -607,7 +652,7 @@ def filter_df():
             data.append([i for i in row][1:])
             index.append(row[0])
     new_df = pd.DataFrame(data, columns=df.columns,index=index)
-    new_df.to_csv(base_path+'20230508/analysis/ECM_aggre_cov_0515.tsv',sep='\t')
+    new_df.to_csv(base_path+'20230508/analysis/ECM_gene_time_series_absoluteCov_0521.tsv',sep='\t')
 
 
 def nsaf_cal():
@@ -793,20 +838,20 @@ def aggregate_cov_each_bio_rep():
 
     times, samples, replicates = ['15', '30', '60', '120', '240'], ['144', '145'], ['A', 'B', 'C', 'D', 'E']
     # std_replicates = ['NA_1080', 'NB_1080', 'NC_1080', 'ND_1080', 'NE_1080']
-    # for gene in gene_category_dict:
-    #     if gene in intensity_dict:
-    for gene in intensity_dict:
+    for gene in gene_category_dict:
+        if gene in intensity_dict:
+    # for gene in intensity_dict:
             print(gene)
             seq = gene_seq_dict[gene]
-            # df.loc[gene, 'category'] = gene_category_dict[gene]["Category"]
-            # df.loc[gene, 'Sub'] = gene_category_dict[gene]["Sub"]
+            df.loc[gene, 'category'] = gene_category_dict[gene]["Category"]
+            df.loc[gene, 'Sub'] = gene_category_dict[gene]["Sub"]
             for sample in samples:
                 for rep in replicates:
                     np_array = np.zeros(len(seq))
                     # peptide_set = reduce(operator.or_,[set(gene_f_psm_dict_of_dict[gene][sample + rep + '_' + time]) for time in times
                     #                if len(set(gene_f_psm_dict_of_dict[gene][sample + rep + '_' + time]))>=1])
                     peptide_set = set()
-                    for time in times[:-3]:  # which time point to aggregate
+                    for time in times:  # which time point to aggregate
                         peptide_time_set = set(gene_f_psm_dict_of_dict[gene][sample + rep + '_' + time])
                         if len(peptide_time_set)>1: # at least 2 peptide ids
                             peptide_set.update(peptide_time_set)
@@ -814,15 +859,16 @@ def aggregate_cov_each_bio_rep():
                         pep_loc = seq.find(each)
                         pep_end_loc = pep_loc + len(each)
                         np_array[pep_loc:pep_end_loc] += 1
-                    df.loc[gene,sample+rep+'_aggregate_30'] = np.count_nonzero(np_array)/len(np_array)*100
-    df.to_csv('F:/fred_time_lapse/20230508/analysis/Allgene_aggre30_cov_each_replicate_0515.tsv',sep='\t')
+                    df.loc[gene,sample+rep+'_aggregate_240'] = np.count_nonzero(np_array)/len(np_array)*100
+    df.to_csv('F:/fred_time_lapse/20230508/analysis/ECM_gene_aggre240_cov_each_replicate_0517.tsv',sep='\t')
 
 
 def check_ecm_id():
     from tsv_reader import protein_info_from_fasta, venn_diagram_gen
+    import json
     fasta = 'F:/sned1_biotinalytion/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta'
     protein_info_dict = protein_info_from_fasta(fasta)
-    protein_df = pd.read_csv(r'F:\fred_time_lapse\20230517/report.pr_matrix.tsv',sep='\t').copy()
+    protein_df = pd.read_csv(r'F:\fred_time_lapse\2023_05_25/report.pr_matrix.tsv',sep='\t').copy()
     genes = []
     for prot in protein_df['Protein.Group']:
         if ';' not in prot:
@@ -836,31 +882,37 @@ def check_ecm_id():
             except:
                 genes.append('')
     protein_df['Genes'] = genes
-    protein_df.to_csv(r'F:\fred_time_lapse\20230517/report.pr_matrix_gene.tsv',sep='\t',index=False)
+    protein_df.to_csv(r'F:\fred_time_lapse\2023_05_25/report.pr_matrix_gene.tsv',sep='\t',index=False)
 
-    # df = pd.read_csv(r'F:\fred_time_lapse\20230508/report.pr_matrix_gene.tsv',sep='\t')
-    # gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json', 'r')) # ECM genes
-    # counter = 0
-    # ecm_peptide_set = set()
-    # ecm_gene_set = set()
+    # df = pd.read_csv(r'F:\fred_time_lapse\20230508/report.pr_matrix_gene.tsv',sep='\t') # merged spectral lib
+    gene_category_dict = json.load(open('F:/matrisomedb2.0/annotation/mat_dict.json', 'r')) # ECM genes
+    # merged_gene_peptide_dict = defaultdict(set)
     # for gene, pep, charge in zip(df.Genes,df['Modified.Sequence'],df['Precursor.Charge']):
     #     if gene in gene_category_dict:
     #         # counter += 1
-    #         ecm_peptide_set.add(pep+str(charge))
-    #         ecm_gene_set.add(gene)
-    # print (len(ecm_peptide_set))
-    # print (counter)
-
+    #         merged_gene_peptide_dict[gene].add(pep+str(charge))
+    # pk.dump(merged_gene_peptide_dict,open('F:/fred_time_lapse/20230508/ecm_peptide_0527.p','wb'))
+    #
     # file_list = [r'F:\fred_time_lapse/search/report.pr_matrix_1.tsv',r'F:\fred_time_lapse\search_11282022/report.pr_matrix_2.tsv',
     #              r'F:\fred_time_lapse\search_11292022/report.pr_matrix_3.tsv']
-    # prosit_total_pepset = set()
-    # prosit_gene = set()
+    # gene_peptide_dict = defaultdict(set)
     # for f in file_list:
     #     df = pd.read_csv(f,sep='\t')
     #     for gene, pep, charge in zip(df.Genes, df['Modified.Sequence'],df['Precursor.Charge']):
     #         if gene in gene_category_dict:
-    #             prosit_total_pepset.add(pep+str(charge))
-    #             prosit_gene.add(gene)
+    #             gene_peptide_dict[gene].add(pep+str(charge))
+    #
+    # pk.dump(gene_peptide_dict, open('F:/fred_time_lapse/analysis/ecm_peptide_0527.p', 'wb'))
+
+    ## get ecm peptides from raw searched data
+    # inter_gene_peptide_dict = defaultdict(set)
+    # df = pd.read_csv('F:/fred_time_lapse/20230504/report.pr_matrix_gene.tsv', sep='\t') # dda-based spectral library search
+    # for gene, pep, charge in zip(df.Genes, df['Modified.Sequence'], df['Precursor.Charge']):
+    #     if gene in gene_category_dict:
+    #         inter_gene_peptide_dict[gene].add(pep + str(charge))
+    # pk.dump(inter_gene_peptide_dict, open('F:/fred_time_lapse/20230504/ecm_peptide_0527.p', 'wb'))
+
+
     #         counter+=1
     # print (counter)
     # print ([gene for gene in ecm_gene_set if gene not in prosit_gene])
@@ -922,7 +974,7 @@ def combine_spec_library():
 
 
 def compare_results_spectral_library():
-    from tsv_reader import venn_diagram_gen
+
     # file_list = [r'F:\fred_time_lapse/search/report.pr_matrix_1.tsv',r'F:\fred_time_lapse\search_11282022/report.pr_matrix_2.tsv',
     #              r'F:\fred_time_lapse\search_11292022/report.pr_matrix_3.tsv']
     # prosit_total_pepset = set()
@@ -941,6 +993,85 @@ def compare_results_spectral_library():
     venn_diagram_gen(venn_dict)
 
 
+def fraction_time_lapsed_cov():
+    """
+    from scipy import stats
+    # compare fractionation and time lapsed cov, 5 raw versus 5 raw files
+    # frac_cov_f = r'F:\fred_time_lapse\20230517\analysis/ecm_gene_fraction_combined_cov_0517.tsv'
+    frac_cov_f_2 = r'F:\fred_time_lapse\2023_05_25\analysis/frac_cov_A_to_E.tsv'
+    time_lapsed_f = r'F:\fred_time_lapse\20230508\analysis/ECM_gene_aggre240_cov_each_replicate_0517.tsv'
+    df1 = pd.read_csv(frac_cov_f_2, sep='\t', index_col=0)
+    df2 = pd.read_csv(time_lapsed_f, sep='\t', index_col=0)
+    shared_gene = [each for each in df1.index if each in df2.index]
+    print (len(shared_gene))
+    df = pd.DataFrame(index=shared_gene, columns= ['category','Sub']+df2.columns.tolist()[-5:]+df1.columns.tolist()[-5:])
+    # df = pd.DataFrame(index=shared_gene, columns= ['category','Sub']+['A_frac_combined_cov']+df2.columns.tolist()[-4:])
+
+    for gene in shared_gene:
+        df.loc[gene, 'category'] = df1.loc[gene,'category']
+        df.loc[gene, 'Sub'] = df1.loc[gene,'Sub']
+        df.loc[gene, '145A_aggregate_240':'145E_aggregate_240'] = df2.loc[gene, '145A_aggregate_240':'145E_aggregate_240']
+        df.loc[gene, 'A_frac_combined_cov':'E_frac_combined_cov'] = df1.loc[gene, 'A_frac_combined_cov':'E_frac_combined_cov']
+        # df.loc[gene, 'A_frac_combined_cov'] = df1.loc[gene, '145_frac_1080_cov']
+    # df.to_csv('F:/fred_time_lapse/2023_05_25/analysis/aggre_and_frac_cov_A_to_E.tsv',sep='\t')
+
+    # transform dataframe
+    df = df.fillna(0)
+    new_df = pd.DataFrame(columns=['cov', 'replicate','method'])
+    cov, replicate, method = [], [], []
+    for col, label in zip(df.columns.to_list()[-10:], [bio + '_aggre' for bio in ['A', 'B', 'C', 'D', 'E']]+
+                                                      [bio + '_frac' for bio in ['A', 'B', 'C', 'D', 'E']]):
+        cov += df[col].tolist()
+        replicate += [label[0]]*df.shape[0]
+        method += [label[2:]]*df.shape[0]
+    new_df['cov'] = cov
+    new_df['replicate'] = replicate
+    new_df['method'] = method
+    new_df.to_csv('F:/fred_time_lapse/2023_05_25/analysis/aggre_and_frac_cov_plot_df.tsv',sep='\t')
+    """
+    df = pd.read_csv('F:/fred_time_lapse/2023_05_25/analysis/aggre_and_frac_cov_plot_df.tsv', sep='\t', index_col=0)
+    fig, ax = plt.subplots(figsize=(8,6))
+    sns.boxplot(ax = ax,data = df, x='replicate', y='cov', hue='method')
+    box_pairs = [((bio,'aggre'), (bio,'frac')) for bio in ['A','B','C','D','E']]
+    add_stat_annotation(ax, data=df,x='replicate',y='cov',hue = 'method', box_pairs=box_pairs,
+                    test='Wilcoxon', text_format='star',loc='outside', verbose=2,comparisons_correction='bonferroni')
+    plt.legend(loc='upper left', bbox_to_anchor=(1.03, 1))
+    fig.tight_layout()
+    plt.savefig('F:/fred_time_lapse/2023_05_25/analysis/ecm_aggre_frac_cov_compare_boxplot_0601.png',dpi=300)
+    # plt.show()
+    # df = pd.read_csv('F:/fred_time_lapse/20230517/analysis/time_lapsed_vs_frac_cov_0517.tsv',sep='\t',index_col=0)
+    # df = df.fillna(0)
+    # for col in df.columns.tolist()[2:-1]:
+    #     print (col, stats.ttest_rel(df[col],df['145_frac_1080_cov']))
+    # fig,ax = plt.subplots()
+    # ax = df.boxplot(column = df.columns.tolist()[-6:],
+    #              boxprops=dict(linestyle='-', linewidth=2, color='k'),
+    #              flierprops=dict(linestyle='-', linewidth=2, color='k'),
+    #              medianprops=dict(linestyle='-', linewidth=2, color='r'),
+    #              whiskerprops=dict(linestyle='-', linewidth=2, color='k'),
+    #              capprops=dict(linestyle='-', linewidth=2),
+    #              showfliers=True, grid=False, rot=20)
+    # fig.tight_layout()
+    # plt.savefig('F:/fred_time_lapse/20230517/analysis/time_lapsed_vs_frac_cov_0517.png', dpi=300)
+
+
+def compare_results_spectral_lib():
+    # compare the results from prosit, dda-based, and merged spectral lib
+    merged_gene_peptide_dict = pk.load(open('F:/fred_time_lapse/20230508/ecm_peptide_0527.p', 'rb'))
+    gene_peptide_dict = pk.load(open('F:/fred_time_lapse/analysis/ecm_peptide_0527.p', 'rb'))
+    inter_gene_peptide_dict = pk.load(open('F:/fred_time_lapse/20230503/analysis/ecm_peptide_0527.p', 'rb'))
+    inter2_gene_peptide_dict = pk.load(open('F:/fred_time_lapse/20230504/ecm_peptide_0527.p','rb'))
+
+    venn_dict = {}
+    for each, name in zip([gene_peptide_dict,inter_gene_peptide_dict,inter2_gene_peptide_dict, merged_gene_peptide_dict],
+                          ['prosit', 'DDA-based', 'DDA+MDB', 'Merged']):
+        venn_dict[name] = [key for key in each.keys()]
+    # print (venn_dict)
+    for each in venn_dict:
+        print (each, len(venn_dict[each]))
+    venn_diagram_gen2(venn_dict, title='ECM proteins')
+
+
 if __name__ == '__main__':
     from protein_coverage import fasta_reader_gene
     # qc_check()
@@ -953,6 +1084,7 @@ if __name__ == '__main__':
     # dot_plot_connecting()
     # dots_plotting_all()
     # scatter_plot_cov()
+    # scatter_plot_cov2()
     # qc_check_ecm_ratio()
     # psm_dict = pk.load(open('F:/fred_time_lapse/analysis/prot_f_rep_combined_peptide_dict_1219.p', 'rb'))
     # print (psm_dict['Q8TER0']['145_1080'])
@@ -960,6 +1092,7 @@ if __name__ == '__main__':
     # filter_df()
     # nsaf_cal()
     # abs_coverage_calculation()
+    # abs_coverage_plot()
     # dissim_index()
     # dissim_index_plot()
     # upsetplot_data()
@@ -971,4 +1104,6 @@ if __name__ == '__main__':
     # check_ecm_id()
     # combine_spec_library()
     # compare_results_spectral_library()
-    combine_psms_fraction()
+    # compare_results_spectral_lib()
+    # combine_psms_fraction()
+    fraction_time_lapsed_cov()

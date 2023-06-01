@@ -185,7 +185,9 @@ def venn_diagram_gen(dictionary, title=''): # parameter could be a dictionary of
 
 
     for t in out.set_labels: t.set_fontsize(22)
-    for t in out.subset_labels: t.set_fontsize(20)
+    for x in range(len(out.subset_labels)):
+        if out.subset_labels[x] is not None:
+            out.subset_labels[x].set_fontsize(20)
 
     fig.suptitle(title, fontsize=22)
     plt.show()
