@@ -257,14 +257,15 @@ def cluster_map():
     import matplotlib.pyplot as plt
     import seaborn as sns
 
-    data_heatshock = pd.read_csv(r'D:\data\native_protein_digestion\12072021\heat_shock_ionquant_MBR/distance_times_norm_intensity_norm01.tsv',sep='\t',index_col=0)
-    protein_list = data_heatshock.index.tolist()
+    # data_heatshock = pd.read_csv(r'D:\data\native_protein_digestion\12072021\heat_shock_ionquant_MBR/distance_times_norm_intensity_norm01.tsv',sep='\t',index_col=0)
+    # protein_list = data_heatshock.index.tolist()
     data = pd.read_csv(r'F:\native_digestion\01242023\analysis/distance_to_center_times_normIntensity_filter_norm01_removelast2.tsv',sep='\t',index_col=0)
-    data = data[data.index.isin(protein_list)].dropna()
+    # data = data[data.index.isin(protein_list)].dropna()
     protein_list = data.index.tolist()
     protein_hex_list = disorder_to_hex(protein_list)  # add row colors on clustermap
     plddt_hex_list = plddt_to_hex(protein_list)
-    row_colors = pd.DataFrame(dict(disorder=protein_hex_list,plddt=plddt_hex_list))
+    pdockq_hex_list = complex_to_hex(protein_list)
+    row_colors = pd.DataFrame(dict(disorder=protein_hex_list,plddt=plddt_hex_list,pdockq=pdockq_hex_list))
     prot_disorder_dict = pk.load(open('F:/native_digestion/01242023/analysis/prot_disorder_dict.p', 'rb'))
 
     # new_data = pd.DataFrame(index=data.index, columns=data.columns.to_list()[:-2])
@@ -277,11 +278,11 @@ def cluster_map():
     fig, ax = plt.subplots(1, 1, figsize=(12,8))
     g = sns.clustermap(data=data.reset_index(drop=True),col_cluster=False,cmap="YlGnBu",yticklabels=False,row_colors=row_colors, figsize=(10,8),dendrogram_ratio=0.15,
                        cbar_kws={"orientation": "horizontal","shrink": 0.5})
-    re_order_protein_index = g.dendrogram_row.reordered_ind
-    re_order_protein_list = [protein_list[each] for each in re_order_protein_index]
-    print ([(each, prot_disorder_dict[each]) if each in prot_disorder_dict else (each, 'None') for each in re_order_protein_list])
-    # plt.tight_layout()
-    # plt.show()
+    # re_order_protein_index = g.dendrogram_row.reordered_ind
+    # re_order_protein_list = [protein_list[each] for each in re_order_protein_index]
+    # print ([(each, prot_disorder_dict[each]) if each in prot_disorder_dict else (each, 'None') for each in re_order_protein_list])
+    plt.tight_layout()
+    plt.show()
     # plt.savefig(r'D:\data\native_protein_digestion\12072021\heat_shock_ionquant_MBR/heatshock_cluster_disorder_plddt.png',dpi=300)
 
 
@@ -312,6 +313,21 @@ def plddt_to_hex(protein_list):
     # df = pd.DataFrame(index=protein_list,columns=['plddt'])
     # df['plddt'] = plddt_hex_list
     return plddt_hex_list
+
+
+def complex_to_hex(protein_list):
+    # correlate with protein complex confidence in https://www.nature.com/articles/s41594-022-00910-8
+    humap_data = pd.read_csv(r'F:\native_digestion/humap.csv') # protein ids with pDockQ value
+    id_pdock_dict = defaultdict(set)
+    pal = sns.color_palette('magma',24)
+    pal_list = pal.as_hex()
+    for name, pdockq in zip(humap_data['Name'],humap_data['pDockQ']):
+        ids = name.split('-')
+        for id in ids:
+            id_pdock_dict[id].add(pdockq)
+    clean_id_pdock_dict = {each:max(id_pdock_dict[each]) for each in id_pdock_dict}
+    pDockq_hex_list = [pal_list[int(clean_id_pdock_dict[each]*23)] if each in clean_id_pdock_dict else '#b3b3b3' for each in protein_list]
+    return pDockq_hex_list
 
 
 def umap_hdbscan():
@@ -407,12 +423,12 @@ if __name__ == '__main__':
     # print (protein_intensity())
     # combine_distance_intensity()
     # filter_df()
-    # cluster_map()
+    cluster_map()
     # umap_hdbscan()
     # distance_intensity_()
     # distance_intensity_plot()
     # ion_quant_analysis()
-    distance_intensity_plot()
+    # distance_intensity_plot()
     # delta_dist_cal()
     # output_intensity_totsv()
     # normalize_distance()

@@ -177,19 +177,53 @@ def aggregate_psms():
 def combine_psms_fraction():
     # for fractionation samples
     replicates_combined_dict = {}
-    prot_f_psm_dict_of_dict = pk.load(open('F:/fred_time_lapse/2023_05_25/analysis/gene_f_psm_dict_of_dict_0601.p', 'rb'))
+    # prot_f_psm_dict_of_dict = pk.load(open('F:/fred_time_lapse/2023_05_25/analysis/gene_f_psm_dict_of_dict_0601.p', 'rb'))
+    prot_f_psm_dict_of_dict = pk.load(open('F:/fred_time_lapse/20230601_all_fractions/analysis/gene_f_psm_dict_of_dict_0602.p', 'rb'))
     # rep_list = ['145_nA1080_1_6', '145_nA1080_2_7', '145_nA1080_3_8', '145_nA1080_4_9', '145_nA1080_5_10']
-    rep_list, bio_list = ['1_6','2_7','3_8','4_9','5_10'], ['B', 'C', 'D', 'E']
+
+    rep_list, bio_list = ['1_6','2_7','3_8','4_9','5_10'], ['A','B', 'C', 'D', 'E']
     for prot in prot_f_psm_dict_of_dict:
         replicates_combined_psm_dict = {}
-        for bio in bio_list:
-            total_psm_set1080 = set([psm for rep in rep_list for psm in
+        # combine samples within biological replicate
+        # for bio in bio_list:
+        #     total_psm_set1080 = set([psm for rep in rep_list for psm in
+        #                              prot_f_psm_dict_of_dict[prot][bio+rep]
+        #                              if len(set(prot_f_psm_dict_of_dict[prot][bio+rep])) > 1])
+        #     replicates_combined_psm_dict[bio+'_frac_combined'] = total_psm_set1080
+        # replicates_combined_dict[prot] = replicates_combined_psm_dict
+        # combine everything
+        total_psm_set1080 = set([psm for bio in bio_list for rep in rep_list for psm in
                                      prot_f_psm_dict_of_dict[prot][bio+rep]
                                      if len(set(prot_f_psm_dict_of_dict[prot][bio+rep])) > 1])
-            replicates_combined_psm_dict[bio+'_frac_combined'] = total_psm_set1080
-        replicates_combined_dict[prot] = replicates_combined_psm_dict
+        replicates_combined_dict[prot] = total_psm_set1080
     pk.dump(replicates_combined_dict,
-            open('F:/fred_time_lapse/2023_05_25/analysis/gene_f_rep_combined_peptide_dict_0601.p', 'wb'))
+            open('F:/fred_time_lapse/20230601_all_fractions/analysis/gene_combined_peptide_set_dict_0724.p', 'wb'))
+
+
+def add_fraction_cov():
+    # add sequence coverage from combined fractions to the table that has aggregated and standard 1080 seq cov
+    seq_cov_table = pd.read_csv(r'F:\fred_time_lapse\20230508\analysis/ECM_aggre_cov_0515.tsv', sep='\t',index_col=0)
+    protein_seq_dict = fasta_reader_gene(
+        'F:/sned1_biotinalytion/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta')
+    prot_f_combined_pep_dict = pk.load(open('F:/fred_time_lapse/20230601_all_fractions/analysis/gene_combined_peptide_set_dict_0724.p','rb'))
+
+    protein_list = seq_cov_table.index.to_list()
+    frac_cov = []
+    for prot in protein_list:
+        if prot in prot_f_combined_pep_dict:
+            seq = protein_seq_dict[prot]
+            prot_len = len(seq)
+            np_arry = np.zeros(prot_len)
+            peptide_set = prot_f_combined_pep_dict[prot]
+            for pep in peptide_set:
+                pep_loc = seq.find(pep)
+                pep_end_loc = pep_loc + len(pep)
+                np_arry[pep_loc:pep_end_loc] += 1
+            frac_cov.append(np.count_nonzero(np_arry)/prot_len*100)
+        else:
+            frac_cov.append(0)
+    seq_cov_table['145_fractions_combined'] = frac_cov
+    seq_cov_table.to_csv(r'F:\fred_time_lapse\20230508\analysis/ECM_aggre_frac_standard_cov_0724.tsv',sep='\t')
 
 
 def coverage_calculation():
@@ -578,12 +612,12 @@ def table_output():
                         #     np_array_std[pep_loc:pep_end_loc] += 1
                         # df.loc[gene,sample+std] = np.count_nonzero(np_array_std)/len(seq)*100
                         # df.loc[gene, sample + std] = intensity_dict[gene][sample + std]
-                        df.loc[gene,sample+std] = str([(pep, 'psm_'+str(psm_count[pep])) for pep in psm_count])
+                        df.loc[gene,sample+std] = str([(pep, 'psm_'+str(psm_count[pep]),str(seq.find(pep)+1)) for pep in psm_count])
                     # df.loc[gene,sample+std] = len(psm_list)
                     else:
                         df.loc[gene, sample + std] = 0
 
-    df.to_csv(base_path+'20230601_all_fractions/analysis/all_gene_psm_0602.tsv',sep='\t')
+    df.to_csv(base_path+'20230601_all_fractions/analysis/all_gene_psm_0724.tsv',sep='\t')
 
 
 def compare5_to5():
@@ -1108,7 +1142,7 @@ if __name__ == '__main__':
     # filter_df()
     # nsaf_cal()
     # abs_coverage_calculation()
-    abs_coverage_plot()
+    # abs_coverage_plot()
     # dissim_index()
     # dissim_index_plot()
     # upsetplot_data()
@@ -1123,3 +1157,6 @@ if __name__ == '__main__':
     # compare_results_spectral_lib()
     # combine_psms_fraction()
     # fraction_time_lapsed_cov()
+    # add_fraction_cov()
+    gene_seq_dict = fasta_reader_gene('F:/sned1_biotinalytion/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta')
+    print (gene_seq_dict['Ltbp1'])
