@@ -620,6 +620,55 @@ def table_output():
     df.to_csv(base_path+'20230601_all_fractions/analysis/all_gene_psm_0724.tsv',sep='\t')
 
 
+def combine_aggre_std_frac():
+    # 08282023, one last f, make a coverage table for all replicates of 145 aggregated, standard, fractions, 15 columns
+    aggre_f = r'D:\uic\lab\data\naba\time_lapse/ECM_gene_aggre240_cov_each_replicate_0517.tsv'
+    base_path = 'F:/fred_time_lapse/'
+    gene_category_dict = json.load(open(r'D:\uic\lab\data\naba\time_lapse/mat_dict.json', 'r'))  # ECM genes
+    ecm_genelist = [k for k in gene_category_dict.keys()]
+    gene_seq_dict = fasta_reader_gene(r'D:\uic\lab\data\naba\time_lapse/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta')
+
+    gene_f_psm_dict_of_dict_fraction = pk.load(
+        open(r'D:\uic\lab\data\naba\time_lapse/gene_f_psm_dict_of_dict_0602.p', 'rb'))
+    gene_f_psm_dict_of_dict = pk.load(
+        open(r'D:\uic\lab\data\naba\time_lapse/gene_f_psm_dict_of_dict_0509.p', 'rb'))
+
+
+    df = pd.read_csv(aggre_f, sep='\t',index_col=0).loc[:,['145A_aggregate_240','145B_aggregate_240',
+                                                           '145C_aggregate_240','145D_aggregate_240','145E_aggregate_240']]
+    gene_list = df.index.tolist()
+    std_replicates = ['NA_1080', 'NB_1080', 'NC_1080', 'ND_1080', 'NE_1080']
+    samples, fractions = ['A', 'B', 'C', 'D', 'E'], ['1_6', '2_7', '3_8', '4_9', '5_10']
+
+    for gene in gene_list:
+        seq = gene_seq_dict[gene]
+        for std in std_replicates:
+            np_array_std = np.zeros(len(seq))
+            psm_list = gene_f_psm_dict_of_dict[gene]['145'+std]
+            if len(set(psm_list)) > 1:  # filter out genes with only one peptide
+                for each in psm_list:
+                    pep_loc = seq.find(each)
+                    pep_end_loc = pep_loc + len(each)
+                    np_array_std[pep_loc:pep_end_loc] += 1
+                df.loc[gene,'145'+'_'+std] = np.count_nonzero(np_array_std)/len(seq)*100
+            else:
+                df.loc[gene, '145' + '_' + std] = 0
+        if gene in gene_f_psm_dict_of_dict_fraction:
+            for sample in samples:
+                np_array_frac = np.zeros(len(seq))
+                peptide_set = set()
+                for frac in fractions:
+                    sub_pep_set = set(gene_f_psm_dict_of_dict_fraction[gene][sample+frac])
+                    if len(sub_pep_set)>1:
+                        peptide_set.update(sub_pep_set)
+                for each in peptide_set:
+                    pep_loc = seq.find(each)
+                    pep_end_loc = pep_loc + len(each)
+                    np_array_frac[pep_loc:pep_end_loc] += 1
+                df.loc[gene,'Fraction_'+sample] = np.count_nonzero(np_array_frac)/len(seq)*100
+    df.to_csv(r'D:\uic\lab\data\naba\time_lapse/145_aggre_std_frac_cov_08282023.tsv',sep='\t')
+
+
 def compare5_to5():
 
     # compare 5 standard 18 hour files versus 5 time lapse file (each from 1 time point)
@@ -1158,5 +1207,6 @@ if __name__ == '__main__':
     # combine_psms_fraction()
     # fraction_time_lapsed_cov()
     # add_fraction_cov()
-    gene_seq_dict = fasta_reader_gene('F:/sned1_biotinalytion/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta')
-    print (gene_seq_dict['Ltbp1'])
+    combine_aggre_std_frac()
+    # gene_seq_dict = fasta_reader_gene('F:/sned1_biotinalytion/uniprot-proteome_UP000000589_mouse_human_SNED1_BSA.fasta')
+    # print (gene_seq_dict['Ltbp1'])
